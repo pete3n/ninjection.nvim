@@ -177,6 +177,13 @@ M.create_child_buffer = function()
 	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
 
+	vim.b.child_info = {
+		parent_bufnr = parent_bufnr,
+		inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col },
+		parent_cursor = parent_cursor,
+		parent_mode = parent_mode,
+	}
+
 end
 
 M.sync_child = function()
