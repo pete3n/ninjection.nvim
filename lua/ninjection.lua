@@ -189,6 +189,9 @@ M.sync_child = function()
   -- Get the new text from the child (current) buffer.
   local new_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 
+	vim.cmd("bdelete!")
+	vim.api.nvim_set_current_buf(parent_bufnr)
+
   -- Replace the text in the parent buffer in the region corresponding to the injection block.
   vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row, inj_range.s_col,
 		inj_range.e_row, inj_range.e_col, new_text)
@@ -203,16 +206,10 @@ M.sync_child = function()
   local new_parent_col = child_cursor[2] + 1
   local new_parent_cursor = { new_parent_row, new_parent_col }
 
-  -- Try to find a window displaying the parent buffer.
-  local wins = vim.fn.win_findbuf(parent_bufnr)
-  if #wins > 0 then
-    vim.api.nvim_win_set_cursor(wins[1], new_parent_cursor)
-    print("Parent cursor updated to: " .. vim.inspect(new_parent_cursor))
-  else
-    print("No window found for parent buffer; parent's cursor not updated.")
-  end
-end
+	vim.api.nvim_win_set_cursor(0, new_parent_cursor)
+  print("Parent cursor updated to: " .. vim.inspect(new_parent_cursor))
 
+end
 
 M.setup = function(args) end
 
