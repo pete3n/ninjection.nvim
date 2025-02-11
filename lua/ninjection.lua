@@ -200,7 +200,7 @@ M.sync_child = function()
   local new_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 
   -- Replace the text in the parent buffer in the region corresponding to the injection block.
-  vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row0, inj_range.s_col,
+  vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row, inj_range.s_col,
 		inj_range.e_row, inj_range.e_col, new_text)
   print("Injection block updated in parent buffer.")
 
