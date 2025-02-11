@@ -120,14 +120,6 @@ M.get_blk_lang = function()
 	end
 end
 
-M.trim_leading_blank_line = function(text)
-	local lines = vim.split(text, "\n")
-	if #lines > 0 and lines[1]:match("^%s*$") then
-		table.remove(lines, 1)
-	end
-	return table.concat(lines, "\n")
-end
-
 M.create_child_buffer = function()
 	local parent_bufnr = vim.api.nvim_get_current_buf()
 
@@ -142,8 +134,6 @@ M.create_child_buffer = function()
 		print("Could not get injection block text.")
 		return
 	end
-
-	-- block_text = M.trim_leading_blank_line(block_text)
 
 	local injected_lang = M.get_blk_lang()
 	if not injected_lang then
