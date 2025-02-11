@@ -128,7 +128,7 @@ M.trim_leading_blank_line = function(text)
 	return table.concat(lines, "\n")
 end
 
-M.create_inj_buffer = function()
+M.create_child_buffer = function()
 	local parent_bufnr = vim.api.nvim_get_current_buf()
 
 	local block_node, s_row, s_col, e_row, e_col = M.get_cur_blk_coords()
