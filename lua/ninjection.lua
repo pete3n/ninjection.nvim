@@ -172,8 +172,6 @@ M.create_inj_buffer = function()
 	print("Opened new buffer with filetype '" .. injected_lang .. "' and pasted injection block text.")
 end
 
-M.setup = function(args)
-	vim.api.nvim_create_user_command("NJedit", M.create_inj_buffer, {})
-end
+M.setup = function(args) end
 
 return M
