@@ -163,7 +163,7 @@ M.create_inj_buffer = function()
   local parent_mode = vim.fn.mode()
 	local parent_name = vim.api.nvim_buf_get_name(0)
 
-	local child_bufnr = vim.api.nvim_create_buf(false, true)
+	local child_bufnr = vim.api.nvim_create_buf(true, true)
 	if not child_bufnr then
 		print("Failed to create a child buffer.")
 		return
