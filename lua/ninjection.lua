@@ -1,4 +1,4 @@
-local rel = require("relation")
+local rel = require("ninjection.relation")
 local M = {}
 
 M.cfg = {
