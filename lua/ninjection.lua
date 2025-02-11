@@ -143,7 +143,7 @@ M.create_child_buffer = function()
 		return
 	end
 
-	block_text = M.trim_leading_blank_line(block_text)
+	-- block_text = M.trim_leading_blank_line(block_text)
 
 	local injected_lang = M.get_blk_lang()
 	if not injected_lang then
