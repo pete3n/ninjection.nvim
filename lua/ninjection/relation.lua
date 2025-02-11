@@ -67,7 +67,7 @@ M.print_inj_table = function()
   print(vim.inspect(M))
 end
 
-vim.api.nvim_create_user_command("PrintInjectionTracker", function()
+vim.api.nvim_create_user_command("NJDumpRelTable", function()
   M.print_inj_table()
 end, {})
 

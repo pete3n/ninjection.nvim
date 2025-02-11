@@ -179,6 +179,49 @@ M.create_inj_buffer = function()
 
 end
 
+M.sync_child = function()
+  local info = vim.b.child_info
+  if not (info and info.parent_bufnr and info.inj_range) then
+    print("No injection info found in this buffer. Cannot sync changes.")
+    return
+  end
+
+  local parent_bufnr = info.parent_bufnr
+  local inj_range = info.inj_range  -- expected as { s_row, s_col, e_row, e_col } (1-indexed)
+
+  -- Get the new text from the child (current) buffer.
+  local new_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+
+  -- Convert the parent's injection range from 1-indexed display to 0-indexed for the API.
+  local s_row0 = inj_range.s_row - 1
+  local s_col0 = inj_range.s_col - 1
+  local e_row0 = inj_range.e_row - 1
+  local e_col0 = inj_range.e_col - 1
+
+  -- Replace the text in the parent buffer in the region corresponding to the injection block.
+  vim.api.nvim_buf_set_text(parent_bufnr, s_row0, s_col0, e_row0, e_col0, new_text)
+  print("Injection block updated in parent buffer.")
+
+  -- Compute the new parent's cursor position.
+  -- Get the child buffer's cursor position (child uses display coordinates: row is 1-indexed, col is 0-indexed).
+  local child_cursor = vim.api.nvim_win_get_cursor(0)  -- { row, col }
+  -- The new parent's row is parent's injection block start row + (child cursor row - 1)
+  local new_parent_row = inj_range.s_row + child_cursor[1] - 1
+  -- The new parent's column is child's column + 1 (to convert 0-indexed to display 1-indexed)
+  local new_parent_col = child_cursor[2] + 1
+  local new_parent_cursor = { new_parent_row, new_parent_col }
+
+  -- Try to find a window displaying the parent buffer.
+  local wins = vim.fn.win_findbuf(parent_bufnr)
+  if #wins > 0 then
+    vim.api.nvim_win_set_cursor(wins[1], new_parent_cursor)
+    print("Parent cursor updated to: " .. vim.inspect(new_parent_cursor))
+  else
+    print("No window found for parent buffer; parent's cursor not updated.")
+  end
+end
+
+
 M.setup = function(args) end
 
 return M
