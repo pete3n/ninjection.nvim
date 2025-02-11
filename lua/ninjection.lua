@@ -199,14 +199,9 @@ M.sync_child = function()
   -- Get the new text from the child (current) buffer.
   local new_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 
-  -- Convert the parent's injection range from 1-indexed display to 0-indexed for the API.
-  local s_row0 = inj_range.s_row - 1
-  local s_col0 = inj_range.s_col - 1
-  local e_row0 = inj_range.e_row - 1
-  local e_col0 = inj_range.e_col - 1
-
   -- Replace the text in the parent buffer in the region corresponding to the injection block.
-  vim.api.nvim_buf_set_text(parent_bufnr, s_row0, s_col0, e_row0, e_col0, new_text)
+  vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row0, inj_range.s_col,
+		inj_range.e_row, inj_range.e_col, new_text)
   print("Injection block updated in parent buffer.")
 
   -- Compute the new parent's cursor position.
