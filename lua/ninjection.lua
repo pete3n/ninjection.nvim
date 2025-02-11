@@ -1,4 +1,4 @@
--- local debug_u = require 'debug.utils'
+local rel = require("relation")
 local M = {}
 
 M.cfg = {
@@ -129,7 +129,7 @@ M.trim_leading_blank_line = function(text)
 end
 
 M.create_inj_buffer = function()
-	local bufnr = vim.api.nvim_get_current_buf()
+	local parent_bufnr = vim.api.nvim_get_current_buf()
 
 	local block_node, s_row, s_col, e_row, e_col = M.get_cur_blk_coords()
 	if not block_node then
@@ -137,7 +137,7 @@ M.create_inj_buffer = function()
 		return
 	end
 
-	local block_text = vim.treesitter.get_node_text(block_node, bufnr)
+	local block_text = vim.treesitter.get_node_text(block_node, parent_bufnr)
 	if not block_text then
 		print("Could not get injection block text.")
 		return
@@ -157,19 +157,26 @@ M.create_inj_buffer = function()
 	vim.fn.setreg("z", block_text)
 	print("Copied injection block text to register 'z'.")
 
-	local new_bufnr = vim.api.nvim_create_buf(false, true)
-	if not new_bufnr then
-		print("Failed to create a new buffer.")
+	-- Save parent's cursor position and mode before switching buffers.
+  local cur = vim.api.nvim_win_get_cursor(0) -- returns {row, col} (1-indexed)
+  local parent_cursor = { row = cur[1], col = cur[2] }
+  local parent_mode = vim.fn.mode()
+	local parent_name = vim.api.nvim_buf_get_name(0)
+
+	local child_bufnr = vim.api.nvim_create_buf(false, true)
+	if not child_bufnr then
+		print("Failed to create a child buffer.")
 		return
 	end
 
-	vim.api.nvim_set_current_buf(new_bufnr)
-
+	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd("set filetype=" .. injected_lang)
-
 	vim.cmd('normal! "zp')
+	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr)
 
-	print("Opened new buffer with filetype '" .. injected_lang .. "' and pasted injection block text.")
+	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
+	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
+
 end
 
 M.setup = function(args) end
