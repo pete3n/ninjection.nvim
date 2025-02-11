@@ -172,7 +172,7 @@ M.create_inj_buffer = function()
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd('normal! "zp')
-	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr)
+	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
 
 	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
