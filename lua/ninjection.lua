@@ -189,25 +189,21 @@ M.sync_child = function()
   -- Get the new text from the child (current) buffer.
   local new_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 
-	vim.cmd("bdelete!")
-	vim.api.nvim_set_current_buf(parent_bufnr)
-
   -- Replace the text in the parent buffer in the region corresponding to the injection block.
   vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row, inj_range.s_col,
 		inj_range.e_row, inj_range.e_col, new_text)
   print("Injection block updated in parent buffer.")
 
-  -- Compute the new parent's cursor position.
-  -- Get the child buffer's cursor position (child uses display coordinates: row is 1-indexed, col is 0-indexed).
-  local child_cursor = vim.api.nvim_win_get_cursor(0)  -- { row, col }
-  -- The new parent's row is parent's injection block start row + (child cursor row - 1)
-  local new_parent_row = inj_range.s_row + child_cursor[1] - 1
-  -- The new parent's column is child's column + 1 (to convert 0-indexed to display 1-indexed)
-  local new_parent_col = child_cursor[2] + 1
-  local new_parent_cursor = { new_parent_row, new_parent_col }
+	vim.cmd("bdelete!")
+	vim.api.nvim_set_current_buf(parent_bufnr)
 
-	vim.api.nvim_win_set_cursor(0, new_parent_cursor)
-  print("Parent cursor updated to: " .. vim.inspect(new_parent_cursor))
+	-- Reset the parent buffer cursor where we found it
+  local child_cursor = vim.api.nvim_win_get_cursor(0)
+  local parent_cursor = child_cursor
+  -- The new parent's column is child's column + 1 (to convert 0-indexed to display 1-indexed)
+
+	vim.api.nvim_win_set_cursor(0, parent_cursor)
+  print("Parent cursor updated to: " .. vim.inspect(parent_cursor))
 
 end
 
