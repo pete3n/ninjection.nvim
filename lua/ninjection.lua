@@ -167,6 +167,7 @@ M.create_child_buffer = function()
 	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd('normal! "zp')
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
+	
 	vim.api.nvim_win_set_cursor(0, parent_cursor)
 
 	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
@@ -207,7 +208,7 @@ M.sync_child = function()
   local parent_cursor = child_cursor
   -- The new parent's column is child's column + 1 (to convert 0-indexed to display 1-indexed)
 
-	vim.api.nvim_win_set_cursor(0, parent_cursor)
+	vim.api.nvim_win_set_cursor(0, 1, 1)
   print("Parent cursor updated to: " .. vim.inspect(parent_cursor))
 
 end
