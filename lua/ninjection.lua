@@ -44,9 +44,9 @@ end
 -- with start and ending coordinates
 M.get_cur_blk_coords = function()
 	local bufnr = vim.api.nvim_get_current_buf()
-	local cursor = vim.api.nvim_win_get_cursor(0) -- {row, col} with row 1-indexed, col 0-indexed
-	local cur_row = cursor[1] - 1 -- convert to 0-indexed
-	local cur_col = cursor[2] -- already 0-indexed
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local cur_row = cursor[1] - 1
+	local cur_col = cursor[2]
 
 	local query = M.ts_query()
 	if not query then
@@ -80,7 +80,7 @@ M.get_cur_blk_coords = function()
 	return nil
 end
 
--- Determine the injected language for a block range so that new buffer can be set to match it
+-- Determine the injected language for a block range so the new buffer can be set to match it
 M.get_blk_lang = function()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local query = M.ts_query()
@@ -98,7 +98,7 @@ M.get_blk_lang = function()
 	end
 	local root = tree:root()
 
-	local _, block_s_row, _, _, _ = M.get_cur_blk_coords()
+	local block_s_row = select(2, M.get_cur_blk_coords())
 	if not block_s_row then
 		return nil
 	end
@@ -107,7 +107,7 @@ M.get_blk_lang = function()
 	for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
 		local capture_name = query.captures[id]
 		if capture_name == "injection.language" then
-			local _, _, e_row, _ = node:range()
+			local e_row = select(3, node:range())
 			-- Assuming the language comment is entirely above the injection block.
 			if e_row < block_s_row then
 				if not candidate_blk or e_row > candidate_blk.e_row then
@@ -167,6 +167,7 @@ M.create_child_buffer = function()
 	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd('normal! "zp')
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
+	vim.api.nvim_win_set_cursor(0, parent_cursor)
 
 	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
