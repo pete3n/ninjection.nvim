@@ -1,3 +1,7 @@
+if vim.fn.exists(":checkhealth") == 2 then
+	require("ninjection.health").check()
+end
+
 local rel = require("ninjection.relation")
 local M = {}
 
