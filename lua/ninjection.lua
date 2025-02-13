@@ -208,7 +208,7 @@ M.sync_child = function()
   local parent_cursor = child_cursor
   -- The new parent's column is child's column + 1 (to convert 0-indexed to display 1-indexed)
 
-	vim.api.nvim_win_set_cursor(0, 1, 1)
+	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
   print("Parent cursor updated to: " .. vim.inspect(parent_cursor))
 
 end
