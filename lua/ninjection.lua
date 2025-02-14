@@ -66,7 +66,7 @@ M.ts_query = function()
 	return query
 end
 
--- Identify the injected language block at the current cursor position
+-- Idntify the injected language block at the current cursor position
 -- with start and ending coordinates
 M.get_cur_blk_coords = function()
 	local bufnr = vim.api.nvim_get_current_buf()
@@ -198,9 +198,15 @@ M.create_child_buffer = function()
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
 	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
 
-	--  util.start_lsp(injected_lang)
-
-
+	local client_id = util.start_lsp(injected_lang)
+  -- Attach LSP if it started successfully
+  local clients = vim.lsp.get_clients()
+  for _, client in ipairs(clients) do
+    if client.name == injected_lang and client_id then
+      vim.lsp.buf_attach_client(child_bufnr, client.id)
+      print("Attached " .. injected_lang .. " LSP to child buffer.")
+    end
+  end
 
 	vim.b.child_info = {
 		parent_bufnr = parent_bufnr,
