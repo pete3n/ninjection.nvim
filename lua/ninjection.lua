@@ -168,6 +168,8 @@ M.create_child_buffer = function()
 	vim.cmd('normal! "zp')
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
 
+	vim.lsp.buf_attach_client(child_bufnr, 2)
+
 	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
 
