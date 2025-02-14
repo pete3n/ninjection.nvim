@@ -1,6 +1,6 @@
 local M = {}
 
-M.get_avalable_lsp = function(ft)
+M.get_available_lsp = function(ft)
   local active_clients = vim.lsp.get_clients()
   local available_lsp = {}
 
