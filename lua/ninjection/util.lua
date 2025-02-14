@@ -6,12 +6,8 @@ M.set_config = function(config)
 	cfg = config
 end
 
-M.get_lsp_map = function()
-	return cfg.lsp_map
-end
-
 M.check_lsp = function(ft)
-  local mapped_lsp = lsp_map[ft]
+  local mapped_lsp = cfg.lsp_map[ft]
   if not mapped_lsp then
     print("No LSP configured for filetype: " .. ft)
     return "unavailable"
@@ -37,7 +33,7 @@ M.check_lsp = function(ft)
 end
 
 M.attach_lsp = function(ft, bufnr, root_dir)
-  local mapped_lsp = lsp_map[ft]
+  local mapped_lsp = cfg.lsp_map[ft]
 
   if not mapped_lsp then
     print("No LSP mapped for filetype: " .. ft)
