@@ -195,12 +195,14 @@ M.create_child_buffer = function()
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
 
 	vim.api.nvim_set_current_buf(child_bufnr)
-	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd('normal! "zp')
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
+	vim.cmd("set filetype=" .. injected_lang)
+	vim.cmd("doautocmd FileType " .. injected_lang)
+
 	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
 
-	util.attach_lsp(injected_lang, child_bufnr, parent_root_dir)
+	--util.attach_lsp(injected_lang, child_bufnr, parent_root_dir)
 
 	vim.b.child_info = {
 		parent_bufnr = parent_bufnr,
