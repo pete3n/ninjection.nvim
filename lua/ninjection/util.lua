@@ -1,6 +1,14 @@
 local M = {}
+local cfg = {}
 local lspconfig = require("lspconfig")
-local lsp_map = require("ninjection").cfg.lsp_map
+
+M.set_config = function(config)
+	cfg = config
+end
+
+M.get_lsp_map = function()
+	return cfg.lsp_map
+end
 
 M.check_lsp = function(ft)
   local mapped_lsp = lsp_map[ft]

@@ -1,11 +1,10 @@
-if vim.fn.exists(":checkhealth") == 2 then
-	require("ninjection.health").check()
-end
-
+local M = {}
 local rel = require("ninjection.relation")
 local util = require("ninjection.util")
 
-local M = {}
+if vim.fn.exists(":checkhealth") == 2 then
+	require("ninjection.health").check()
+end
 
 M.cfg = {
 	-- TODO: Implement other scratch buffer types, currently only std
@@ -47,6 +46,8 @@ M.cfg = {
 		zig = "zls",
 	},
 }
+
+util.set_config(M.cfg)
 
 M.setup = function(args)
   -- Merge user args with default config
