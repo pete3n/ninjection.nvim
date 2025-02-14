@@ -27,5 +27,30 @@ M.check_lsp = function(ft)
   return "unavailable"
 end
 
+M.start_lsp = function(ft)
+  local mapped_lsp = require("ninjection").cfg.lsp_map[ft]
+  if not mapped_lsp then
+    print("No LSP mapped for filetype: " .. ft)
+    return
+  end
+
+  local status = M.check_lsp(ft)
+  if status == "attached" then
+    print("LSP " .. mapped_lsp .. " is already running.")
+    return
+  elseif status == "unavailable" then
+    print("LSP " .. mapped_lsp .. " is not available.")
+    return
+  end
+
+  -- Start LSP if it's configured but not running
+  if status == "configured" then
+    print("Starting LSP: " .. mapped_lsp)
+    lspconfig[mapped_lsp].setup({})
+    vim.cmd("e") -- Reload buffer to trigger attachment
+  end
+end
+
+
 return M
 
