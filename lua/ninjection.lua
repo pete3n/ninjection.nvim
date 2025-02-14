@@ -182,6 +182,7 @@ M.create_child_buffer = function()
   local parent_cursor = { row = cur[1], col = cur[2] }
   local parent_mode = vim.fn.mode()
 	local parent_name = vim.api.nvim_buf_get_name(0)
+	local parent_root_dir = vim.lsp.buf.list_workspace_folders()[1] or vim.fn.getcwd()
 
 	local child_bufnr = vim.api.nvim_create_buf(true, true)
 	if not child_bufnr then
@@ -198,21 +199,14 @@ M.create_child_buffer = function()
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
 	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
 
-	local client_id = util.start_lsp(injected_lang)
-  -- Attach LSP if it started successfully
-  local clients = vim.lsp.get_clients()
-  for _, client in ipairs(clients) do
-    if client.name == injected_lang and client_id then
-      vim.lsp.buf_attach_client(child_bufnr, client.id)
-      print("Attached " .. injected_lang .. " LSP to child buffer.")
-    end
-  end
+	util.attach_lsp(injected_lang, child_bufnr, parent_root_dir)
 
 	vim.b.child_info = {
 		parent_bufnr = parent_bufnr,
 		inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col },
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
+		prent_root_dir = parent_root_dir,
 	}
 
 end

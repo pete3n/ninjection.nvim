@@ -1,8 +1,9 @@
 local M = {}
 local lspconfig = require("lspconfig")
+local lsp_map = require("ninjection").cfg.lsp_map
 
 M.check_lsp = function(ft)
-  local mapped_lsp = require("ninjection").cfg.lsp_map[ft]
+  local mapped_lsp = lsp_map[ft]
   if not mapped_lsp then
     print("No LSP configured for filetype: " .. ft)
     return "unavailable"
@@ -27,37 +28,41 @@ M.check_lsp = function(ft)
   return "unavailable"
 end
 
-M.start_lsp = function(ft)
-  local mapped_lsp = require("ninjection").cfg.lsp_map[ft]
+M.attach_lsp = function(ft, bufnr, root_dir)
+  local mapped_lsp = lsp_map[ft]
+
   if not mapped_lsp then
     print("No LSP mapped for filetype: " .. ft)
-    return
+    return nil
   end
 
   local status = M.check_lsp(ft)
   if status == "attached" then
-    print("LSP " .. mapped_lsp .. " is already running.")
-    return
+    print("LSP " .. mapped_lsp .. " is already attached.")
+    return nil
   elseif status == "unavailable" then
     print("LSP " .. mapped_lsp .. " is not available.")
-    return
+    return nil
   end
 
-  -- Start LSP if it's configured but not running
   if status == "configured" then
-    print("Starting LSP: " .. mapped_lsp)
-		lspconfig[mapped_lsp].setup({})
-    vim.cmd("LspStart " .. mapped_lsp)
+    print("Starting LSP: " .. mapped_lsp .. " with root_dir: " .. root_dir)
 
-    -- Wait for LSP to start (we need to yield execution)
-    vim.defer_fn(function()
-      local clients = vim.lsp.get_clients()
-      for _, client in ipairs(clients) do
-        if client.name == mapped_lsp then
-          print("LSP " .. mapped_lsp .. " started successfully.")
-        end
-      end
-    end, 500)  -- Delay for 500ms to allow LSP startup
+    -- Ensure LSP is set up with the correct root directory
+    if not lspconfig[mapped_lsp].manager then
+      print("LSP " .. mapped_lsp .. " not initialized, setting up...")
+      lspconfig[mapped_lsp].setup({
+        root_dir = root_dir,  -- Pass the root directory
+      })
+    end
+
+    -- Try attaching the LSP manually
+    local success = lspconfig[mapped_lsp].manager.try_add(bufnr)
+    if success then
+      print("LSP " .. mapped_lsp .. " attached successfully to buffer " .. bufnr)
+    else
+      print("Failed to attach LSP " .. mapped_lsp .. " to buffer " .. bufnr)
+    end
   end
 end
 
