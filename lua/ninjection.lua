@@ -31,7 +31,31 @@ M.cfg = {
 		(#set! injection.combined)
 	)
 	]],
+
+	lsp_map = {
+		bash = "bashls",
+		c = "clangd",
+		cpp = "clangd",
+		javascript = "ts_ls",
+		json = "jsonls",
+		lua = "lua_ls",
+		python = "ruff",
+		rust = "rust_analyzer",
+		sh = "bashls",
+		typescript = "ts_ls",
+		yaml = "yamlls",
+		zig = "zls",
+	},
 }
+
+M.setup = function(args)
+  -- Merge user args with default config
+  if args and args.lsp_map then
+    for k, v in pairs(args.lsp_map) do
+      M.cfg.lsp_map[k] = v  -- Override defaults
+    end
+  end
+end
 
 M.ts_query = function()
 	local query = vim.treesitter.query.parse("nix", M.cfg.ts_query_str)
@@ -170,7 +194,7 @@ M.create_child_buffer = function()
 	vim.cmd('normal! "zp')
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
 
-	util.get_available_lsp(injected_lang)
+	util.check_lsp(injected_lang)
 
 	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
@@ -217,7 +241,5 @@ M.sync_child = function()
   print("Parent cursor updated to: " .. vim.inspect(parent_cursor))
 
 end
-
-M.setup = function(args) end
 
 return M
