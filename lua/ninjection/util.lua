@@ -46,14 +46,18 @@ M.start_lsp = function(ft)
   -- Start LSP if it's configured but not running
   if status == "configured" then
     print("Starting LSP: " .. mapped_lsp)
-    local client_id = lspconfig[mapped_lsp].setup({})
-    local clients = vim.lsp.get_clients()
-    for _, client in ipairs(clients) do
-      if client.name == mapped_lsp then
-        print("LSP " .. mapped_lsp .. " started successfully. ID:", client.id)
-        return client.id
+		lspconfig[mapped_lsp].setup({})
+    vim.cmd("LspStart " .. mapped_lsp)
+
+    -- Wait for LSP to start (we need to yield execution)
+    vim.defer_fn(function()
+      local clients = vim.lsp.get_clients()
+      for _, client in ipairs(clients) do
+        if client.name == mapped_lsp then
+          print("LSP " .. mapped_lsp .. " started successfully.")
+        end
       end
-    end
+    end, 500)  -- Delay for 500ms to allow LSP startup
   end
 end
 
