@@ -196,11 +196,11 @@ M.create_child_buffer = function()
 	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd('normal! "zp')
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. child_bufnr .. ':')
+	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
 
-	util.start_lsp(injected_lang)
+	--  util.start_lsp(injected_lang)
 
 
-	-- vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
 
 	vim.b.child_info = {
 		parent_bufnr = parent_bufnr,
