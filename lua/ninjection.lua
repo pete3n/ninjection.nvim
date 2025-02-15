@@ -1,14 +1,8 @@
--- TODO: Healthcheck and track depedencies/requirements
--- vim.lsp.start requires Neovim >= 0.8
--- nvim-treesitter is required
--- nvim-lspconfig is required
-
 local M = {}
 local rel = require("ninjection.relation")
 
 ---@type ninjection.util
 local util = require("ninjection.util")
-
 if vim.fn.exists(":checkhealth") == 2 then
 	require("ninjection.health").check()
 end
@@ -203,6 +197,7 @@ M.create_child_buffer = function()
 
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd('normal! "zp')
+	print("Checking whitespace borders: " .. vim.inspect(util.get_borders()))
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. ':' .. child_bufnr)
 	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd("doautocmd FileType " .. injected_lang)

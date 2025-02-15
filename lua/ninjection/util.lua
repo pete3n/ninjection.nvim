@@ -7,10 +7,60 @@ M.set_config = function(config)
 	cfg = config
 end
 
+---
+
+--- Return the whitespace borders in the current buffer.
+--- @return table metadata A table containing:
+---   - top_ws: number of blank lines at the top.
+---   - bottom_ws: number of blank lines at the bottom.
+---   - left_indent: minimum number of leading spaces on nonempty lines.
+M.get_borders = function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local top_ws = 0
+  local bottom_ws = 0
+  local left_indent = math.huge
+
+  for _, line in ipairs(lines) do
+    if line:match("^%s*$") then
+      top_ws = top_ws + 1
+    else
+      break
+    end
+  end
+
+  for i = #lines, 1, -1 do
+    if lines[i]:match("^%s*$") then
+      bottom_ws = bottom_ws + 1
+    else
+      break
+    end
+  end
+
+  for _, line in ipairs(lines) do
+    if not line:match("^%s*$") then
+      local indent = line:match("^(%s*)")
+      if indent then
+        local count = #indent
+        if count < left_indent then
+          left_indent = count
+        end
+      end
+    end
+  end
+
+  if left_indent == math.huge then
+    left_indent = 0
+  end
+
+  return { top_ws = top_ws, bottom_ws = bottom_ws, left_indent = left_indent }
+end
+
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
 -- filetypes to buffers, so we need our on function to start the appropriate
 -- LSP.
 
+--- Start an appropriate LSP for the provided language
 --- @param lang string The filetype of the injected language (e.g., "lua", "python").
 --- @param root_dir string The root directory for the buffer (inherits parent's root).
 --- @return table result A table containing:
