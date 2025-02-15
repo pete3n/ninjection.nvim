@@ -8,19 +8,22 @@ if vim.fn.exists(":checkhealth") == 2 then
 end
 
 M.cfg = {
+	preserve_indents = false, -- Re-apply indents from the parent buffer.
+	-- This option should be used in conjunction with auto_format because
+	-- This will re-apply indents that auto_format normally removes.
+	-- If you don't remove them, then they will be re-applied which will increase
+	-- the original indenation.
+	auto_format = false, -- Format the new child buffer with the provided command
+	format_cmd = "_G.format_with_conform()", -- Command for auto_format
+	-- TODO: Safety checks for auto_format, and require command, default should
+	-- be blank.
+
+
 	-- TODO: Implement other scratch buffer types, currently only std
 	buffer_styles = { "std", "popup", "v_split", "h_split", "tab_r", "tab_l" },
 	buffer_style = "std",
-	preserve_indents = true, -- Should be used in conjunction with auto_format
-	-- This will re-apply indents that auto_format normall removes
-	-- If you don't remove them, then they will be re-applied which will increase
-	-- the original indenation.
-
 	-- TODO: Implement auto-inject on buffer close
 	inject_on_close = false,
-	-- TODO: Implement auto-format
-	auto_format = true, -- Format the buffer after creation, with the provided command
-	format_cmd = "_G.format_with_conform()", -- Command for auto_format
 
 	-- Injected language query string
 	ts_query_str = [[
