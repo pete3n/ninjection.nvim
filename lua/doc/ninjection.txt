@@ -6,3 +6,4 @@ ninjection.nvim is a plugin that enables seamless editing for injected lanuages
 inside Nix files with full LSP support.
 
 
+vim:tw=78:ts=8:ft=help:norl:
