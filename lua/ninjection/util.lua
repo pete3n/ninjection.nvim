@@ -7,7 +7,9 @@ M.set_config = function(config)
 	cfg = config
 end
 
----
+-- We need to provide a way of recording and restoring whitespace from the parent
+-- buffer to allow easily formatting the buffer without worrying about its
+-- relative placement in the parent buffer.
 
 --- Return the whitespace borders in the current buffer.
 --- @return table metadata A table containing:
@@ -54,6 +56,54 @@ M.get_borders = function()
   end
 
   return { top_ws = top_ws, bottom_ws = bottom_ws, left_indent = left_indent }
+end
+
+--- Restores the recorded whitespace borders (top, bottom, and left indent)
+--- to a block of text.
+---
+--- The `borders` table should have the following structure:
+---   {
+---     top_ws = <number>,       -- Number of blank lines to add at the top.
+---     bottom_ws = <number>,    -- Number of blank lines to add at the bottom.
+---     left_indent = <number>   -- Number of spaces to prepend to each non-empty line.
+---   }
+---
+--- @param text string|table The text to which borders should be restored.
+---        Can be either a string (with newline separators) or a table of lines.
+--- @param borders table The whitespace borders to restore.
+--- @return table restored_lines A table of lines with the borders restored.
+M.restore_borders = function(text, borders)
+  -- Ensure we have a table of lines.
+  local lines
+  if type(text) == "string" then
+    lines = vim.split(text, "\n")
+  elseif type(text) == "table" then
+    lines = text
+  else
+    error("restore_borders: text must be a string or a table of lines")
+  end
+
+  -- Create the indentation string.
+  local indent = string.rep(" ", borders.left_indent or 0)
+
+  -- Reapply left indent to each non-empty line.
+  for i, line in ipairs(lines) do
+    if line:match("%S") then
+      lines[i] = indent .. line
+    end
+  end
+
+  -- Prepend top blank lines.
+  for i = 1, (borders.top_ws or 0) do
+    table.insert(lines, 1, "")
+  end
+
+  -- Append bottom blank lines.
+  for i = 1, (borders.bottom_ws or 0) do
+    table.insert(lines, "")
+  end
+
+  return lines
 end
 
 -- Autocommands don't trigger properly when creating and arbitrarily assigning

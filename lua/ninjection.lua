@@ -197,7 +197,7 @@ M.create_child_buffer = function()
 
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd('normal! "zp')
-	print("Checking whitespace borders: " .. vim.inspect(util.get_borders()))
+	local parent_borders = util.get_borders()
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. ':' .. child_bufnr)
 	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd("doautocmd FileType " .. injected_lang)
@@ -212,6 +212,7 @@ M.create_child_buffer = function()
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
 		prent_root_dir = parent_root_dir,
+		parent_borders = parent_borders,
 	}
 
 end
@@ -224,15 +225,19 @@ M.sync_child = function()
   end
 
   local parent_bufnr = info.parent_bufnr
+	local parent_borders = info.parent_borders
   local inj_range = info.inj_range  -- expected as { s_row, s_col, e_row, e_col } (1-indexed)
 
   -- Get the new text from the child (current) buffer.
   local new_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 
+	-- Restore borders
+	new_text = util.restore_borders(vim.api.nvim_buf_get_lines(0, 0, -1, false),
+		parent_borders)
+
   -- Replace the text in the parent buffer in the region corresponding to the injection block.
   vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row, inj_range.s_col,
 		inj_range.e_row, inj_range.e_col, new_text)
-  print("Injection block updated in parent buffer.")
 
 	vim.cmd("bdelete!")
 	vim.api.nvim_set_current_buf(parent_bufnr)
@@ -240,10 +245,7 @@ M.sync_child = function()
 	-- Reset the parent buffer cursor where we found it
   local child_cursor = vim.api.nvim_win_get_cursor(0)
   local parent_cursor = child_cursor
-  -- The new parent's column is child's column + 1 (to convert 0-indexed to display 1-indexed)
-
 	vim.api.nvim_win_set_cursor(0, parent_cursor)
-  print("Parent cursor updated to: " .. vim.inspect(parent_cursor))
 
 end
 
