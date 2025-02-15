@@ -1,3 +1,4 @@
+---@class ninjection.util
 local M = {}
 local cfg = {}
 local lspconfig = require("lspconfig")

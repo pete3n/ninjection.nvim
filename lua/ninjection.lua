@@ -5,6 +5,8 @@
 
 local M = {}
 local rel = require("ninjection.relation")
+
+---@type ninjection.util
 local util = require("ninjection.util")
 
 if vim.fn.exists(":checkhealth") == 2 then
