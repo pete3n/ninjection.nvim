@@ -82,7 +82,7 @@ end
 
 -- Identify the injected language block at the current cursor position
 -- with start and ending coordinates
-M.get_cur_blk_coords = function()
+M.get_node_range = function()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local cursor = vim.api.nvim_win_get_cursor(0)
 	local cur_row = cursor[1] - 1 -- 0-indexed
@@ -121,7 +121,7 @@ M.get_cur_blk_coords = function()
 end
 
 -- Determine the injected language for a block range so that new buffer can be set to match it
-M.get_blk_lang = function()
+M.get_node_lang = function()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local query = M.ts_query()
 	if not query then
@@ -132,33 +132,33 @@ M.get_blk_lang = function()
 	if not parser then
 		return nil
 	end
+
 	local tree = parser:parse()[1]
 	if not tree then
 		return nil
 	end
 	local root = tree:root()
-
-	local _, block_s_row, _, _, _ = M.get_cur_blk_coords()
-	if not block_s_row then
+	local _, node_s_row, _, _, _ = M.get_node_range()
+	if not node_s_row then
 		return nil
 	end
 
-	local candidate_blk = nil
+	local candidate_node = nil
 	for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
 		local capture_name = query.captures[id]
 		if capture_name == "injection.language" then
 			local _, _, e_row, _ = node:range()
 			-- Assuming the language comment is entirely above the injection block.
-			if e_row < block_s_row then
-				if not candidate_blk or e_row > candidate_blk.e_row then
-					candidate_blk = { node = node, e_row = e_row }
+			if e_row < node_s_row then
+				if not candidate_node or e_row > candidate_node.e_row then
+					candidate_node = { node = node, e_row = e_row }
 				end
 			end
 		end
 	end
 
-	if candidate_blk then
-		local injected_lang = vim.treesitter.get_node_text(candidate_blk.node, bufnr)
+	if candidate_node then
+		local injected_lang = vim.treesitter.get_node_text(candidate_node.node, bufnr)
 		injected_lang = injected_lang:gsub("^%s*(.-)%s*$", "%1")
 		injected_lang = injected_lang:gsub("^#%s*", "")
 		return injected_lang
@@ -167,22 +167,31 @@ M.get_blk_lang = function()
 	end
 end
 
+M.select = function()
+	local node, s_row, s_col, e_row, e_col = M.get_node_range()
+	if node then
+		vim.fn.setpos("'<", {0, s_row, s_col})
+		vim.fn.setpos("'>", {0, e_row, e_col})
+		vim.cmd("normal! gv")
+	end
+end
+
 M.create_child_buffer = function()
 	local parent_bufnr = vim.api.nvim_get_current_buf()
 
-	local block_node, s_row, s_col, e_row, e_col = M.get_cur_blk_coords()
-	if not block_node then
+	local node, s_row, s_col, e_row, e_col = M.get_node_range()
+	if not node then
 		print("Cursor is not inside an injection block.")
 		return
 	end
 
-	local block_text = vim.treesitter.get_node_text(block_node, parent_bufnr)
+	local block_text = vim.treesitter.get_node_text(node, parent_bufnr)
 	if not block_text then
 		print("Could not get injection block text.")
 		return
 	end
 
-	local injected_lang = M.get_blk_lang()
+	local injected_lang = M.get_node_lang()
 	if not injected_lang then
 		print("Could not determine injected language for this block.")
 		return
@@ -192,7 +201,7 @@ M.create_child_buffer = function()
 	print("Copied injection block text to register 'z'.")
 
 	-- Save parent's cursor position and mode before switching buffers.
-  local cur = vim.api.nvim_win_get_cursor(0) 
+  local cur = vim.api.nvim_win_get_cursor(0)
   local parent_cursor = { row = cur[1], col = cur[2] }
   local parent_mode = vim.fn.mode()
 	local parent_name = vim.api.nvim_buf_get_name(0)
