@@ -9,15 +9,18 @@ end
 
 M.cfg = {
 	-- TODO: Implement other scratch buffer types, currently only std
-	buffer_styles = { "std", "popup", "vsplit", "hsplit", "tabr", "tabl" },
+	buffer_styles = { "std", "popup", "v_split", "h_split", "tab_r", "tab_l" },
 	buffer_style = "std",
-	-- TODO: Implement indentation preservation
-	preserve_indents = true,
+	preserve_indents = true, -- Should be used in conjunction with auto_format
+	-- This will re-apply indents that auto_format normall removes
+	-- If you don't remove them, then they will be re-applied which will increase
+	-- the original indenation.
+
 	-- TODO: Implement auto-inject on buffer close
 	inject_on_close = false,
 	-- TODO: Implement auto-format
-	auto_format = true,
-	format_cmd = "_G.format_with_conform()",
+	auto_format = true, -- Format the buffer after creation, with the provided command
+	format_cmd = "_G.format_with_conform()", -- Command for auto_format
 
 	-- Injected language query string
 	ts_query_str = [[
@@ -208,6 +211,10 @@ M.create_child_buffer = function()
 	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
 
 	util.start_lsp(injected_lang, parent_root_dir)
+
+	if M.cfg.auto_format then
+		vim.cmd("lua " .. M.cfg.format_cmd)
+	end
 
 	vim.b.child_info = {
 		parent_bufnr = parent_bufnr,
