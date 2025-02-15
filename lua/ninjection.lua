@@ -255,7 +255,7 @@ M.sync_child = function()
 
   -- Replace the text in the parent buffer in the region corresponding to the injection block.
   vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row, inj_range.s_col,
-		(inj_range.e_row - 1), inj_range.e_col, sync_text)
+		inj_range.e_row, inj_range.e_col, sync_text)
 
 	vim.cmd("bdelete!")
 	vim.api.nvim_set_current_buf(parent_bufnr)
