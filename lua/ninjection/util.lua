@@ -29,7 +29,7 @@ M.start_lsp = function(lang, root_dir)
   end
 
 	-- The LSP must be available to execute
-	local lsp_cmd = lspconfig[lang_lsp].lang_config.config_def.default_config.cmd
+	local lsp_cmd = lspconfig[lang_lsp].config_def.default_config.cmd
 	if not lsp_cmd then
 		vim.api.nvim_err_writeln(
 			"ninjection ERROR: Command found to execute " .. lang_lsp ..
