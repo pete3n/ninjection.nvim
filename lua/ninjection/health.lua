@@ -7,7 +7,7 @@ local error = health.warn or health.report_error
 local M = {}
 
 local required_plugins = {
-  { lib = "nvim-lspconfig", optional = false,
+  { lib = "lspconfig", optional = false,
 		info = "Required for LSP integration" },
   { lib = "nvim-treesitter",
     optional = false,
@@ -24,6 +24,8 @@ function M.check()
 	start "Checking Neovim version >= 0.8"
 	if vim.version().major == 0 and vim.version().minor < 8 then
 		error("Neovim 0.8 or greater required")
+	else
+		ok("Neovim >= 0.8 detected")
 	end
 
 	start "Checking for required plugins"
