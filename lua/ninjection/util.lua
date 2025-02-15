@@ -40,7 +40,7 @@ M.start_lsp = function(lang, root_dir)
 
 	-- The LSP must support our injected language
 	local lang_supported = false
-	for _, v in ipairs(lspconfig[lang_lsp].lang_config.config_dev.default_config.filetypes) do
+	for _, v in ipairs(lspconfig[lang_lsp].config_def.default_config.filetypes) do
 		if v == lang then
 			lang_supported = true
 		end
