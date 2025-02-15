@@ -110,7 +110,7 @@ M.get_cur_blk_coords = function()
 				(cur_row > s_row or (cur_row == s_row and cur_col >= s_col))
 				and (cur_row < e_row or (cur_row == e_row and cur_col <= e_col))
 			then
-				return node, s_row, s_col, (e_row + 1), e_col
+				return node, s_row, s_col, (e_row -1), e_col
 			end
 		end
 	end
