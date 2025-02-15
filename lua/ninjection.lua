@@ -204,7 +204,7 @@ M.create_child_buffer = function()
 		return
 	end
 
-	local inj_range = { s_row = s_row, s_col = s_col, e_row = (e_row -1), e_col = e_col }
+	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
 
 	vim.api.nvim_set_current_buf(child_bufnr)
@@ -255,7 +255,7 @@ M.sync_child = function()
 
   -- Replace the text in the parent buffer in the region corresponding to the injection block.
   vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row, inj_range.s_col,
-		inj_range.e_row, inj_range.e_col, sync_text)
+		(inj_range.e_row - 1), inj_range.e_col, sync_text)
 
 	vim.cmd("bdelete!")
 	vim.api.nvim_set_current_buf(parent_bufnr)
