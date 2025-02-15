@@ -81,9 +81,9 @@ end
 -- with start and ending coordinates
 M.get_cur_blk_coords = function()
 	local bufnr = vim.api.nvim_get_current_buf()
-	local cursor = vim.api.nvim_win_get_cursor(0) -- {row, col} with row 1-indexed, col 0-indexed
-	local cur_row = cursor[1] - 1 -- convert to 0-indexed
-	local cur_col = cursor[2] -- already 0-indexed
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local cur_row = cursor[1]
+	local cur_col = cursor[2]
 
 	local query = M.ts_query()
 	if not query then
