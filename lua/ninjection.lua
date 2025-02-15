@@ -12,9 +12,12 @@ M.cfg = {
 	buffer_styles = { "std", "popup", "vsplit", "hsplit", "tabr", "tabl" },
 	buffer_style = "std",
 	-- TODO: Implement indentation preservation
-	preserve_l_indent = true,
+	preserve_indents = true,
 	-- TODO: Implement auto-inject on buffer close
 	inject_on_close = false,
+	-- TODO: Implement auto-format
+	auto_format = true,
+	format_cmd = "_G.format_with_conform()",
 
 	-- Injected language query string
 	ts_query_str = [[
@@ -228,16 +231,17 @@ M.sync_child = function()
 	local parent_borders = info.parent_borders
   local inj_range = info.inj_range  -- expected as { s_row, s_col, e_row, e_col } (1-indexed)
 
-  -- Get the new text from the child (current) buffer.
-  local new_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-
-	-- Restore borders
-	new_text = util.restore_borders(vim.api.nvim_buf_get_lines(0, 0, -1, false),
-		parent_borders)
+  local sync_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	if M.cfg.preserve_indents then
+		sync_text = util.restore_borders(vim.api.nvim_buf_get_lines(0, 0, -1, false),
+			parent_borders)
+	else
+		sync_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	end
 
   -- Replace the text in the parent buffer in the region corresponding to the injection block.
   vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row, inj_range.s_col,
-		inj_range.e_row, inj_range.e_col, new_text)
+		inj_range.e_row, inj_range.e_col, sync_text)
 
 	vim.cmd("bdelete!")
 	vim.api.nvim_set_current_buf(parent_bufnr)
