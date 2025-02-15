@@ -77,12 +77,12 @@ M.ts_query = function()
 	return query
 end
 
--- Idntify the injected language block at the current cursor position
+-- Identify the injected language block at the current cursor position
 -- with start and ending coordinates
 M.get_cur_blk_coords = function()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local cursor = vim.api.nvim_win_get_cursor(0)
-	local cur_row = cursor[1]
+	local cur_row = cursor[1] - 1 -- 0-indexed
 	local cur_col = cursor[2]
 
 	local query = M.ts_query()
@@ -110,7 +110,7 @@ M.get_cur_blk_coords = function()
 				(cur_row > s_row or (cur_row == s_row and cur_col >= s_col))
 				and (cur_row < e_row or (cur_row == e_row and cur_col <= e_col))
 			then
-				return node, s_row, s_col, e_row, e_col
+				return node, s_row, s_col, (e_row + 1), e_col
 			end
 		end
 	end
