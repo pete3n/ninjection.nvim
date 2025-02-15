@@ -25,6 +25,9 @@ M.cfg = {
 	-- TODO: Implement auto-inject on buffer close
 	inject_on_close = false,
 
+	-- TODO: Implement working register option
+	register = "z",
+
 	-- Injected language query string
 	ts_query_str = [[
 	(
@@ -110,7 +113,7 @@ M.get_cur_blk_coords = function()
 				(cur_row > s_row or (cur_row == s_row and cur_col >= s_col))
 				and (cur_row < e_row or (cur_row == e_row and cur_col <= e_col))
 			then
-				return node, s_row, s_col, (e_row -1), e_col
+				return node, s_row, s_col, e_row, e_col
 			end
 		end
 	end
@@ -155,7 +158,10 @@ M.get_blk_lang = function()
 	end
 
 	if candidate_blk then
-		return vim.treesitter.get_node_text(candidate_blk.node, bufnr)
+		local injected_lang = vim.treesitter.get_node_text(candidate_blk.node, bufnr)
+		injected_lang = injected_lang:gsub("^%s*(.-)%s*$", "%1")
+		injected_lang = injected_lang:gsub("^#%s*", "")
+		return injected_lang
 	else
 		return nil
 	end
@@ -182,9 +188,6 @@ M.create_child_buffer = function()
 		return
 	end
 
-	injected_lang = injected_lang:gsub("^%s*(.-)%s*$", "%1")
-	injected_lang = injected_lang:gsub("^#%s*", "")
-
 	vim.fn.setreg("z", block_text)
 	print("Copied injection block text to register 'z'.")
 
@@ -201,7 +204,7 @@ M.create_child_buffer = function()
 		return
 	end
 
-	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
+	local inj_range = { s_row = s_row, s_col = s_col, e_row = (e_row -1), e_col = e_col }
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
 
 	vim.api.nvim_set_current_buf(child_bufnr)
@@ -221,7 +224,8 @@ M.create_child_buffer = function()
 
 	vim.b.child_info = {
 		parent_bufnr = parent_bufnr,
-		inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col },
+		inj_range = { s_row = inj_range.s_row, s_col = inj_range.s_col,
+			e_row = inj_range.e_row, e_col = inj_range.e_col },
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
 		prent_root_dir = parent_root_dir,
