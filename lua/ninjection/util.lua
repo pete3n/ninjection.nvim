@@ -9,9 +9,22 @@ end
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
 -- filetypes to buffers, so we need our on function to start the appropriate
 -- LSP.
+
+--- @param lang string The filetype of the injected language (e.g., "lua", "python").
+--- @param root_dir string The root directory for the buffer (inherits parent's root).
+--- @return table result A table containing:
+---   - `status` (string): The LSP startup status. Possible values:
+---     - `"unmapped"`: No LSP mapped for this language.
+---     - `"unconfigured"`: No configuration found for the LSP.
+---     - `"unavailable"`: The LSP command is not available.
+---     - `"unsupported"`: The LSP does not support this language.
+---     - `"failed_start"`: The LSP failed to start.
+---     - `"started"`: The LSP started successfully.
+---   - `client_id` (integer): The client ID of the started LSP (or -1 on failure).
 M.start_lsp = function(lang, root_dir)
 	local lang_lsp = cfg.lsp_map[lang]
 
+	-- The injected langauge must be mapped to an LSP value
   if not lang_lsp then
 		vim.notify(
 			"ninjection WARNING: No LSP mapped to language: " .. lang .. " check your configuration.",
