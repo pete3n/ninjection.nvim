@@ -201,7 +201,7 @@ M.create_child_buffer = function()
 
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd('normal! "zp')
-	vim.cmd('file ' .. parent_name .. ':' .. injected_lang ':' .. child_bufnr)
+	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. ':' .. child_bufnr)
 	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd("doautocmd FileType " .. injected_lang)
 
