@@ -1,3 +1,7 @@
+-- TODO: Healthcheck and track depedencies/requirements
+-- vim.lsp.start requires Neovim >= 0.8
+-- Treesitter required
+
 local M = {}
 local rel = require("ninjection.relation")
 local util = require("ninjection.util")
@@ -202,7 +206,7 @@ M.create_child_buffer = function()
 
 	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
 
-	--util.attach_lsp(injected_lang, child_bufnr, parent_root_dir)
+	util.start_lsp(injected_lang, child_bufnr, parent_root_dir)
 
 	vim.b.child_info = {
 		parent_bufnr = parent_bufnr,
