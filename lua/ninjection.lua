@@ -177,7 +177,7 @@ M.select = function()
 
   local vs_row, vs_col, ve_row, ve_col = util.get_visual_range(node, bufnr)
   -- Convert to 1-indexed for Vim's setpos()
-  vim.fn.setpos("'<", {0, vs_row + 2, vs_col, 0})
+  vim.fn.setpos("'<", {0, vs_row + 2, vs_col + 1, 0})
   vim.fn.setpos("'>", {0, ve_row, ve_col - 1, 0})
   vim.cmd("normal! gv")
 end
