@@ -77,12 +77,38 @@ M.setup = function(args)
 	end
 end
 
+--- Function: Identify and select injected content text in visual mode
+---@return nil
 M.select = function()
-	local bufnr = vim.api.nvim_get_current_buf()
-	local node = M.get_node_range(M.cfg.inj_lang_query)
+	---@type string|nil
+	local err
+	---@type boolean, integer
+	local ok, bufnr, raw_output
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_get_current_buf()
+	end)
+	if not ok then
+		vim.notify("ninjection.select(): nvim_get_current_buf failed.",
+			vim.log.levels.WARN)
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_write(err)
+		end
+		return nil
+	end
+	bufnr = raw_output
+
+	---@type table|nil
+	local node
+	node, err = nts.get_node_info(M.cfg.inj_lang_query, bufnr)
 	if not node then
-		print("No injection content found at the cursor.")
-		return
+		vim.notify("ninjection.select(): No injection content found at the cursor.",
+			vim.log.levels.INFO)
+		if err then
+			vim.api.err.nvim_err_write(err)
+			return nil
+		end
+		return nil
 	end
 
 	local vs_row, vs_col, ve_row, ve_col = nts.get_visual_range(node, bufnr)
@@ -91,9 +117,45 @@ M.select = function()
 	-- ''
 	-- 		injected.content
 	-- '';
-	vim.fn.setpos("'<", { 0, vs_row + 2, vs_col + 1, 0 })
-	vim.fn.setpos("'>", { 0, ve_row, ve_col - 1, 0 })
-	vim.cmd("normal! gv")
+
+	ok, raw_output = pcall(function()
+		return vim.fn.setpos("'<", { 0, vs_row + 2, vs_col + 1, 0 })
+	end)
+	if not ok then
+		vim.notify("ninjection.select(): Error setting beginning mark.", vim.log.levels.WARN)
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_write(err)
+			return nil
+		end
+		return nil
+	end
+
+	ok, raw_output = pcall(function()
+		vim.fn.setpos("'>", { 0, ve_row, ve_col - 1, 0 })
+	end)
+	if not ok then
+		vim.notify("ninjection.select(): Error setting ending mark.", vim.log.levels.WARN)
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_write(err)
+			return nil
+		end
+		return nil
+	end
+
+	ok, raw_output = pcall(function()
+		vim.cmd("normal! gv")
+	end)
+	if not ok then
+		vim.notify("ninjection.select(): Error setting visual mode.", vim.log.levels.WARN)
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_write(err)
+			return nil
+		end
+		return nil
+	end
 end
 
 --- Function: Detects injected language at the cursor position and begins

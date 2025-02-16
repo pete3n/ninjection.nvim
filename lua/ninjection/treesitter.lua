@@ -22,7 +22,7 @@ M.get_query = function(query)
 	if not ok then
 		---@type string
 		local err = tostring(raw_output)
-		vim.notify("ninjection.treesitter.get_query(): Failed.")
+		vim.notify("ninjection.treesitter.get_query(): Failed.", vim.log.levels.WARN)
 		return nil, err
 	end
 	parsed_query = raw_output
@@ -58,7 +58,8 @@ M.get_node_info = function(query, bufnr)
 	--- @type vim.treesitter.Query|nil, string|nil
 	local parsed_query, err = M.get_query(query)
 	if not parsed_query then
-		vim.notify("ninjection.treesitter.get_node_info(): get_query() failed")
+		vim.notify("ninjection.treesitter.get_node_info(): get_query() failed",
+			vim.log.levels.WARN)
 		return nil, err
 	end
 
@@ -69,7 +70,8 @@ M.get_node_info = function(query, bufnr)
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		vim.notify("ninjection.treesitter.get_node_info(): get_parser() failed")
+		vim.notify("ninjection.treesitter.get_node_info(): get_parser() failed",
+			vim.log.levels.WARN)
 		return nil, err
 	end
 	parser_trees = raw_output
@@ -111,8 +113,9 @@ M.get_node_info = function(query, bufnr)
 		end
 	end
 
-	err = "ninjection.treesitter.get_node_info(): no injection.content id found in node."
-	return nil, err
+	vim.notify("ninjection.treesitter.get_node_info(): No injection.content id" .. 
+		"found in node.", vim.log.levels.WARN)
+	return nil, nil
 end
 
 --- Parse an injected content node for a language comment
@@ -131,7 +134,8 @@ M.get_inj_lang = function(node, bufnr)
 	if not ok then
 		---@type string
 		local err = tostring(raw_output)
-		vim.notify("ninjection.treesitter.get_inj_lang(): get_node_text() failed.")
+		vim.notify("ninjection.treesitter.get_inj_lang(): get_node_text() failed.",
+			vim.log.levels.WARN)
 		return nil, err
 	end
 	-- Gross regex magic
@@ -145,11 +149,9 @@ M.get_inj_lang = function(node, bufnr)
 		return lang, nil
 	end
 
-	---@type string
-	local err
-	err = "ninjection.treesitter.get_inj.lang(): no supported injected languages were found." ..
-		" parsed: " .. lang
-	return nil, err
+	vim.notify("ninjection.treesitter.get_inj.lang(): no supported injected" ..
+		" languages were found for: " .. lang, vim.log.levels.WARN)
+	return nil, nil
 end
 
 -- Treesitter's selection for "injected.content" doesn't match the actual text
