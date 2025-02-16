@@ -106,18 +106,17 @@ M.restore_borders = function(text, borders)
   return lines
 end
 
+-- Treesitter's selection for "injected.content" doesn't match the actual text
+-- that is selected. We need a function that adjusts the selection to match.
+
 --- Returns an adjusted "visual" range for a node,
 --- approximating the range of text that is actually seen (as returned by get_node_text).
 --- @param node TSNode The Treesitter node.
 --- @param bufnr number The buffer number.
 --- @return number visual_s_row, number visual_s_col, number visual_e_row, number visual_e_col
 M.get_visual_range = function(node, bufnr)
-  -- Get the raw range (0-indexed)
   local s_row, s_col, e_row, e_col = node:range()
-
-  -- Get the raw lines from the buffer for the node
   local raw_lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row, false)
-  -- Get the "visual" text as extracted by get_node_text()
   local visual_text = vim.treesitter.get_node_text(node, bufnr)
   local visual_lines = vim.split(visual_text, "\n", { plain = true })
 
@@ -137,7 +136,6 @@ M.get_visual_range = function(node, bufnr)
   local offset_end = raw_last:find(visual_last, 1, true) or 1
   local visual_e_col = s_col + offset_end + #visual_last - 1
 
-  -- Return the adjusted range (still 0-indexed)
   return s_row, visual_s_col, e_row, visual_e_col
 end
 

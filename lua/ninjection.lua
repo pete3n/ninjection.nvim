@@ -6,7 +6,7 @@ local util = require("ninjection.util")
 if vim.fn.exists(":checkhealth") == 2 then
 	require("ninjection.health").check()
 end
-
+util.get_visual_range()
 M.cfg = {
 	preserve_indents = false, -- Re-apply indents from the parent buffer.
 	-- This option should be used in conjunction with auto_format because
@@ -182,7 +182,7 @@ M.select = function()
   vim.cmd("normal! gv")
 end
 
-M.create_child_buffer = function()
+M.edit = function()
 	local parent_bufnr = vim.api.nvim_get_current_buf()
 
 	local node, s_row, s_col, e_row, e_col = M.get_node_range(M.cfg.inj_lang_query)
@@ -224,7 +224,7 @@ M.create_child_buffer = function()
 
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd('normal! "zp')
-	local parent_borders = util.get_borders()
+	local original_borders = util.get_borders()
 	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. ':' .. child_bufnr)
 	vim.cmd("set filetype=" .. injected_lang)
 	vim.cmd("doautocmd FileType " .. injected_lang)
@@ -237,49 +237,43 @@ M.create_child_buffer = function()
 		vim.cmd("lua " .. M.cfg.format_cmd)
 	end
 
-	vim.b.child_info = {
-		parent_bufnr = parent_bufnr,
-		inj_range = { s_row = inj_range.s_row, s_col = inj_range.s_col,
+	vim.b.ninjection = {
+		range = { s_row = inj_range.s_row, s_col = inj_range.s_col,
 			e_row = inj_range.e_row, e_col = inj_range.e_col },
+		parent_bufnr = parent_bufnr,
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
 		prent_root_dir = parent_root_dir,
-		parent_borders = parent_borders,
+		parent_borders = original_borders,
 	}
 
 end
 
-M.sync_child = function()
-  local info = vim.b.child_info
-  if not (info and info.parent_bufnr and info.inj_range) then
-    print("No injection info found in this buffer. Cannot sync changes.")
-    return
+--- Replace the injected language text in the parent buffer with the edited
+--- text in the child buffer.
+---@return nil or -1 (error)
+M.replace = function()
+  local nj = vim.b.ninjection
+  local child_cursor = vim.api.nvim_win_get_cursor(0)
+
+  if not (nj and nj.parent_bufnr and nj.range) then
+		vim.api.nvim_err_writeln("ninjection ERROR: No injection info found in this buffer." ..
+			" Cannot sync changes.")
+    return -1
   end
 
-  local parent_bufnr = info.parent_bufnr
-	local parent_borders = info.parent_borders
-  local inj_range = info.inj_range  -- expected as { s_row, s_col, e_row, e_col } (1-indexed)
-
-  local sync_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local rep_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 	if M.cfg.preserve_indents then
-		sync_text = util.restore_borders(vim.api.nvim_buf_get_lines(0, 0, -1, false),
-			parent_borders)
-	else
-		sync_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+		rep_text = util.restore_borders(vim.api.nvim_buf_get_lines(0, 0, -1, false),
+			nj.parent_borders)
 	end
 
-  -- Replace the text in the parent buffer in the region corresponding to the injection block.
-  vim.api.nvim_buf_set_text(parent_bufnr, inj_range.s_row, inj_range.s_col,
-		inj_range.e_row, inj_range.e_col, sync_text)
-
+  vim.api.nvim_buf_set_text(nj.parent_bufnr, nj.range.s_row, nj.range.s_col,
+		nj.range.e_row, nj.range.e_col, rep_text)
 	vim.cmd("bdelete!")
-	vim.api.nvim_set_current_buf(parent_bufnr)
 
-	-- Reset the parent buffer cursor where we found it
-  local child_cursor = vim.api.nvim_win_get_cursor(0)
-  local parent_cursor = child_cursor
-	vim.api.nvim_win_set_cursor(0, parent_cursor)
-
+	vim.api.nvim_set_current_buf(nj.parent_bufnr)
+	vim.api.nvim_win_set_cursor(0, child_cursor)
 end
 
 return M
