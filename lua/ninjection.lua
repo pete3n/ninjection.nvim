@@ -1,5 +1,4 @@
 local M = {}
-local vim = require("vim")
 
 local ts = require("vim.treesitter")
 local rel = require("ninjection.relation")
@@ -24,7 +23,6 @@ M.cfg = {
 	format_cmd = "_G.format_with_conform()", -- Command for auto_format
 	-- TODO: Safety checks for auto_format, and require command, default should
 	-- be blank.
-
 
 	-- TODO: Implement other scratch buffer types, currently only std
 	buffer_styles = { "std", "popup", "v_split", "h_split", "tab_r", "tab_l" },
@@ -71,31 +69,31 @@ util.set_config(M.cfg)
 nts.set_config(M.cfg)
 
 M.setup = function(args)
-  -- Merge user args with default config
-  if args and args.lsp_map then
-    for k, v in pairs(args.lsp_map) do
-      M.cfg.lsp_map[k] = v  -- Override defaults
-    end
-  end
+	-- Merge user args with default config
+	if args and args.lsp_map then
+		for k, v in pairs(args.lsp_map) do
+			M.cfg.lsp_map[k] = v -- Override defaults
+		end
+	end
 end
 
 M.select = function()
-  local bufnr = vim.api.nvim_get_current_buf()
-  local node = M.get_node_range(M.cfg.inj_lang_query)
-  if not node then
-    print("No injection content found at the cursor.")
-    return
-  end
+	local bufnr = vim.api.nvim_get_current_buf()
+	local node = M.get_node_range(M.cfg.inj_lang_query)
+	if not node then
+		print("No injection content found at the cursor.")
+		return
+	end
 
-  local vs_row, vs_col, ve_row, ve_col = nts.get_visual_range(node, bufnr)
+	local vs_row, vs_col, ve_row, ve_col = nts.get_visual_range(node, bufnr)
 	-- This assumes a injected code block style of
 	-- assignment = # inj_lang
 	-- ''
 	-- 		injected.content
 	-- '';
-  vim.fn.setpos("'<", {0, vs_row + 2, vs_col + 1, 0})
-  vim.fn.setpos("'>", {0, ve_row, ve_col - 1, 0})
-  vim.cmd("normal! gv")
+	vim.fn.setpos("'<", { 0, vs_row + 2, vs_col + 1, 0 })
+	vim.fn.setpos("'>", { 0, ve_row, ve_col - 1, 0 })
+	vim.cmd("normal! gv")
 end
 
 --- Function: Detects injected language at the cursor position and begins
@@ -159,8 +157,10 @@ M.edit = function()
 			return nil
 		end
 
-		vim.notify("ninjection.edit(): Could not determined injected language " ..
-			"for this block, for an undetermined reason.")
+		vim.notify(
+			"ninjection.edit(): Could not determined injected language "
+				.. "for this block, for an undetermined reason."
+		)
 		return nil
 	end
 
@@ -176,15 +176,14 @@ M.edit = function()
 	end
 
 	vim.fn.setreg(M.cfg.register, node_text)
-	vim.notify("ninjection.edit(): Copied injected content text to register: " ..
-		M.cfg.register)
+	vim.notify("ninjection.edit(): Copied injected content text to register: " .. M.cfg.register)
 
 	---@type integer[]
-  local cur = vim.api.nvim_win_get_cursor(0)
+	local cur = vim.api.nvim_win_get_cursor(0)
 	---@type { row: integer, col: integer }
-  local parent_cursor = { row = cur[1], col = cur[2] }
+	local parent_cursor = { row = cur[1], col = cur[2] }
 	---@type string
-  local parent_mode = vim.fn.mode()
+	local parent_mode = vim.fn.mode()
 	---@type string
 	local parent_name = vim.api.nvim_buf_get_name(0)
 	---@type string
@@ -200,15 +199,15 @@ M.edit = function()
 	-- are opened for the same injected content.
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_node.range, parent_cursor, parent_mode)
 
-	-- Setup the child buffer 
+	-- Setup the child buffer
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd('normal! "zp')
 
-	vim.cmd('file ' .. parent_name .. ':' .. inj_node.lang .. ':' .. child_bufnr)
+	vim.cmd("file " .. parent_name .. ":" .. inj_node.lang .. ":" .. child_bufnr)
 	vim.cmd("set filetype=" .. inj_node.lang)
 	vim.cmd("doautocmd FileType " .. inj_node.lang)
 
-	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_node.range.s_row), parent_cursor.col})
+	vim.api.nvim_win_set_cursor(0, { (parent_cursor.row - inj_node.range.s_row), parent_cursor.col })
 
 	print("auto_format:", M.cfg.auto_format)
 	if M.cfg.auto_format then
@@ -219,8 +218,12 @@ M.edit = function()
 	util.start_lsp(inj_node.lang, parent_root_dir)
 
 	vim.b.ninjection = {
-		range = { s_row = inj_node.range.s_row, s_col = inj_node.range.s_col,
-			e_row = inj_node.range.e_row, e_col = inj_node.range.e_col },
+		range = {
+			s_row = inj_node.range.s_row,
+			s_col = inj_node.range.s_col,
+			e_row = inj_node.range.e_row,
+			e_col = inj_node.range.e_col,
+		},
 		parent_bufnr = parent_bufnr,
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
@@ -236,7 +239,7 @@ M.replace = function()
 	---@type string|nil
 	local err
 	---@type table|nil
-  local njb = vim.b.ninjection
+	local njb = vim.b.ninjection
 	---@type boolean, integer[]
 	local ok, child_cursor, raw_output
 	ok, raw_output = pcall(function()
@@ -247,13 +250,12 @@ M.replace = function()
 		vim.api.nvim_err_writeln(err)
 		return nil
 	end
-  child_cursor = raw_output
+	child_cursor = raw_output
 
-  if not (njb and njb.parent_bufnr and njb.range) then
-		vim.api.nvim_err_writeln("ninjection.replace(): missing injection information. " ..
-			" Cannot sync changes.")
-    return nil
-  end
+	if not (njb and njb.parent_bufnr and njb.range) then
+		vim.api.nvim_err_writeln("ninjection.replace(): missing injection information. " .. " Cannot sync changes.")
+		return nil
+	end
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_get_lines(0, 0, -1, false)
@@ -267,14 +269,20 @@ M.replace = function()
 		return nil
 	end
 	---@type string[]
-  local rep_text = raw_output
+	local rep_text = raw_output
 	if M.cfg.preserve_indents then
 		rep_text = util.restore_indents(rep_text, njb.parent_borders)
 	end
 
-  ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_text(njb.parent_bufnr, njb.range.s_row,
-			njb.range.s_col, njb.range.e_row, njb.range.e_col, rep_text)
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_buf_set_text(
+			njb.parent_bufnr,
+			njb.range.s_row,
+			njb.range.s_col,
+			njb.range.e_row,
+			njb.range.e_col,
+			rep_text
+		)
 	end)
 	if not ok then
 		vim.notify("ninjection.replace(): Error setting buffer text.")
