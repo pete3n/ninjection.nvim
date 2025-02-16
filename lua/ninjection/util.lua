@@ -116,7 +116,7 @@ M.get_visual_range = function(node, bufnr)
   local s_row, s_col, e_row, e_col = node:range()
 
   -- Get the raw lines from the buffer for the node
-  local raw_lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row + 1, false)
+  local raw_lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row, false)
   -- Get the "visual" text as extracted by get_node_text()
   local visual_text = vim.treesitter.get_node_text(node, bufnr)
   local visual_lines = vim.split(visual_text, "\n", { plain = true })
