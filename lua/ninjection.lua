@@ -15,12 +15,12 @@ if vim.fn.exists(":checkhealth") == 2 then
 end
 
 M.cfg = {
-	preserve_indents = false, -- Re-apply indents from the parent buffer.
+	preserve_indents = true, -- Re-apply indents from the parent buffer.
 	-- This option should be used in conjunction with auto_format because
 	-- This will re-apply indents that auto_format normally removes.
 	-- If you don't remove them, then they will be re-applied which will increase
 	-- the original indenation.
-	auto_format = false, -- Format the new child buffer with the provided command
+	auto_format = true, -- Format the new child buffer with the provided command
 	format_cmd = "_G.format_with_conform()", -- Command for auto_format
 	-- TODO: Safety checks for auto_format, and require command, default should
 	-- be blank.
@@ -213,6 +213,7 @@ M.edit = function()
 	util.start_lsp(inj_node.lang, parent_root_dir)
 
 	if M.cfg.auto_format then
+		vim.notify("ninjection.edit(): Auto formatting")
 		vim.cmd("lua " .. M.cfg.format_cmd)
 	end
 
