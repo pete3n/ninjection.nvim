@@ -21,6 +21,7 @@ M.get_query = function(query)
 	if not ok then
 		---@type string
 		local err = tostring(raw_output)
+		vim.notify("ninjection.treesitter.get_query(): Failed.")
 		return nil, err
 	end
 
@@ -56,6 +57,7 @@ M.get_node_info = function(query, bufnr)
 	--- @type vim.treesitter.Query|nil, string|nil
 	local parsed_query, err = M.get_query(query)
 	if not parsed_query then
+		vim.notify("ninjection.treesitter.get_node_info(): parse_query() failed")
 		return nil, err
 	end
 
@@ -66,6 +68,7 @@ M.get_node_info = function(query, bufnr)
 	end)
 	if not ok then
 		err = tostring(raw_output)
+		vim.notify("ninjection.treesitter.get_node_info(): get_parser() failed")
 		return nil, err
 	end
 	parser_trees = raw_output
@@ -127,6 +130,7 @@ M.get_inj_lang = function(node, bufnr)
 	if not ok then
 		---@type string
 		local err = tostring(raw_output)
+		vim.notify("ninjection.treesitter.get_inj_lang(): get_node_text() failed.")
 		return nil, err
 	end
 	-- Gross regex magic
