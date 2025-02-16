@@ -16,16 +16,17 @@ end
 M.get_query = function(query)
 	---@type boolean, TSQuery
 	local ok, parsed_query, raw_output
-	ok, raw_output = pcall(ts.query.parse("nix", query))
-
+	ok, raw_output = pcall(function()
+		return ts.query.parse("nix", query)
+	end)
 	if not ok then
 		---@type string
 		local err = tostring(raw_output)
 		vim.notify("ninjection.treesitter.get_query(): Failed.")
 		return nil, err
 	end
-
 	parsed_query = raw_output
+
 	return parsed_query, nil
 end
 
@@ -57,7 +58,7 @@ M.get_node_info = function(query, bufnr)
 	--- @type vim.treesitter.Query|nil, string|nil
 	local parsed_query, err = M.get_query(query)
 	if not parsed_query then
-		vim.notify("ninjection.treesitter.get_node_info(): parse_query() failed")
+		vim.notify("ninjection.treesitter.get_node_info(): get_query() failed")
 		return nil, err
 	end
 
