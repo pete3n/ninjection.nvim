@@ -169,6 +169,9 @@ end
 
 M.select = function()
 	local node, s_row, s_col, e_row, e_col = M.get_node_range()
+	print("node: " .. vim.inspect(node) .. " s_row:" .. vim.inspect(s_row) .. 
+		" s_col:" .. vim.inspect(s_col) .. " e_row:" .. vim.inspect(e_row) .. 
+		" e_col: " .. vim.inspect(e_col))
 	if node then
 		vim.fn.setpos("'<", {0, s_row, s_col})
 		vim.fn.setpos("'>", {0, e_row, e_col})
@@ -185,8 +188,8 @@ M.create_child_buffer = function()
 		return
 	end
 
-	local block_text = vim.treesitter.get_node_text(node, parent_bufnr)
-	if not block_text then
+	local node_text = vim.treesitter.get_node_text(node, parent_bufnr)
+	if not node_text then
 		print("Could not get injection block text.")
 		return
 	end
@@ -197,7 +200,7 @@ M.create_child_buffer = function()
 		return
 	end
 
-	vim.fn.setreg("z", block_text)
+	vim.fn.setreg("z", node_text)
 	print("Copied injection block text to register 'z'.")
 
 	-- Save parent's cursor position and mode before switching buffers.
