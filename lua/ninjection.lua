@@ -121,9 +121,9 @@ M.get_node_range = function(query_str)
 end
 
 -- Determine the injected language for a block range so that new buffer can be set to match it
-M.get_node_lang = function()
+M.get_node_lang = function(query_str)
 	local bufnr = vim.api.nvim_get_current_buf()
-	local query = M.ts_query()
+	local query = M.ts_query(query_str)
 	if not query then
 		return nil
 	end
@@ -197,7 +197,7 @@ M.edit = function()
 		return
 	end
 
-	local injected_lang = M.get_node_lang()
+	local injected_lang = M.get_node_lang(M.cfg.inj_lang_query)
 	if not injected_lang then
 		print("Could not determine injected language for this block.")
 		return
