@@ -1,4 +1,5 @@
 local M = {}
+local vim = require("vim")
 
 local ts = require("vim.treesitter")
 local rel = require("ninjection.relation")
@@ -103,8 +104,22 @@ end
 M.edit = function()
 	---@type string
 	local node_text
-	---@type integer
-	local parent_bufnr = vim.api.nvim_get_current_buf()
+	---@type table|nil
+	local original_indents
+
+	---@type boolean, integer
+	local ok, parent_bufnr, raw_output
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_get_current_buf()
+	end)
+	if not ok then
+		---@type string
+		local err = tostring(raw_output)
+		vim.api.nvim_err_writeln(err)
+		return nil
+	end
+	parent_bufnr = raw_output
+
 	---@type table|nil
 	local inj_node, err = nts.get_node_info(M.cfg.inj_lang_query, parent_bufnr)
 	if not inj_node then
@@ -116,8 +131,6 @@ M.edit = function()
 	---@cast inj_node table
 
 	if inj_node.node then
-		---@type boolean, string
-		local ok, raw_output
 		ok, raw_output = pcall(function()
 			return ts.get_node_text(inj_node.node, parent_bufnr)
 		end)
@@ -134,6 +147,11 @@ M.edit = function()
 		end
 	end
 
+	if not inj_node.range then
+		vim.notify("ninjection.edit(): Failed to retrieve valid range for injected content.")
+		return nil
+	end
+
 	if not inj_node.lang then
 		if inj_node.err then
 			err = inj_node.err
@@ -146,32 +164,46 @@ M.edit = function()
 		return nil
 	end
 
-	vim.fn.setreg("z", node_text)
-	vim.notify("Copied injection block text to register 'z'.")
-
-	-- Save parent's cursor position and mode before switching buffers.
-  local cur = vim.api.nvim_win_get_cursor(0)
-  local parent_cursor = { row = cur[1], col = cur[2] }
-  local parent_mode = vim.fn.mode()
-	local parent_name = vim.api.nvim_buf_get_name(0)
-	local parent_root_dir = vim.lsp.buf.list_workspace_folders()[1] or vim.fn.getcwd()
-
-	local child_bufnr = vim.api.nvim_create_buf(true, true)
-	if not child_bufnr then
-		print("Failed to create a child buffer.")
-		return
+	if M.cfg.preserve_indents then
+		original_indents, err = util.get_indents(0)
+		-- Border preservation is not a halting error
+		if not original_indents then
+			vim.notify("ninjection.edit(): Unable to preserve indentation.")
+			if err then
+				vim.notify(err)
+			end
+		end
 	end
 
-	if not inj_node.range then
-		vim.notify("ninjection.edit(): Failed to retrieve valid range for injected content")
+	vim.fn.setreg(M.cfg.register, node_text)
+	vim.notify("ninjection.edit(): Copied injected content text to register: " ..
+		M.cfg.register)
+
+	---@type integer[]
+  local cur = vim.api.nvim_win_get_cursor(0)
+	---@type { row: integer, col: integer }
+  local parent_cursor = { row = cur[1], col = cur[2] }
+	---@type string
+  local parent_mode = vim.fn.mode()
+	---@type string
+	local parent_name = vim.api.nvim_buf_get_name(0)
+	---@type string
+	local parent_root_dir = vim.lsp.buf.list_workspace_folders()[1] or vim.fn.getcwd()
+	---@type integer
+	local child_bufnr = vim.api.nvim_create_buf(true, true)
+	if not child_bufnr then
+		vim.notify("ninjection.edit(): Failed to create a child buffer.")
 		return nil
 	end
 
+	-- Track parent, child buffer relations, in the event multiple child buffers
+	-- are opened for the same injected content.
 	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_node.range, parent_cursor, parent_mode)
 
+	-- Setup the child buffer 
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd('normal! "zp')
-	local original_borders = util.get_borders()
+
 	vim.cmd('file ' .. parent_name .. ':' .. inj_node.lang .. ':' .. child_bufnr)
 	vim.cmd("set filetype=" .. inj_node.lang)
 	vim.cmd("doautocmd FileType " .. inj_node.lang)
@@ -190,37 +222,102 @@ M.edit = function()
 		parent_bufnr = parent_bufnr,
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
-		prent_root_dir = parent_root_dir,
-		parent_borders = original_borders,
+		parent_root_dir = parent_root_dir,
+		parent_indents = original_indents,
 	}
-
 end
 
 --- Replace the original injected language text in the parent buffer with the
 --- edited text in the child buffer.
 ---@return nil
 M.replace = function()
+	---@type string|nil
+	local err
+	---@type table|nil
   local njb = vim.b.ninjection
-  local child_cursor = vim.api.nvim_win_get_cursor(0)
+	---@type boolean, integer[]
+	local ok, child_cursor, raw_output
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_win_get_cursor(0)
+	end)
+	if not ok then
+		err = tostring(raw_output)
+		vim.api.nvim_err_writeln(err)
+		return nil
+	end
+  child_cursor = raw_output
 
   if not (njb and njb.parent_bufnr and njb.range) then
-		vim.api.nvim_err_writeln("ninjection ERROR: No injection info found in this buffer." ..
+		vim.api.nvim_err_writeln("ninjection.replace(): missing injection information. " ..
 			" Cannot sync changes.")
     return nil
   end
 
-  local rep_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	end)
+	if not ok then
+		vim.notify("ninjection.replace(): Error getting buffer text.")
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_writeln(err)
+		end
+		return nil
+	end
+	---@type string[]
+  local rep_text = raw_output
 	if M.cfg.preserve_indents then
-		rep_text = util.restore_borders(vim.api.nvim_buf_get_lines(0, 0, -1, false),
-			njb.parent_borders)
+		rep_text = util.restore_indents(rep_text, njb.parent_borders)
 	end
 
-  vim.api.nvim_buf_set_text(njb.parent_bufnr, njb.range.s_row, njb.range.s_col,
-		njb.range.e_row, njb.range.e_col, rep_text)
-	vim.cmd("bdelete!")
+  ok, raw_output = pcall(function()
+		return vim.api.nvim_buf_set_text(njb.parent_bufnr, njb.range.s_row,
+			njb.range.s_col, njb.range.e_row, njb.range.e_col, rep_text)
+	end)
+	if not ok then
+		vim.notify("ninjection.replace(): Error setting buffer text.")
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_writeln(err)
+		end
+		return nil
+	end
 
-	vim.api.nvim_set_current_buf(njb.parent_bufnr)
-	vim.api.nvim_win_set_cursor(0, child_cursor)
+	ok, raw_output = pcall(function()
+		return vim.cmd("bdelete!")
+	end)
+	if not ok then
+		vim.notify("ninjection.replace(): Error deleting buffer.")
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_writeln(err)
+		end
+		return nil
+	end
+
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_set_current_buf(njb.parent_bufnr)
+	end)
+	if not ok then
+		vim.notify("ninjection.replace(): Error switching to parent buffer.")
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_writeln(err)
+		end
+		return nil
+	end
+
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_win_set_cursor(0, njb.parent_cursor)
+	end)
+	if not ok then
+		vim.notify("ninjection.replace(): Error resetting cursor.")
+		err = tostring(raw_output)
+		if err then
+			vim.api.nvim_err_writeln(err)
+		end
+		return nil
+	end
 end
 
 return M

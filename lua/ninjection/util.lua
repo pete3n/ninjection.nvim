@@ -12,19 +12,33 @@ end
 -- buffer to allow easily formatting the buffer without worrying about its
 -- relative placement in the parent buffer.
 
---- Return the whitespace borders in the current buffer.
---- @return table metadata A table containing:
----   - top_ws: number of blank lines at the top.
----   - bottom_ws: number of blank lines at the bottom.
----   - left_indent: minimum number of leading spaces on nonempty lines.
-M.get_borders = function()
-  local bufnr = vim.api.nvim_get_current_buf()
-  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  local top_ws = 0
-  local bottom_ws = 0
-  local left_indent = math.huge
+---Function: Find whitespace indents (top, bottom, left) in the provided buffer.
+---@param bufnr integer  Buffer handle
+---@return { top_ws: number, bottom_ws:number, l_indent: number}|nil table
+---@return nil|string err Error string if applicable
+--- Return, on success, A table containing:
+---  - top_ws: number of blank lines at the top.
+---  - bottom_ws: number of blank lines at the bottom.
+---  - l_indent: minimum number of leading spaces on nonempty lines.
+--- Return, on failure, nil and error string, if available
+M.get_indents = function(bufnr)
+	---@type boolean, string[]
+	local ok, lines, raw_output
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+	end)
+	if not ok then
+		---@type string
+		local err = tostring(raw_output)
+		return nil, err
+	end
+	lines = raw_output
+
+	---@type number, number, number
+  local top_ws, bottom_ws, l_indent = 0, 0, math.huge
 
   for _, line in ipairs(lines) do
+		---@cast line string
     if line:match("^%s*$") then
       top_ws = top_ws + 1
     else
@@ -33,6 +47,7 @@ M.get_borders = function()
   end
 
   for i = #lines, 1, -1 do
+		---@cast i number
     if lines[i]:match("^%s*$") then
       bottom_ws = bottom_ws + 1
     else
@@ -41,39 +56,41 @@ M.get_borders = function()
   end
 
   for _, line in ipairs(lines) do
+		---@cast line string
     if not line:match("^%s*$") then
+			---@type string|nil
       local indent = line:match("^(%s*)")
       if indent then
         local count = #indent
-        if count < left_indent then
-          left_indent = count
+        if count < l_indent then
+          l_indent = count
         end
       end
     end
   end
 
-  if left_indent == math.huge then
-    left_indent = 0
+  if l_indent == math.huge then
+    l_indent = 0
   end
 
-  return { top_ws = top_ws, bottom_ws = bottom_ws, left_indent = left_indent }
+  return { top_ws = top_ws, bottom_ws = bottom_ws, l_indent = l_indent }, nil
 end
 
---- Restores the recorded whitespace borders (top, bottom, and left indent)
+--- Restores the recorded whitespace indents (top, bottom, and left indent)
 --- to a block of text.
 ---
---- The `borders` table should have the following structure:
+--- The `indents` table should have the following structure:
 ---   {
 ---     top_ws = <number>,       -- Number of blank lines to add at the top.
 ---     bottom_ws = <number>,    -- Number of blank lines to add at the bottom.
 ---     left_indent = <number>   -- Number of spaces to prepend to each non-empty line.
 ---   }
 ---
---- @param text string|table The text to which borders should be restored.
+--- @param text string|table The text to which indentts should be restored.
 ---        Can be either a string (with newline separators) or a table of lines.
---- @param borders table The whitespace borders to restore.
---- @return table restored_lines A table of lines with the borders restored.
-M.restore_borders = function(text, borders)
+--- @param indents table The whitespace indents to restore.
+--- @return table restored_lines A table of lines with the indents restored.
+M.restore_indents = function(text, indents)
   -- Ensure we have a table of lines.
   local lines
   if type(text) == "string" then
@@ -81,11 +98,12 @@ M.restore_borders = function(text, borders)
   elseif type(text) == "table" then
     lines = text
   else
-    error("restore_borders: text must be a string or a table of lines")
+    error("ninjection.util.restore_indents(): text must be a string or a " ..
+		"table of lines")
   end
 
   -- Create the indentation string.
-  local indent = string.rep(" ", borders.left_indent or 0)
+  local indent = string.rep(" ", indents.left_indent or 0)
 
   -- Reapply left indent to each non-empty line.
   for i, line in ipairs(lines) do
@@ -95,12 +113,12 @@ M.restore_borders = function(text, borders)
   end
 
   -- Prepend top blank lines.
-  for i = 1, (borders.top_ws or 0) do
+  for i = 1, (indents.top_ws or 0) do
     table.insert(lines, 1, "")
   end
 
   -- Append bottom blank lines.
-  for i = 1, (borders.bottom_ws or 0) do
+  for i = 1, (indents.bottom_ws or 0) do
     table.insert(lines, "")
   end
 
