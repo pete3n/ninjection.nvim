@@ -29,7 +29,7 @@ M.cfg = {
 	register = "z",
 
 	-- Injected language query string
-	ts_query_str = [[
+	inj_lang_query = [[
 	(
 		(comment) @injection.language
 		.
@@ -71,24 +71,24 @@ M.setup = function(args)
   end
 end
 
-M.ts_query = function()
-	local query = vim.treesitter.query.parse("nix", M.cfg.ts_query_str)
-	if not query then
+M.ts_query = function(query_str)
+	local query_ret = vim.treesitter.query.parse("nix", query_str)
+	if not query_ret then
 		print("Failed to parse injected language query!")
 		return nil
 	end
-	return query
+	return query_ret
 end
 
 -- Identify the injected language block at the current cursor position
 -- with start and ending coordinates
-M.get_node_range = function()
+M.get_node_range = function(query_str)
 	local bufnr = vim.api.nvim_get_current_buf()
 	local cursor = vim.api.nvim_win_get_cursor(0)
 	local cur_row = cursor[1] - 1 -- 0-indexed
 	local cur_col = cursor[2]
 
-	local query = M.ts_query()
+	local query = M.ts_query(query_str)
 	if not query then
 		return nil
 	end
@@ -138,7 +138,7 @@ M.get_node_lang = function()
 		return nil
 	end
 	local root = tree:root()
-	local _, node_s_row, _, _, _ = M.get_node_range()
+	local _, node_s_row, _, _, _ = M.get_node_range(M.cfg.inj_lang_query)
 	if not node_s_row then
 		return nil
 	end
@@ -168,21 +168,24 @@ M.get_node_lang = function()
 end
 
 M.select = function()
-	local node, s_row, s_col, e_row, e_col = M.get_node_range()
-	print("node: " .. vim.inspect(node) .. " s_row:" .. vim.inspect(s_row) .. 
-		" s_col:" .. vim.inspect(s_col) .. " e_row:" .. vim.inspect(e_row) .. 
-		" e_col: " .. vim.inspect(e_col))
-	if node then
-		vim.fn.setpos("'<", {0, s_row, s_col})
-		vim.fn.setpos("'>", {0, e_row, e_col})
-		vim.cmd("normal! gv")
-	end
+  local bufnr = vim.api.nvim_get_current_buf()
+  local node = M.get_node_range(M.cfg.inj_lang_query)
+  if not node then
+    print("No injection content found at the cursor.")
+    return
+  end
+
+  local vs_row, vs_col, ve_row, ve_col = util.get_visual_range(node, bufnr)
+  -- Convert to 1-indexed for Vim's setpos()
+  vim.fn.setpos("'<", {0, vs_row + 1, vs_col + 1, 0})
+  vim.fn.setpos("'>", {0, ve_row + 1, ve_col + 1, 0})
+  vim.cmd("normal! gv")
 end
 
 M.create_child_buffer = function()
 	local parent_bufnr = vim.api.nvim_get_current_buf()
 
-	local node, s_row, s_col, e_row, e_col = M.get_node_range()
+	local node, s_row, s_col, e_row, e_col = M.get_node_range(M.cfg.inj_lang_query)
 	if not node then
 		print("Cursor is not inside an injection block.")
 		return

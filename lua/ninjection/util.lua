@@ -106,6 +106,41 @@ M.restore_borders = function(text, borders)
   return lines
 end
 
+--- Returns an adjusted "visual" range for a node,
+--- approximating the range of text that is actually seen (as returned by get_node_text).
+--- @param node TSNode The Treesitter node.
+--- @param bufnr number The buffer number.
+--- @return number visual_s_row, number visual_s_col, number visual_e_row, number visual_e_col
+M.get_visual_range = function(node, bufnr)
+  -- Get the raw range (0-indexed)
+  local s_row, s_col, e_row, e_col = node:range()
+
+  -- Get the raw lines from the buffer for the node
+  local raw_lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row + 1, false)
+  -- Get the "visual" text as extracted by get_node_text()
+  local visual_text = vim.treesitter.get_node_text(node, bufnr)
+  local visual_lines = vim.split(visual_text, "\n", { plain = true })
+
+  if #raw_lines == 0 or #visual_lines == 0 then
+    return s_row, s_col, e_row, e_col
+  end
+
+  -- For the first line, find the offset of the visual text in the raw line.
+  local raw_first = raw_lines[1]
+  local visual_first = visual_lines[1]
+  local offset_start = raw_first:find(visual_first, 1, true) or 1
+  local visual_s_col = s_col + offset_start - 1
+
+  -- For the last line, find the offset of the visual text in the raw line.
+  local raw_last = raw_lines[#raw_lines]
+  local visual_last = visual_lines[#visual_lines]
+  local offset_end = raw_last:find(visual_last, 1, true) or 1
+  local visual_e_col = s_col + offset_end + #visual_last - 1
+
+  -- Return the adjusted range (still 0-indexed)
+  return s_row, visual_s_col, e_row, visual_e_col
+end
+
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
 -- filetypes to buffers, so we need our on function to start the appropriate
 -- LSP.
