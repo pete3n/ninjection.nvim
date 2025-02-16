@@ -1,5 +1,5 @@
 local M = {}
-local vim = require("vim")
+
 local ts = require("vim.treesitter")
 local rel = require("ninjection.relation")
 

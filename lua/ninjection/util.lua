@@ -1,7 +1,7 @@
 ---@class ninjection.util
 local M = {}
 local cfg = {}
-local vim = require("vim")
+
 local lspconfig = require("lspconfig")
 
 M.set_config = function(config)
