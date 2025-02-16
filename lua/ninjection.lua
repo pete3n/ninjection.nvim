@@ -125,6 +125,7 @@ M.edit = function()
 		if err then
 			vim.api.nvim_err_writeln(err)
 		end
+		return nil
 	end
 	---@cast inj_node table
 
