@@ -1,8 +1,14 @@
 local M = {}
+local vim = require("vim")
+local ts = require("vim.treesitter")
 local rel = require("ninjection.relation")
 
----@type ninjection.util
+--- @type ninjection.util
 local util = require("ninjection.util")
+
+--- @type ninjection.treesitter
+local nts = require("ninjection.treesitter")
+
 if vim.fn.exists(":checkhealth") == 2 then
 	require("ninjection.health").check()
 end
@@ -61,6 +67,7 @@ M.cfg = {
 }
 
 util.set_config(M.cfg)
+nts.set_config(M.cfg)
 
 M.setup = function(args)
   -- Merge user args with default config
@@ -71,102 +78,6 @@ M.setup = function(args)
   end
 end
 
-M.ts_query = function(query_str)
-	local query_ret = vim.treesitter.query.parse("nix", query_str)
-	if not query_ret then
-		print("Failed to parse injected language query!")
-		return nil
-	end
-	return query_ret
-end
-
--- Identify the injected language block at the current cursor position
--- with start and ending coordinates
-M.get_node_range = function(query_str)
-	local bufnr = vim.api.nvim_get_current_buf()
-	local cursor = vim.api.nvim_win_get_cursor(0)
-	local cur_row = cursor[1] - 1 -- 0-indexed
-	local cur_col = cursor[2]
-
-	local query = M.ts_query(query_str)
-	if not query then
-		return nil
-	end
-
-	local parser = vim.treesitter.get_parser(bufnr, "nix")
-	if not parser then
-		print("No parser available for nix!")
-		return nil
-	end
-	local tree = parser:parse()[1]
-	if not tree then
-		print("No syntax tree found!")
-		return nil
-	end
-	local root = tree:root()
-
-	for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
-		local capture_name = query.captures[id]
-		if capture_name == "injection.content" then
-			local s_row, s_col, e_row, e_col = node:range()
-			if
-				(cur_row > s_row or (cur_row == s_row and cur_col >= s_col))
-				and (cur_row < e_row or (cur_row == e_row and cur_col <= e_col))
-			then
-				return node, s_row, s_col, e_row, e_col
-			end
-		end
-	end
-	return nil
-end
-
--- Determine the injected language for a block range so that new buffer can be set to match it
-M.get_node_lang = function(query_str)
-	local bufnr = vim.api.nvim_get_current_buf()
-	local query = M.ts_query(query_str)
-	if not query then
-		return nil
-	end
-
-	local parser = vim.treesitter.get_parser(bufnr, "nix")
-	if not parser then
-		return nil
-	end
-
-	local tree = parser:parse()[1]
-	if not tree then
-		return nil
-	end
-	local root = tree:root()
-	local _, node_s_row, _, _, _ = M.get_node_range(M.cfg.inj_lang_query)
-	if not node_s_row then
-		return nil
-	end
-
-	local candidate_node = nil
-	for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
-		local capture_name = query.captures[id]
-		if capture_name == "injection.language" then
-			local _, _, e_row, _ = node:range()
-			-- Assuming the language comment is entirely above the injection block.
-			if e_row < node_s_row then
-				if not candidate_node or e_row > candidate_node.e_row then
-					candidate_node = { node = node, e_row = e_row }
-				end
-			end
-		end
-	end
-
-	if candidate_node then
-		local injected_lang = vim.treesitter.get_node_text(candidate_node.node, bufnr)
-		injected_lang = injected_lang:gsub("^%s*(.-)%s*$", "%1")
-		injected_lang = injected_lang:gsub("^#%s*", "")
-		return injected_lang
-	else
-		return nil
-	end
-end
-
 M.select = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local node = M.get_node_range(M.cfg.inj_lang_query)
@@ -175,36 +86,68 @@ M.select = function()
     return
   end
 
-  local vs_row, vs_col, ve_row, ve_col = util.get_visual_range(node, bufnr)
-  -- Convert to 1-indexed for Vim's setpos()
+  local vs_row, vs_col, ve_row, ve_col = nts.get_visual_range(node, bufnr)
+	-- This assumes a injected code block style of
+	-- assignment = # inj_lang
+	-- ''
+	-- 		injected.content
+	-- '';
   vim.fn.setpos("'<", {0, vs_row + 2, vs_col + 1, 0})
   vim.fn.setpos("'>", {0, ve_row, ve_col - 1, 0})
   vim.cmd("normal! gv")
 end
 
+--- Function: Detects injected language at the cursor position and begins
+--- editing supported languages according to config preferences
+---@return nil
 M.edit = function()
+	---@type string
+	local node_text
+	---@type integer
 	local parent_bufnr = vim.api.nvim_get_current_buf()
+	---@type table|nil
+	local inj_node, err = nts.get_node_info(M.cfg.inj_lang_query, parent_bufnr)
+	if not inj_node then
+		vim.notify("ninjection.edit(): failed to get injected node information.")
+		if err then
+			vim.api.nvim_err_writeln(err)
+		end
+	end
+	---@cast inj_node table
 
-	local node, s_row, s_col, e_row, e_col = M.get_node_range(M.cfg.inj_lang_query)
-	if not node then
-		print("Cursor is not inside an injection block.")
-		return
+	if inj_node.node then
+		---@type boolean, string
+		local ok, raw_output
+		ok, raw_output = pcall(function()
+			return ts.get_node_text(inj_node.node, parent_bufnr)
+		end)
+		if not ok then
+			---@string
+			err = tostring(raw_output)
+			vim.api.nvim_err_writeln(err)
+			return nil
+		end
+		node_text = raw_output
+		if not node_text then
+			vim.notify("ninjection.edit(): Could not get injection block text.")
+			return nil
+		end
 	end
 
-	local node_text = vim.treesitter.get_node_text(node, parent_bufnr)
-	if not node_text then
-		print("Could not get injection block text.")
-		return
-	end
+	if not inj_node.lang then
+		if inj_node.err then
+			err = inj_node.err
+			vim.notify(err)
+			return nil
+		end
 
-	local injected_lang = M.get_node_lang(M.cfg.inj_lang_query)
-	if not injected_lang then
-		print("Could not determine injected language for this block.")
-		return
+		vim.notify("ninjection.edit(): Could not determined injected language " ..
+			"for this block, for an undetermined reason.")
+		return nil
 	end
 
 	vim.fn.setreg("z", node_text)
-	print("Copied injection block text to register 'z'.")
+	vim.notify("Copied injection block text to register 'z'.")
 
 	-- Save parent's cursor position and mode before switching buffers.
   local cur = vim.api.nvim_win_get_cursor(0)
@@ -219,27 +162,31 @@ M.edit = function()
 		return
 	end
 
-	local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
-	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_range, parent_cursor, parent_mode)
+	if not inj_node.range then
+		vim.notify("ninjection.edit(): Failed to retrieve valid range for injected content")
+		return nil
+	end
+
+	rel.add_inj_buff(parent_bufnr, child_bufnr, inj_node.range, parent_cursor, parent_mode)
 
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd('normal! "zp')
 	local original_borders = util.get_borders()
-	vim.cmd('file ' .. parent_name .. ':' .. injected_lang .. ':' .. child_bufnr)
-	vim.cmd("set filetype=" .. injected_lang)
-	vim.cmd("doautocmd FileType " .. injected_lang)
+	vim.cmd('file ' .. parent_name .. ':' .. inj_node.lang .. ':' .. child_bufnr)
+	vim.cmd("set filetype=" .. inj_node.lang)
+	vim.cmd("doautocmd FileType " .. inj_node.lang)
 
-	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_range.s_row), parent_cursor.col})
+	vim.api.nvim_win_set_cursor(0, {(parent_cursor.row - inj_node.range.s_row), parent_cursor.col})
 
-	util.start_lsp(injected_lang, parent_root_dir)
+	util.start_lsp(inj_node.lang, parent_root_dir)
 
 	if M.cfg.auto_format then
 		vim.cmd("lua " .. M.cfg.format_cmd)
 	end
 
 	vim.b.ninjection = {
-		range = { s_row = inj_range.s_row, s_col = inj_range.s_col,
-			e_row = inj_range.e_row, e_col = inj_range.e_col },
+		range = { s_row = inj_node.range.s_row, s_col = inj_node.range.s_col,
+			e_row = inj_node.range.e_row, e_col = inj_node.range.e_col },
 		parent_bufnr = parent_bufnr,
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
@@ -249,30 +196,30 @@ M.edit = function()
 
 end
 
---- Replace the injected language text in the parent buffer with the edited
---- text in the child buffer.
----@return nil or -1 (error)
+--- Replace the original injected language text in the parent buffer with the
+--- edited text in the child buffer.
+---@return nil
 M.replace = function()
-  local nj = vim.b.ninjection
+  local njb = vim.b.ninjection
   local child_cursor = vim.api.nvim_win_get_cursor(0)
 
-  if not (nj and nj.parent_bufnr and nj.range) then
+  if not (njb and njb.parent_bufnr and njb.range) then
 		vim.api.nvim_err_writeln("ninjection ERROR: No injection info found in this buffer." ..
 			" Cannot sync changes.")
-    return -1
+    return nil
   end
 
   local rep_text = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 	if M.cfg.preserve_indents then
 		rep_text = util.restore_borders(vim.api.nvim_buf_get_lines(0, 0, -1, false),
-			nj.parent_borders)
+			njb.parent_borders)
 	end
 
-  vim.api.nvim_buf_set_text(nj.parent_bufnr, nj.range.s_row, nj.range.s_col,
-		nj.range.e_row, nj.range.e_col, rep_text)
+  vim.api.nvim_buf_set_text(njb.parent_bufnr, njb.range.s_row, njb.range.s_col,
+		njb.range.e_row, njb.range.e_col, rep_text)
 	vim.cmd("bdelete!")
 
-	vim.api.nvim_set_current_buf(nj.parent_bufnr)
+	vim.api.nvim_set_current_buf(njb.parent_bufnr)
 	vim.api.nvim_win_set_cursor(0, child_cursor)
 end
 
