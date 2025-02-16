@@ -3,7 +3,6 @@
 local M = {}
 local cfg = {}
 
-local api = require("vim.api")
 local ts = require("vim.treesitter")
 
 M.set_config = function(config)
