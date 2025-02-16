@@ -6,7 +6,7 @@ local util = require("ninjection.util")
 if vim.fn.exists(":checkhealth") == 2 then
 	require("ninjection.health").check()
 end
-util.get_visual_range()
+
 M.cfg = {
 	preserve_indents = false, -- Re-apply indents from the parent buffer.
 	-- This option should be used in conjunction with auto_format because
