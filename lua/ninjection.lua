@@ -343,10 +343,10 @@ M.replace = function()
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_set_text(
 			njb.parent_bufnr,
-			njb.s_row,
-			njb.s_col,
-			njb.e_row,
-			njb.e_col,
+			njb.range.s_row,
+			njb.range.s_col,
+			njb.range.e_row,
+			njb.range.e_col,
 			rep_text
 		)
 	end)
