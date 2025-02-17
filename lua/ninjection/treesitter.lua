@@ -30,24 +30,53 @@ M.get_query = function(query)
 	return parsed_query, nil
 end
 
---- Function: Identify the injected language block at the current cursor position
+--- Function: Helper function to parse the root tree from a Treesitter Query
+---@param bufnr integer  Buffer handle
+---@return TSNode|nil root  root node of TSTree for language syntax
+---@return nil|string err  error string if available
+M.get_root = function (bufnr)
+	---@type boolean, vim.treesitter.LanguageTree, string
+	local ok, parser, err, raw_output
+  ok, raw_output = pcall(function()
+		return vim.treesitter.get_parser(bufnr, "nix")
+	end)
+	if not ok then
+		err = tostring(raw_output)
+		vim.notify("ninjection.treesitter.get_root(): " ..
+			"Error calling vim.treesitter.get_parser()", vim.log.levels.WARN)
+		return nil, err
+	end
+	parser = raw_output
+  if not parser then
+    vim.notify("ninjection.treesitter.get_root(): No parser available for nix!",
+			vim.log.levels.WARN)
+    return nil, "ninjection.treesitter.get_root(): No parser available for nix!"
+  end
+	---@type TSTree
+  local tree = parser:parse()[1]
+  if not tree then
+    vim.notify("ninjection.treesitter.get.root(): No syntax tree found!", vim.log.levels.WARN)
+    return nil, "ninjection.treesitter.get.root(): No syntax tree found!"
+  end
+  return tree:root(), nil
+end
+
+--- Function: Identify the injected language node at the current cursor position
 --- with start and ending coordinates.
 ---
 ---@param query string  Lua-literal string query to identify an injected
 ---@param bufnr integer  buffer handle to query (must be in current window)
 ---
----@return { node: TSNode, range: Range4, lang: string|nil, err: string|nil }|nil table
---- Return: On success, a table containing:
+---@return { node: TSNode, range: Range4 }|nil table
+--- Return, on success, a table containing:
 --- node: TSNode - the Treesitter node element (see :h TSNode)
 --- range: Range4 - s_col, s_row, e_col, e_row integer coordinates for the node
 --- NOTE: Coordinates may not match the actual text locations (see the
 --- get_visual_range function for this).
---- lang: string|nil - the parsed language comment, if identifiable
---- err: string|nil - language parsing error, if exists
 ---
---- Return: On failure: nil, err string if available
+--- Return, on failure: nil, err string if available
 ---@return nil|string err Error string on failure if it exists
-M.get_node_info = function(query, bufnr)
+M.get_node_table = function(query, bufnr)
 	---@type integer[]
 	local cursor = vim.api.nvim_win_get_cursor(0) -- current window cursor position
 	---@type integer
@@ -58,42 +87,34 @@ M.get_node_info = function(query, bufnr)
 	--- @type vim.treesitter.Query|nil, string|nil
 	local parsed_query, err = M.get_query(query)
 	if not parsed_query then
-		vim.notify("ninjection.treesitter.get_node_info(): get_query() failed",
+		vim.notify("ninjection.treesitter.get_node_info(): Could not parse " ..
+			"the Treesitter query with get_query().",
 			vim.log.levels.WARN)
+		if err then
+			vim.notify("ninjection.treesitter.get_node_info(): Error calling get_query()",
+				vim.log.levels.WARN)
+		end
 		return nil, err
 	end
 
-	--- @type boolean, vim.treesitter.LanguageTree
-	local ok, parser_trees, raw_output
-	ok, raw_output = pcall(function()
-		return ts.get_parser(bufnr, "nix")
-	end)
-	if not ok then
-		err = tostring(raw_output)
-		vim.notify("ninjection.treesitter.get_node_info(): get_parser() failed",
-			vim.log.levels.WARN)
-		return nil, err
-	end
-	parser_trees = raw_output
-
-	---@type TSTree
-	---@const
-	local tree = parser_trees:parse()[1]
-
-	---@type TSNode
+	---@type TSNode|nil
 	local root
-	root = tree:root()
+	root, err = M.get_root(bufnr)
+	if not root then
+			vim.notify("ninjection.treesitter.get_node_table(): Could not determine " ..
+				"the syntax tree root from get_root().", vim.log.levels.WARN)
+		if err then
+			vim.notify("ninjection.treesitter.get_node_table(): Error calling get_root()",
+				vim.log.levels.WARN)
+		end
+		return nil, err
+	end
 
-	-- We only want to work with injected language content that the cursor is
-	-- currently located in, so we need to search for the injected.content string
-	-- in our Treesitter capture and determine if our cursor is inside its range.
 	for id, node, _, _ in parsed_query:iter_captures(root, bufnr, 0, -1) do
 		---@cast id integer
 		---@cast node TSNode
 		---@type string
 		local capture_name = parsed_query.captures[id]
-		---@type string|nil
-		local lang
 
 		if capture_name == "injection.content" then
 			---@type integer
@@ -104,54 +125,125 @@ M.get_node_info = function(query, bufnr)
 			local cur_point = { cur_row, cur_col, cur_row, cur_col }
 
 			if ts.node_contains(node, cur_point) then
-				-- We identified an injected language at our cursor location
-				-- We need to parse the language string, assuming the language comment
-				-- is entirely above the injected code.
-				lang, err = M.get_inj_lang(node, bufnr)
-				return { node = node, range = inj_range, lang = lang, err = err}
+				return { node = node, range = inj_range }
 			end
 		end
 	end
 
-	vim.notify("ninjection.treesitter.get_node_info(): No injection.content id" .. 
+	vim.notify("ninjection.treesitter.get_node_table(): No injection.content id" ..
 		"found in node.", vim.log.levels.WARN)
 	return nil, nil
 end
 
 --- Parse an injected content node for a language comment
----@param node TSNode Treesitter node containing the text to parse for a language
---- comment
+---@param query string  Lua-literal string query to identify an injected
 ---@param bufnr integer  Buffer handle for the node parent buffer
 ---@return string|nil lang  Parsed language comment
 ---@return nil|string err  Error string
-M.get_inj_lang = function(node, bufnr)
-	---@type boolean, string
-	local ok, lang, raw_output
-	ok, raw_output = pcall(function()
-		return ts.get_node_text(node, bufnr)
-	end)
-
-	if not ok then
-		---@type string
-		local err = tostring(raw_output)
-		vim.notify("ninjection.treesitter.get_inj_lang(): get_node_text() failed.",
+M.get_inj_lang = function(query, bufnr)
+	--- @type vim.treesitter.Query|nil, string|nil
+	local parsed_query, err = M.get_query(query)
+	if not parsed_query then
+		vim.notify("ninjection.treesitter.get_inj_lang(): Could not parse " ..
+			"the Treesitter query with get_query().", vim.log.levels.WARN)
+		if err then
+			vim.notify("ninjection.treesitter.get_inj_lang(): Error calling get_query()",
 			vim.log.levels.WARN)
+		end
 		return nil, err
 	end
-	-- Gross regex magic
-	raw_output = raw_output:gsub("^%s*(.-)%s*$", "%1")
-	raw_output = raw_output:gsub("^#%s*", "")
 
-	lang = raw_output
-
-	-- Check language against table of languages mapped to LSPs
-	if lang and cfg.lsp_map[lang] then
-		return lang, nil
+	---@type TSNode|nil
+	local root
+	root, err = M.get_root(bufnr)
+	if not root then
+			vim.notify("ninjection.treesitter.get_inj_lang(): Could not determine " ..
+				"the syntax tree root from get_root().", vim.log.levels.WARN)
+		if err then
+			vim.notify("ninjection.treesitter.get_inj_lang(): Error calling get_root()",
+				vim.log.levels.WARN)
+		end
+		return nil, err
 	end
 
-	vim.notify("ninjection.treesitter.get_inj.lang(): no supported injected" ..
-		" languages were found for: " .. lang, vim.log.levels.WARN)
-	return nil, nil
+	---@type table|nil
+	local node_info
+  node_info, err = M.get_node_table(cfg.inj_lang_query, bufnr)
+  if not node_info then
+		vim.notify("ninjection.treesitter.get_inj_lang(): Could not determine " ..
+			"injected content calling get_node_table()",
+			vim.log.levels.WARN)
+		if err then
+			vim.notify("ninjection.treesitter.get_ing_lang(): Error calling " ..
+				"get_node_table()", vim.log.levels.WARN)
+		end
+		return nil, err
+  end
+
+	---@type integer
+	local node_s_row = node_info.range[1]
+	if not node_s_row then
+		err = "ninjection.treesitter.get_inj_lang(): Could not determine " ..
+			"inject language starting row calling get_node_table()"
+		return nil, err
+	end
+
+	---@type table|nil
+	local candidate_node
+  for id, node, _ in parsed_query:iter_captures(root, bufnr, 0, -1) do
+		---@cast id, integer
+		---@cast node, TSNode
+    local capture_name = parsed_query.captures[id]
+    if capture_name == "injection.language" then
+			---@type integer
+      local e_row = select(3, node:range())
+      -- Assuming the language comment is entirely above the injection block.
+      if e_row < node_s_row then
+        if not candidate_node or (e_row > candidate_node.e_row) then
+          candidate_node = { node = node, e_row = e_row }
+        end
+      end
+    end
+  end
+
+  if candidate_node then
+		---@type boolean, string
+    local ok, candidate_text, raw_output
+		ok, raw_output = pcall(function()
+			return vim.treesitter.get_node_text(candidate_node.node, bufnr)
+		end)
+		if not ok then
+			err = tostring(raw_output)
+			vim.notify("ninjection.get_inj_lang: Error calling vim.treesitter.get_node_text()",
+				vim.log.levels.WARN)
+			return nil, err
+		end
+		candidate_text = raw_output
+		if not candidate_text then
+			err = "ninjection.get_inj_lang: Could not retrieve injected " ..
+				"language text calling vim.treesitter.get_node_text()"
+			vim.notify(err, vim.log.levels.WARN)
+			return nil, err
+		end
+		-- Gross regex magic
+		candidate_text = candidate_text:gsub("^%s*(.-)%s*$", "%1")
+		---@type string
+		local lang = candidate_text:gsub("^#%s*", "")
+
+		-- Check language against table of languages mapped to LSPs
+		if lang and cfg.lsp_map[lang] then
+			return lang, nil
+		end
+
+		err = "ninjection.treesitter.get_inj.lang(): no supported injected " ..
+			"languages were found."
+		vim.notify(err, vim.log.levels.WARN)
+		return nil, err
+	end
+
+	err = "ninjection.treesitter.get_inj.lang(): no supported injected " ..
+		"languages were found."
+	return nil, err
 end
 
 -- Treesitter's selection for "injected.content" doesn't match the actual text
