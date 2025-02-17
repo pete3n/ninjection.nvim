@@ -100,9 +100,9 @@ M.select = function()
 
 	---@type table|nil
 	local info
-	info, err = nts.get_node_info(M.cfg.inj_lang_query, bufnr)
+	info, err = nts.get_node_table(M.cfg.inj_lang_query, bufnr)
 	if not info then
-		vim.notify("ninjection.select(): get_node_info() returned a nil value.",
+		vim.notify("ninjection.select(): get_node_table() returned a nil value.",
 			vim.log.levels.INFO)
 		if err then
 			vim.api.err.nvim_err_write(err)
@@ -112,7 +112,7 @@ M.select = function()
 	end
 
 	if not info.node then
-		vim.notify("ninjection.select(): get_node_info() returned a nil node.",
+		vim.notify("ninjection.select(): get_node_table() returned a nil node.",
 			vim.log.levels.info)
 		return nil
 	end
@@ -186,7 +186,7 @@ M.edit = function()
 	parent_bufnr = raw_output
 
 	---@type table|nil
-	local inj_node, err = nts.get_node_info(M.cfg.inj_lang_query, parent_bufnr)
+	local inj_node, err = nts.get_node_table(M.cfg.inj_lang_query, parent_bufnr)
 	if not inj_node then
 		vim.notify("ninjection.edit(): failed to get injected node information.")
 		if err then
