@@ -167,8 +167,8 @@ end
 --- editing supported languages according to config preferences
 ---@return nil
 M.edit = function()
-	---@type string
-	local node_text
+	---@type string|nil
+	local inj_node_text, inj_node_lang, err
 	---@type table|nil
 	local original_indents
 
@@ -179,16 +179,18 @@ M.edit = function()
 	end)
 	if not ok then
 		---@type string
-		local err = tostring(raw_output)
+		err = tostring(raw_output)
 		vim.api.nvim_err_writeln(err)
 		return nil
 	end
 	parent_bufnr = raw_output
 
 	---@type table|nil
-	local inj_node, err = nts.get_node_table(M.cfg.inj_lang_query, parent_bufnr)
+	local inj_node
+	inj_node, err = nts.get_node_table(M.cfg.inj_lang_query, parent_bufnr)
 	if not inj_node then
-		vim.notify("ninjection.edit(): failed to get injected node information.")
+		vim.notify("ninjection.edit(): Failed to get injected node information " ..
+			"calling get_node_table()", vim.log.levels.WARN)
 		if err then
 			vim.api.nvim_err_writeln(err)
 		end
@@ -201,34 +203,31 @@ M.edit = function()
 			return ts.get_node_text(inj_node.node, parent_bufnr)
 		end)
 		if not ok then
-			---@string
 			err = tostring(raw_output)
 			vim.api.nvim_err_writeln(err)
 			return nil
 		end
-		node_text = raw_output
-		if not node_text then
-			vim.notify("ninjection.edit(): Could not get injection block text.")
+		inj_node_text = raw_output
+		if not inj_node_text then
+			vim.notify("ninjection.edit(): Failed to get injected node text " ..
+				"calling vim.treesitter.get_node_text()", vim.log.levels.WARN)
 			return nil
 		end
 	end
 
 	if not inj_node.range then
-		vim.notify("ninjection.edit(): Failed to retrieve valid range for injected content.")
+		vim.notify("ninjection.edit(): Failed to retrieve valid range for injected " ..
+			" content calling get_node_table().")
 		return nil
 	end
 
-	if not inj_node.lang then
-		if inj_node.err then
-			err = inj_node.err
-			vim.notify(err)
-			return nil
+	inj_node_lang, err = nts.get_inj_lang(M.cfg.inj_lang_query, parent_bufnr)
+	if not inj_node_lang then
+		vim.notify("ninjection.edit(): Failed to get injected node language " ..
+			"calling get_inj_lang()", vim.log.levels.WARN)
+		if err then
+			vim.api.nvim_err_writeln(err)
 		end
-
-		vim.notify(
-			"ninjection.edit(): Could not determined injected language "
-				.. "for this block, for an undetermined reason."
-		)
 		return nil
 	end
 
@@ -243,7 +242,7 @@ M.edit = function()
 		end
 	end
 
-	vim.fn.setreg(M.cfg.register, node_text)
+	vim.fn.setreg(M.cfg.register, inj_node_text)
 	vim.notify("ninjection.edit(): Copied injected content text to register: " .. M.cfg.register)
 
 	---@type integer[]
@@ -271,9 +270,9 @@ M.edit = function()
 	vim.api.nvim_set_current_buf(child_bufnr)
 	vim.cmd('normal! "zp')
 
-	vim.cmd("file " .. parent_name .. ":" .. inj_node.lang .. ":" .. child_bufnr)
-	vim.cmd("set filetype=" .. inj_node.lang)
-	vim.cmd("doautocmd FileType " .. inj_node.lang)
+	vim.cmd("file " .. parent_name .. ":" .. inj_node_lang .. ":" .. child_bufnr)
+	vim.cmd("set filetype=" .. inj_node_lang)
+	vim.cmd("doautocmd FileType " .. inj_node_lang)
 
 	vim.api.nvim_win_set_cursor(0, { (parent_cursor.row - inj_node.range.s_row), parent_cursor.col })
 
@@ -286,12 +285,7 @@ M.edit = function()
 	util.start_lsp(inj_node.lang, parent_root_dir)
 
 	vim.b.ninjection = {
-		range = {
-			s_row = inj_node.range.s_row,
-			s_col = inj_node.range.s_col,
-			e_row = inj_node.range.e_row,
-			e_col = inj_node.range.e_col,
-		},
+		range = inj_node.range,
 		parent_bufnr = parent_bufnr,
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
