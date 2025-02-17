@@ -276,16 +276,19 @@ M.edit = function()
 
 	vim.api.nvim_win_set_cursor(0, { (parent_cursor.row - inj_node.range[1]), parent_cursor.col })
 
-	print("auto_format:", M.cfg.auto_format)
 	if M.cfg.auto_format then
-		vim.notify("ninjection.edit(): Auto formatting")
 		vim.cmd("lua " .. M.cfg.format_cmd)
 	end
 
 	util.start_lsp(inj_node_lang, parent_root_dir)
 
 	vim.b.ninjection = {
-		range = inj_node.range,
+		range = {
+			s_row = inj_node.range[1],
+			s_col = inj_node.range[2],
+			e_row = inj_node.range[3],
+			e_col = inj_node.range[4],
+		},
 		parent_bufnr = parent_bufnr,
 		parent_cursor = parent_cursor,
 		parent_mode = parent_mode,
@@ -340,10 +343,10 @@ M.replace = function()
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_set_text(
 			njb.parent_bufnr,
-			njb.range[1],
-			njb.range[2],
-			njb.range[3],
-			njb.range[4],
+			njb.s_row,
+			njb.s_col,
+			njb.e_row,
+			njb.e_col,
 			rep_text
 		)
 	end)
