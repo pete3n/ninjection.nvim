@@ -109,7 +109,7 @@ M.get_node_info = function(query, bufnr)
 				-- is entirely above the injected code.
 				lang, err = M.get_inj_lang(node, bufnr)
 			end
-			return { node, inj_range, lang, err }
+			return { node = node, range = inj_range, lang = lang, err = err}
 		end
 	end
 
