@@ -166,7 +166,7 @@ M.get_visual_range = function(node, bufnr)
   local s_row, s_col, e_row, e_col = node:range()
   local raw_lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row, false)
   local visual_text = ts.get_node_text(node, bufnr)
-  local visual_lines = vim.vim.split(visual_text, "\n", { plain = true })
+  local visual_lines = vim.split(visual_text, "\n", { plain = true })
 
   if #raw_lines == 0 or #visual_lines == 0 then
     return s_row, s_col, e_row, e_col
