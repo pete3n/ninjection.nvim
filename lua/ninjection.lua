@@ -337,7 +337,7 @@ M.replace = function()
 	---@type string[]
 	local rep_text = raw_output
 	if M.cfg.preserve_indents then
-		rep_text = util.restore_indents(rep_text, njb.parent_borders)
+		rep_text = util.restore_indents(rep_text, njb.parent_indents)
 	end
 
 	ok, raw_output = pcall(function()
