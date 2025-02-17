@@ -99,10 +99,10 @@ M.select = function()
 	bufnr = raw_output
 
 	---@type table|nil
-	local node
-	node, err = nts.get_node_info(M.cfg.inj_lang_query, bufnr)
-	if not node then
-		vim.notify("ninjection.select(): No injection content found at the cursor.",
+	local info
+	info, err = nts.get_node_info(M.cfg.inj_lang_query, bufnr)
+	if not info then
+		vim.notify("ninjection.select(): get_node_info() returned a nil value.",
 			vim.log.levels.INFO)
 		if err then
 			vim.api.err.nvim_err_write(err)
@@ -111,7 +111,12 @@ M.select = function()
 		return nil
 	end
 
-	local vs_row, vs_col, ve_row, ve_col = nts.get_visual_range(node, bufnr)
+	if not info.node then
+		vim.notify("ninjection.select(): get_node_info() returned a nil node.",
+			vim.log.levels.info)
+		return nil
+	end
+	local vs_row, vs_col, ve_row, ve_col = nts.get_visual_range(info.node, bufnr)
 	-- This assumes a injected code block style of
 	-- assignment = # inj_lang
 	-- ''
