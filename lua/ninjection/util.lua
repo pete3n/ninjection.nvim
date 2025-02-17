@@ -83,7 +83,7 @@ end
 ---   {
 ---     top_ws = <number>,       -- Number of blank lines to add at the top.
 ---     bottom_ws = <number>,    -- Number of blank lines to add at the bottom.
----     left_indent = <number>   -- Number of spaces to prepend to each non-empty line.
+---     l_indent = <number>   -- Number of spaces to prepend to each non-empty line.
 ---   }
 ---
 --- @param text string|table The text to which indentts should be restored.
@@ -103,7 +103,7 @@ M.restore_indents = function(text, indents)
   end
 
   -- Create the indentation string.
-  local indent = string.rep(" ", indents.left_indent or 0)
+  local indent = string.rep(" ", indents.l_indent or 0)
 
   -- Reapply left indent to each non-empty line.
   for i, line in ipairs(lines) do
