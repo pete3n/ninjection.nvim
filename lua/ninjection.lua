@@ -274,7 +274,7 @@ M.edit = function()
 	vim.cmd("set filetype=" .. inj_node_lang)
 	vim.cmd("doautocmd FileType " .. inj_node_lang)
 
-	vim.api.nvim_win_set_cursor(0, { (parent_cursor.row - inj_node.range.s_row), parent_cursor.col })
+	vim.api.nvim_win_set_cursor(0, { (parent_cursor.row - inj_node.range[1]), parent_cursor.col })
 
 	print("auto_format:", M.cfg.auto_format)
 	if M.cfg.auto_format then
