@@ -282,7 +282,7 @@ M.edit = function()
 		vim.cmd("lua " .. M.cfg.format_cmd)
 	end
 
-	util.start_lsp(inj_node.lang, parent_root_dir)
+	util.start_lsp(inj_node_lang, parent_root_dir)
 
 	vim.b.ninjection = {
 		range = inj_node.range,
@@ -314,8 +314,9 @@ M.replace = function()
 	end
 	child_cursor = raw_output
 
-	if not (njb and njb.parent_bufnr and njb.range) then
-		vim.api.nvim_err_writeln("ninjection.replace(): missing injection information. " .. " Cannot sync changes.")
+	if not (njb.parent_bufnr and njb.range) then
+		vim.api.nvim_err_writeln("ninjection.replace(): missing injection " ..
+			"information. Cannot sync changes.")
 		return nil
 	end
 
@@ -339,10 +340,10 @@ M.replace = function()
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_set_text(
 			njb.parent_bufnr,
-			njb.range.s_row,
-			njb.range.s_col,
-			njb.range.e_row,
-			njb.range.e_col,
+			njb.range[1],
+			njb.range[2],
+			njb.range[3],
+			njb.range[4],
 			rep_text
 		)
 	end)
