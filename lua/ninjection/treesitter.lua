@@ -108,8 +108,8 @@ M.get_node_info = function(query, bufnr)
 				-- We need to parse the language string, assuming the language comment
 				-- is entirely above the injected code.
 				lang, err = M.get_inj_lang(node, bufnr)
+				return { node = node, range = inj_range, lang = lang, err = err}
 			end
-			return { node = node, range = inj_range, lang = lang, err = err}
 		end
 	end
 
