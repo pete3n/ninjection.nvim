@@ -518,19 +518,16 @@ M.edit = function()
 end
 
 
---- Function: Replace the original injected language text in the parent buffer with the
---- edited text in the child buffer.
----@param bufnr integer Default: 0, the buffer handle for the buffer we will be using.
----  Params: bufnr is a child buffer that must have a parent associated with it.
----  This state is stored by its vim.b.ninjection table as a NJParent object.
+--- Function: Replace the original injected language text in the parent buffer 
+--- with the current text in the child buffer.
+--- This state is stored by its vim.b.ninjection table as a NJParent object.
 ---@return nil|string err Returns err string, if applicable
-M.replace = function(bufnr)
-	bufnr = bufnr or 0
+M.replace = function()
 	---@type boolean, any|nil, string|nil, NJChild|nil, integer[]|nil
 	local ok, raw_output, err, nj_child_b, child_cursor
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_get_var(bufnr, "ninjection")
+		return vim.api.nvim_buf_get_var(0, "ninjection")
 	end)
 	if not ok then
 		err = tostring(raw_output)
