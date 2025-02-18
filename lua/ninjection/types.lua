@@ -4,6 +4,10 @@
 ---@field e_row integer
 ---@field e_col integer
 
+---@class NJCursor
+---@field row integer
+---@field col integer
+
 ---@class NJNodeTable
 ---@field node TSNode
 ---@field range NJRange
@@ -16,7 +20,7 @@
 ---@class NJParent
 ---@field bufnr integer
 ---@field root_dir string
----@field cursor integer[]
+---@field cursor NJCursor
 ---@field indents NJIndents
 ---@field mode string
 ---@field range NJRange

@@ -259,9 +259,9 @@ M.edit = function()
 	end
 	---@cast inj_node_lang string
 
+	---@type NJIndents|nil
+	local parent_indents
 	if M.cfg.preserve_indents then
-		---@type NJIndents|nil
-		local parent_indents
 		parent_indents, err = util.get_indents(0)
 		if not parent_indents then
 			-- Don't return early on indentation errors
@@ -273,6 +273,11 @@ M.edit = function()
 				vim.api.nvim_err_writeln(err)
 			end
 		end
+		---@cast parent_indents NJIndents
+	end
+	-- Initialized to 0 if unset
+	if not parent_indents then
+		parent_indents = {t_indent = 0, b_indent = 0, l_indent = 0}
 		---@cast parent_indents NJIndents
 	end
 
@@ -375,7 +380,7 @@ M.edit = function()
 		end
 	end
 	if not root_dir or root_dir == "" then
-		vim.notify("ninjection.edit(): Error unknown error setting root_dir", 
+		vim.notify("ninjection.edit(): Error unknown error setting root_dir",
 		vim.log.levels.ERROR)
 		return nil
 	end
@@ -496,8 +501,11 @@ M.edit = function()
 	vim.api.nvim_buf_set_var(child_bufnr, "ninjection", {
 		parent = {
 			bufnr = parent_bufnr,
-			root_dir = parent_root_dir,
-			cursor = parent_cursor,
+			root_dir = root_dir,
+			cursor = {
+				row = parent_cursor[1],
+				col = parent_cursor[2],
+			},
 			indents = parent_indents,
 			mode = parent_mode,
 			range = {
@@ -638,7 +646,8 @@ M.replace = function(bufnr)
 	end
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_cursor(0, nj_child_b.parent.cursor)
+		return vim.api.nvim_win_set_cursor(0, { nj_child_b.parent.cursor.row,
+			nj_child_b.parent.cursor.col })
 	end)
 	if not ok then
 		err = tostring(raw_output)
