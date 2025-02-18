@@ -508,10 +508,10 @@ M.edit = function()
 			indents = parent_indents,
 			mode = parent_mode,
 			range = {
-				s_row = inj_node.range[1],
-				s_col = inj_node.range[2],
-				e_row = inj_node.range[3],
-				e_col = inj_node.range[4],
+				s_row = inj_node.range.s_row,
+				s_col = inj_node.range.s_col,
+				e_row = inj_node.range.e_row,
+				e_col = inj_node.range.e_col,
 			}
 		}
 	})
