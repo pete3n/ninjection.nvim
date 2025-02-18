@@ -475,7 +475,6 @@ M.edit = function()
 
 	---@type NJLspStatus|nil
 	local lsp_status
-	print("DEBUG: root_dir is " .. root_dir)
 	lsp_status, err = util.start_lsp(inj_node_lang, root_dir)
 	if not lsp_status then
 		if M.cfg.suppress_warnings == false then
@@ -593,14 +592,14 @@ M.replace = function()
 
 	if M.cfg.preserve_indents then
 			raw_output, err = util.restore_indents(rep_text, nj_child_b.parent.indents)
-			if not err and not raw_output and raw_output ~= "" then
-				rep_text = raw_output
-			else
+			if err then
 				if M.cfg.suppress_warnings == false then
 					vim.notify("ninjection.replace(): Error restoring indents: " .. err,
 					vim.log.levels.WARN)
 				end
 			end
+			rep_text = raw_output
+			---@cast rep_text string[]
 	end
 
 	ok, raw_output = pcall(function()
