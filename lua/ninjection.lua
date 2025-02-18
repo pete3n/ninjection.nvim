@@ -475,6 +475,7 @@ M.edit = function()
 
 	---@type NJLspStatus|nil
 	local lsp_status
+	print("DEBUG: root_dir is " .. root_dir)
 	lsp_status, err = util.start_lsp(inj_node_lang, root_dir)
 	if not lsp_status then
 		if M.cfg.suppress_warnings == false then
@@ -570,7 +571,7 @@ M.replace = function()
 	end
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+		return vim.api.nvim_buf_get_lines(0, 0, -1, false)
 	end)
 	if not ok then
 		err = tostring(raw_output)
