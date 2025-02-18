@@ -4,10 +4,6 @@
 ---@field e_row integer
 ---@field e_col integer
 
----@class NJCursor
----@field row integer
----@field col integer
-
 ---@class NJNodeTable
 ---@field node TSNode
 ---@field range NJRange
@@ -18,15 +14,16 @@
 ---@field l_indent number
 
 ---@class NJParent
----@field bufnr integer
----@field root_dir string
----@field cursor NJCursor
----@field indents NJIndents
----@field mode string
----@field range NJRange
+---@field children integer[]
 
 ---@class NJChild
----@field parent NJParent
+---@field bufnr integer
+---@field root_dir string
+---@field parent_bufnr integer
+---@field parent_cursor integer[]
+---@field parent_indents NJIndents
+---@field parent_mode string
+---@field parent_range NJRange
 
 ---@class NJLspStatus
 ---@field status string -- The LSP startup status. Possible values: "unmapped",
