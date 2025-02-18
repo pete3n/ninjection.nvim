@@ -309,8 +309,10 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 		---@cast node TSNode
     local capture_name = parsed_query.captures[id]
     if capture_name == "injection.language" then
-			---@type integer
-      local e_row = node:range()[3]
+			---@type table, integer
+			local capture_range, e_row
+      capture_range = { node:range() }
+			e_row = capture_range[3]
       -- Assuming the language comment is entirely above the injection block,
 			-- we will find the matching node that has the greatest end row.
       if e_row < node_s_row then
