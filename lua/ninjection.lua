@@ -649,6 +649,7 @@ M.replace = function()
 	if not ok then
 		err = tostring(raw_output)
 		vim.notify("ninjection.replace(): Error resetting parent cursor: " ..
+		"row: col:" .. {nj_child_b.parent.cursor.row, nj_child_b.parent.cursor.row } ..
 		err, vim.log.levels.ERROR)
 		vim.api.nvim_err_writeln(err)
 		return err
