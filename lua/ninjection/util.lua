@@ -199,7 +199,10 @@ M.start_lsp = function(lang, root_dir)
 
 	-- The LSP binary path must exist
 	---@type string|nil
-	local lsp_cmd = lsp_def.config_def.cmd
+	local lsp_cmd = lsp_def.cmd
+	print("DEBUG lsp_def: " .. vim.inspect(lsp_def))
+	print("DEBUG lsp_def.cmd: " .. vim.inspect(lsp_def.cmd))
+	print("DEBUG lsp_cmd: " .. lsp_cmd)
 	if not lsp_cmd or "" then
 		vim.notify("ninjection.util.start_lsp(): Command to execute " .. lang_lsp ..
 			" does not exist. Ensure it is installed and configured.", vim.log.levels.WARN)
