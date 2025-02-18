@@ -615,7 +615,7 @@ M.replace = function()
 	if not ok then
 		err = tostring(raw_output)
 		vim.notify("ninjection.replace(): Error replacing parent buffer text: " ..
-		err, vim.log.level.ERROR)
+		err, vim.log.levels.ERROR)
 		vim.api.nvim_err_writeln(err)
 		return err
 	end

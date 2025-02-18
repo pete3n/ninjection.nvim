@@ -189,6 +189,7 @@ M.start_lsp = function(lang, root_dir)
 	end
 	---@type table|nil
 	local lsp_def = raw_output
+	print("DEBUG, lsp_def: " .. vim.inspect(lsp_def))
 	if not lsp_def or lsp_def.config_def then
 		vim.notify("ninjection.util.start_lsp(): Could not find default_config " ..
 			"for " .. lang_lsp .. ". Ensure it is installed and properly configured " ..
@@ -196,7 +197,6 @@ M.start_lsp = function(lang, root_dir)
 		return {"unconfigured", -1}
 	end
 	---@cast lsp_def table
-	print("DEBUG lsp config_def" .. vim.inspect(lspconfig[lang_lsp]))
 
 	-- The LSP binary path must exist
 	---@type string|nil
