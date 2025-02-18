@@ -196,6 +196,7 @@ M.start_lsp = function(lang, root_dir)
 		return {"unconfigured", -1}
 	end
 	---@cast lsp_def table
+	print("DEBUG lsp config_def" .. vim.inspect(lspconfig[lang_lsp]))
 
 	-- The LSP binary path must exist
 	---@type string|nil
