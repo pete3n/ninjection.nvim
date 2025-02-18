@@ -2,7 +2,7 @@
 ---@class ninjection.treesitter
 local M = {}
 local cfg = {}
-require("types")
+require("ninjection.types")
 
 local ts = require("vim.treesitter")
 
