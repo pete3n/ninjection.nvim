@@ -1,7 +1,6 @@
 local M = {}
 require("ninjection.types")
 local ts = require("vim.treesitter")
-local rel = require("ninjection.relation")
 
 --- @type ninjection.util
 local util = require("ninjection.util")
