@@ -317,26 +317,6 @@ M.edit = function()
 	---@cast parent_cursor integer[]	
 
 	ok, raw_output = pcall(function()
-		return vim.fn.mode()
-	end)
-	if not ok then
-		err = tostring(raw_output)
-		vim.notify("ninjection.edit(): Error calling vim.fn.mode(): " ..
-		err, vim.log.levels.ERROR)
-		return err
-	end
-	---@type string|nil
-	local parent_mode = raw_output
-	if not parent_mode or parent_mode == "" then
-		if M.cfg.suppress_warnings == false then
-			vim.notify("ninjection.edit(): No mode returned from " ..
-			"vim.fn.mode()", vim.log.levels.WARN)
-		end
-		return nil
-	end
-	---@cast parent_mode string
-
-	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_get_name(0)
 	end)
 	if not ok then
@@ -449,17 +429,22 @@ M.edit = function()
 		return err
 	end
 
-	-- Offset the absolute row in the parent by the relative row in the injected
-	-- content range
+	--- We want to keep the same relative cursor position in the child buffer as 
+	--- in the parent buffer.
+	---@type integer[]
+	local offset_cur = { parent_cursor[1] - inj_node_info.range.s_row,
+		parent_cursor[2] }
+
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_cursor(0, parent_cursor[1] - inj_node_info.range.s_row)
+		return vim.api.nvim_win_set_cursor(0, offset_cur)
 	end)
 	if not ok then
+		if M.cfg.suppress_warnings == false then
 		err = tostring(raw_output)
-		vim.notify("ninjection.edit(): Error calling vim.api.nvim_win_set_cursor(0" ..
-		", {(" .. (parent_cursor.row - inj_node_info.range.s_row) .. "," .. parent_cursor.col ..
-		"})" .. "\n" .. err, vim.log.levels.ERROR)
-		return err
+			vim.notify("ninjection.edit(): Error calling vim.api.nvim_win_set_cursor(0" ..
+			", {(" .. tostring(offset_cur) .. "})" .. "\n" .. err, vim.log.levels.WARN)
+			-- Don't return early on cursor set error
+		end
 	end
 
 	if M.cfg.auto_format then
@@ -467,10 +452,12 @@ M.edit = function()
 			return vim.cmd("lua " .. M.cfg.format_cmd)
 		end)
 		if not ok then
-			err = tostring(raw_output)
-			vim.notify("ninjection.edit(): Error calling vim.cmd(\"lua \"" ..
-			M.cfg.format_cmd .. ")\n" .. err, vim.log.levels.ERROR)
-			return err
+			if M.cfg.suppress_warnings == false then
+				err = tostring(raw_output)
+				vim.notify("ninjection.edit(): Error calling vim.cmd(\"lua \"" ..
+				M.cfg.format_cmd .. ")\n" .. err, vim.log.levels.WARN)
+				-- Don't return early on auto-format error
+			end
 		end
 	end
 
@@ -482,7 +469,7 @@ M.edit = function()
 			err = tostring(err) ---@cast err string
 			vim.notify("ninjection.edit(): Error starting LSP: " ..err,
 			vim.log.levels.WARN)
-			-- Don't return on LSP failure
+			-- Don't return early on LSP failure
 		end
 	end
 
@@ -504,9 +491,7 @@ M.edit = function()
 		bufnr = child_bufnr,
 		root_dir = root_dir,
 		parent_bufnr = parent_bufnr,
-		parent_cursor = parent_cursor,
 		parent_indents = parent_indents,
-		parent_mode = parent_mode,
 		parent_range = {
 			s_row = inj_node_info.range.s_row,
 			s_col = inj_node_info.range.s_col,

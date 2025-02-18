@@ -20,9 +20,7 @@
 ---@field bufnr integer
 ---@field root_dir string
 ---@field parent_bufnr integer
----@field parent_cursor integer[]
 ---@field parent_indents NJIndents
----@field parent_mode string
 ---@field parent_range NJRange
 
 ---@class NJLspStatus
