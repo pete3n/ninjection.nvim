@@ -167,6 +167,8 @@ M.start_lsp = function(lang, root_dir)
 	---@type boolean, any|nil, string|nil, string|nil
 	local ok, raw_output, err, lang_lsp
 
+	print("Sanity check: Starting LSP...")
+
 	-- The injected langauge must be mapped to an LSP value
 	lang_lsp = cfg.lsp_map[lang]
   if not lang_lsp then
@@ -196,6 +198,8 @@ M.start_lsp = function(lang, root_dir)
 		return {"unconfigured", -1}
 	end
 	---@cast lsp_def table
+
+	print("Sanity check: Getting lsp cmd...")
 
 	-- The LSP binary path must exist
 	---@type table|nil
