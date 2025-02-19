@@ -145,6 +145,11 @@ M.restore_indents = function(text, indents)
   -- Append bottom indent lines.
   for _ = 1, (indents.b_indent or 0) do
 		if cfg.preserve_indents then
+			-- Compute the left indent string, subtracting one tab size.
+			local tab_size = vim.o.tabstop or 8
+			-- Ensure the resulting indent length is not negative.
+			local adjusted_indent = string.rep(" ", math.max(0,
+				(indents.l_indent or 0) - tab_size))
 			table.insert(lines, l_indent)
 		else
 			table.insert(lines, "")
