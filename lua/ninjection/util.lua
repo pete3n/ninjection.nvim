@@ -144,14 +144,14 @@ M.restore_indents = function(text, indents)
 
   -- Append bottom indent lines.
   for _ = 1, (indents.b_indent or 0) do
-		if cfg.restore_indents then
+		if cfg.preserve_indents then
 			table.insert(lines, l_indent)
 		else
 			table.insert(lines, "")
 		end
   end
 
-	print("DEBUG restore_indents: ", tostring(cfg.restore_indents))
+	print("DEBUG restore_indents: ", tostring(cfg.preserve_indents))
 	print("DEBUG restored lines: " .. vim.inspect(lines))
 
   return lines
