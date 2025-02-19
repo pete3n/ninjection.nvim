@@ -200,9 +200,6 @@ M.start_lsp = function(lang, root_dir)
 	-- The LSP binary path must exist
 	---@type table|nil
 	local lsp_cmd = lsp_def.cmd
-	vim.notify("DEBUG lsp_def: " .. vim.inspect(lsp_def))
-	vim.notify("DEBUG lsp_def.cmd: " .. vim.inspect(lsp_def.cmd))
-	vim.notify("DEBUG lsp_cmd: " .. tostring(lsp_cmd))
 	if not lsp_cmd or #lsp_cmd == 0 then
 		vim.notify("ninjection.util.start_lsp(): Command to execute " .. lang_lsp ..
 			" does not exist. Ensure it is installed and configured.", vim.log.levels.WARN)
@@ -212,16 +209,16 @@ M.start_lsp = function(lang, root_dir)
 
 	-- The LSP binary path must be executable
 	ok, raw_output = pcall(function()
-		return vim.fn.executable(lsp_cmd)
+		return vim.fn.executable(lsp_cmd[1])
 	end)
 	if not ok then
 		err = tostring(raw_output)
 		vim.notify("ninjection.util.start_lsp(): Error calling vim.fn.executable() " ..
-			" to confirm " .. lsp_cmd .. " is executable.", vim.log.levels.ERROR)
+			" to confirm " .. lsp_cmd[1] .. " is executable.", vim.log.levels.ERROR)
 		return {"no-exec", -1}, err
 	end
 	if raw_output ~= 1 then
-		vim.notify("ninjection.util.start_lsp(): The LSP command: " .. lsp_cmd ..
+		vim.notify("ninjection.util.start_lsp(): The LSP command: " .. lsp_cmd[1] ..
 			" is not executable.", vim.log.levels.WARN)
 		return {"no-exec", -1}
 	end
@@ -237,14 +234,14 @@ M.start_lsp = function(lang, root_dir)
 	ok, raw_output = pcall(function()
 		return vim.lsp.start({
 			name = lang_lsp,
-			cmd = lsp_cmd,
+			cmd = lsp_cmd[1],
 			root_dir = root_dir,
 		})
 	end)
 	if not ok then
 		err = tostring(raw_output)
 		vim.notify("ninjection.util.start_lsp(): Error starting LSP with " ..
-			"vim.lsp.start({ \n  name = " .. lang_lsp .. ",\n  cmd = " .. lsp_cmd ..
+			"vim.lsp.start({ \n  name = " .. lang_lsp .. ",\n  cmd = " .. lsp_cmd[1] ..
 			",\n  root_dir = " .. root_dir .. ",\n})" .. "\n" .. err,
 			vim.log.levels.ERROR)
 		return {"failed_start", -1}, err
