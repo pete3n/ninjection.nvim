@@ -25,17 +25,18 @@ M.cfg = {
 	format_cmd = "_G.format_with_conform()", -- Command for auto_format
 	-- TODO: Safety checks for auto_format, and require command, default should
 	-- be blank.
-	injected_comment_newline = true, -- The comment delimiting the injected content
-	-- is no a separate line from the content itself. For example:
+	injected_comment_lines = 1, -- Offset comment delimiting lines based on style
+	-- preferences. For example, offsetting 1 line would function with this format:
 	-- # injected_lang
 	-- ''
 	-- 		injected content
 	-- '';
-	-- vs:
+	--
+	-- Offsetting 0 lines would function with this format:
 	-- # injected_lang
-	-- '' injected content
+	-- ''injected content
 	-- more injected content
-	-- end content '';
+	-- end content'';
 	register = "z", -- Register to use to copy injected content.
 	suppress_warnings = false, -- true|false only show critical errors
 	-- If ninjection is not functioning properly, ensure this is false to debug
@@ -379,8 +380,8 @@ M.edit = function()
 		offset_cur = { parent_cursor[1] - (inj_node_info.range.s_row + 1),
 		parent_cursor[2] - parent_indents.l_indent }
 	else
-		offset_cur = { parent_cursor[1] - (inj_node_info.range.s_row + 1),
-		parent_cursor[2] }
+		offset_cur = { parent_cursor[1] - (inj_node_info.range.s_row +
+			M.cfg.injected_comment_lines + 1), parent_cursor[2] }
 	end
 	---@cast offset_cur integer[]
 
@@ -637,8 +638,7 @@ M.replace = function()
 		pos = { this_cursor[1] + nj_child_b.parent_range.s_row + 1,
 			this_cursor[2] + nj_child_b.parent_indents.l_indent }
 	else
-		pos = { this_cursor[1] + (nj_child_b.parent_range.s_row + 1),
-			(this_cursor[2]) }
+		pos = { this_cursor[1] + nj_child_b.parent_range.s_row, this_cursor[2] }
 	end
 	---@cast pos integer[]
 	ok, raw_output = pcall(function()
