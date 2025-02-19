@@ -249,7 +249,7 @@ M.start_lsp = function(lang, root_dir)
 	---@type integer|nil
 	local client_id = raw_output
 	if not client_id or client_id >= 0 then
-		vim.vim.notify("ninjection.util.start_lsp(): The LSP: " .. lang_lsp ..
+		vim.notify("ninjection.util.start_lsp(): The LSP: " .. lang_lsp ..
 			" did not return a client_id, check your language client logs " ..
 			"(default ~/.local/state/nvim/lsp.log) for more information.",
 			vim.log.levels.WARN)
