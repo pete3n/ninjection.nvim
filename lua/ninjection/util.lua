@@ -150,14 +150,14 @@ M.restore_indents = function(text, indents)
 			-- Ensure the resulting indent length is not negative.
 			local adjusted_indent = string.rep(" ", math.max(0,
 				(indents.l_indent or 0) - tab_size))
+			print("DEBUG, tabsize is: ", tab_size)
+			print("DEBUG, l_indent is: ", string.len(l_indent))
+			print("DEBUG, adjusted indent is: ", string.len(adjusted_indent))
 			table.insert(lines, l_indent)
 		else
 			table.insert(lines, "")
 		end
   end
-
-	print("DEBUG restore_indents: ", tostring(cfg.preserve_indents))
-	print("DEBUG restored lines: " .. vim.inspect(lines))
 
   return lines
 end
