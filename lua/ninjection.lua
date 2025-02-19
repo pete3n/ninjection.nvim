@@ -380,8 +380,7 @@ M.edit = function()
 		offset_cur = { parent_cursor[1] - (inj_node_info.range.s_row + 1),
 		parent_cursor[2] - parent_indents.l_indent }
 	else
-		offset_cur = { parent_cursor[1] - (inj_node_info.range.s_row +
-			M.cfg.injected_comment_lines + 1), parent_cursor[2] }
+		offset_cur = { parent_cursor[1] - inj_node_info.range.s_row, parent_cursor[2] }
 	end
 	---@cast offset_cur integer[]
 
