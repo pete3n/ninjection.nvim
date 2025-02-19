@@ -29,16 +29,13 @@ M.get_indents = function(bufnr)
 		return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 	end)
 	if not ok then
-		err = tostring(raw_output)
-		vim.notify("ninjection.util.get_indents(): Error retrieving lines from buffer: " ..
-		bufnr .. " when calling vim.api.nvim.buf_get_lines()", vim.log.levels.ERROR)
-		return nil, err
+		error(tostring(raw_output),2)
 	end
 	lines = raw_output
 	if not lines or #lines == 0 then
 		if cfg.suppress_warnings == false then
-			vim.notify("ninjection.util.get_indents(): No lines retrieved from buffer, " .. 
-			"calling vim.api.nvim_buf_get_lines()", vim.log.levels.WARN)
+			vim.notify("ninjection.util.get_indents() warning: No lines returned " ..
+			"from calling vim.api.nvim_buf_get_lines()", vim.log.levels.WARN)
 		end
 	end
 	---@cast lines string[]
@@ -83,6 +80,7 @@ M.get_indents = function(bufnr)
     indents.l_indent = 0
   end
 
+	print("DEBUG indents: " .. vim.inspect(indents))
   return indents, nil
 end
 
