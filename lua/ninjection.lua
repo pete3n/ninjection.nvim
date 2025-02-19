@@ -16,12 +16,12 @@ M.cfg = {
 	file_lang = "nix", -- Native file type to search for injected languages in.
 	-- Must have a matching entry in inj_lang_queries.
 	-- Currently only supports nix, but could be extended.
-	preserve_indents = false, -- Re-apply indents from the parent buffer.
+	preserve_indents = true, -- Re-apply indents from the parent buffer.
 	-- This option should be used in conjunction with auto_format because
 	-- This will re-apply indents that auto_format normally removes.
 	-- If you don't remove them, then they will be re-applied which will increase
 	-- the original indenation.
-	auto_format = false, -- Format the new child buffer with the provided command
+	auto_format = true, -- Format the new child buffer with the provided command
 	format_cmd = "_G.format_with_conform()", -- Command for auto_format
 	-- TODO: Safety checks for auto_format, and require command, default should
 	-- be blank.
