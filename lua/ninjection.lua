@@ -16,11 +16,15 @@ M.cfg = {
 	file_lang = "nix", -- Native file type to search for injected languages in.
 	-- Must have a matching entry in inj_lang_queries.
 	-- Currently only supports nix, but could be extended.
-	preserve_indents = true, -- Re-apply indents from the parent buffer.
+	preserve_indents = false, -- Re-apply indents from the parent buffer.
 	-- This option should be used in conjunction with auto_format because
 	-- This will re-apply indents that auto_format normally removes.
 	-- If you don't remove them, then they will be re-applied which will increase
 	-- the original indenation.
+	auto_format = false, -- Format the new child buffer with the provided command
+	format_cmd = "_G.format_with_conform()", -- Command for auto_format
+	-- TODO: Safety checks for auto_format, and require command, default should
+	-- be blank.
 	injected_comment_newline = true, -- The comment delimiting the injected content
 	-- is no a separate line from the content itself. For example:
 	-- # injected_lang
@@ -32,10 +36,6 @@ M.cfg = {
 	-- '' injected content
 	-- more injected content
 	-- end content '';
-	auto_format = true, -- Format the new child buffer with the provided command
-	format_cmd = "_G.format_with_conform()", -- Command for auto_format
-	-- TODO: Safety checks for auto_format, and require command, default should
-	-- be blank.
 	register = "z", -- Register to use to copy injected content.
 	suppress_warnings = false, -- true|false only show critical errors
 	-- If ninjection is not functioning properly, ensure this is false to debug
