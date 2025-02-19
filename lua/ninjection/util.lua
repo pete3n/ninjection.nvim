@@ -151,6 +151,9 @@ M.restore_indents = function(text, indents)
 		end
   end
 
+	print("DEBUG restore_indents: ", tostring(cfg.restore_indents))
+	print("DEBUG restored lines: " .. vim.inspect(lines))
+
   return lines
 end
 
