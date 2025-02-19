@@ -234,7 +234,7 @@ M.start_lsp = function(lang, root_dir)
 	ok, raw_output = pcall(function()
 		return vim.lsp.start({
 			name = lang_lsp,
-			cmd = lsp_cmd[1],
+			cmd = lsp_cmd,
 			root_dir = root_dir,
 		})
 	end)
@@ -248,7 +248,7 @@ M.start_lsp = function(lang, root_dir)
 	end
 	---@type integer|nil
 	local client_id = raw_output
-	if not client_id or client_id >= 0 then
+	if client_id == nil then
 		vim.notify("ninjection.util.start_lsp(): The LSP: " .. lang_lsp ..
 			" did not return a client_id, check your language client logs " ..
 			"(default ~/.local/state/nvim/lsp.log) for more information.",
