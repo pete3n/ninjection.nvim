@@ -363,10 +363,10 @@ M.edit = function()
 	local offset_cur
 	if M.cfg.preserve_indents and M.cfg.auto_format then
 		offset_cur = { parent_cursor[1] - (inj_node_info.range.s_row + 1),
-		parent_cursor[2] - (parent_indents.l_indent + 1) }
+		parent_cursor[2] - parent_indents.l_indent }
 	else
 		offset_cur = { parent_cursor[1] - (inj_node_info.range.s_row + 1),
-		parent_cursor[2] - 1 }
+		parent_cursor[2] }
 	end
 	---@cast offset_cur integer[]
 
@@ -620,10 +620,10 @@ M.replace = function()
 	local pos
 	if M.cfg.preserve_indents then
 		pos = { this_cursor[1] + (nj_child_b.parent_range.s_row + 1),
-			this_cursor[2] + (nj_child_b.parent_indents.l_indent + 1) }
+			this_cursor[2] + nj_child_b.parent_indents.l_indent }
 	else
 		pos = { this_cursor[1] + (nj_child_b.parent_range.s_row + 1),
-			(this_cursor[2] + 1) }
+			(this_cursor[2]) }
 	end
 	---@cast pos integer[]
 	ok, raw_output = pcall(function()

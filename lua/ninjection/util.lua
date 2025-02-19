@@ -82,7 +82,6 @@ M.get_indents = function(bufnr)
     indents.l_indent = 0
   end
 
-	print("DEBUG indents: " .. vim.inspect(indents))
   return indents, nil
 end
 
