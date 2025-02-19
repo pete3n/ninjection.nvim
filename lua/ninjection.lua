@@ -380,9 +380,6 @@ M.edit = function()
 		end
 	end
 
-	print("DEBUG auto_format...")
-	print("auto_format: " .. tostring(M.cfg.auto_format))
-	print("format_cmd: " .. tostring(M.cfg.format_cmd))
 	if M.cfg.auto_format then
 		ok, raw_output = pcall(function()
 			return vim.cmd("lua " .. M.cfg.format_cmd)
@@ -516,8 +513,8 @@ M.replace = function()
 		error(err,2)
 	end
 	nj_parent_b = raw_output
-	if not nj_parent_b.children[this_bufnr] then
-			error("ninjection.replace() error: The recorded parent buffer has no " ..
+	if not vim.tbl_contains(nj_parent_b.children, this_bufnr) then
+		error("ninjection.replace() error: The recorded parent buffer has no " ..
 			"record of this buffer.", 2)
 	end
 	---@cast nj_parent_b NJParent
