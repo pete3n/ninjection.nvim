@@ -592,7 +592,7 @@ M.replace = function()
 			nj_child_b.parent_bufnr,
 			nj_child_b.parent_range.s_row,
 			nj_child_b.parent_range.s_col,
-			nj_child_b.parent_range.e_row - 1,
+			nj_child_b.parent_range.e_row,
 			nj_child_b.parent_range.e_col,
 			rep_text
 		)
