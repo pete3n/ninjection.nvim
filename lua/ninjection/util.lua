@@ -22,8 +22,8 @@ end
 ---  - l_indent: minimum number of leading spaces on nonempty lines.
 --- Return, on failure, nil and error string, if applicable
 M.get_indents = function(bufnr)
-	---@type boolean, any|nil, string|nil, string[]|nil
-	local ok, raw_output, err, lines
+	---@type boolean, any|nil, string[]|nil
+	local ok, raw_output, lines
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
@@ -46,6 +46,7 @@ M.get_indents = function(bufnr)
   for _, line in ipairs(lines) do
 		---@cast line string
     if line:match("^%s*$") then
+			print("Top blank line: [" .. line .. "]")
 			indents.t_indent = indents.t_indent + 1
     else
       break
@@ -55,6 +56,7 @@ M.get_indents = function(bufnr)
   for i = #lines, 1, -1 do
 		---@cast i number
     if lines[i]:match("^%s*$") then
+			print("Bottom blank line: [" .. lines[i] .. "]")
       indents.b_indent = indents.b_indent + 1
     else
       break
