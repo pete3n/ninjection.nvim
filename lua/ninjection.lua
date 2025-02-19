@@ -21,19 +21,30 @@ M.cfg = {
 	-- This will re-apply indents that auto_format normally removes.
 	-- If you don't remove them, then they will be re-applied which will increase
 	-- the original indenation.
+	injected_comment_newline = true, -- The comment delimiting the injected content
+	-- is no a separate line from the content itself. For example:
+	-- # injected_lang
+	-- ''
+	-- 		injected content
+	-- '';
+	-- vs:
+	-- # injected_lang
+	-- '' injected content
+	-- more injected content
+	-- end content '';
 	auto_format = true, -- Format the new child buffer with the provided command
 	format_cmd = "_G.format_with_conform()", -- Command for auto_format
 	-- TODO: Safety checks for auto_format, and require command, default should
 	-- be blank.
+	register = "z", -- Register to use to copy injected content.
+	suppress_warnings = false, -- true|false only show critical errors
+	-- If ninjection is not functioning properly, ensure this is false to debug
 
 	-- TODO: Implement other scratch buffer types, currently only std
 	buffer_styles = { "std", "popup", "v_split", "h_split", "tab_r", "tab_l" },
 	buffer_style = "std",
 	-- TODO: Implement auto-inject on buffer close
 	inject_on_close = false,
-	register = "z",
-	suppress_warnings = false, -- true|false only show critical errors
-	-- If ninjection is not functioning properly, ensure this is false to debug
 
 	-- Contains per-language string literals for Treesitter queries to Identify
 	-- injected content nodes.
@@ -55,6 +66,9 @@ M.cfg = {
 	},
 	inj_lang_query = nil, -- Dyanmically configured from file_lang and inj_lang_queries.
 
+	-- LSPs associated with injected languages. The keys must match the language 
+	-- comment used to identify injected languages, and the value must match the
+	-- LSP configured in your lspconfig. 
 	lsp_map = {
 		bash = "bashls",
 		c = "clangd",
