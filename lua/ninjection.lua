@@ -477,13 +477,27 @@ M.edit = function()
 	-- are opened for the same injected content.
 	-- Retrieve the existing ninjection table or initialize a new one
 	---@type NJParent
-	local parent_ninjection = vim.api.nvim_buf_get_var(parent_bufnr, "ninjection") or {}
+	local parent_ninjection
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_buf_get_var(parent_bufnr, "ninjection")
+	end)
+	if ok then
+		parent_ninjection = raw_output
+	else
+		local err_msg = tostring(raw_output)
+		if err_msg:find("Key not found: ninjection") then
+			parent_ninjection = { children = {} }
+		else
+			-- If it's a different error, propagate it or handle it as needed.
+			error(err_msg)
+		end
+	end
 	parent_ninjection.children = parent_ninjection.children or {}
 
-			-- Append the new child_bufnr to the children array
+	-- Append the new child_bufnr to the children array.
 	table.insert(parent_ninjection.children, child_bufnr)
 
-	-- Write it back to the buffer variable
+	-- Write it back to the buffer variable.
 	vim.api.nvim_buf_set_var(parent_bufnr, "ninjection", parent_ninjection)
 
 	---@type NJChild
