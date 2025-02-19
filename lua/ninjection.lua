@@ -636,8 +636,6 @@ M.replace = function()
 	if M.cfg.preserve_indents then
 		pos = { this_cursor[1] + nj_child_b.parent_range.s_row + 1,
 			this_cursor[2] + nj_child_b.parent_indents.l_indent }
-		print("DEBUG preserving indents, resetting cursor to row: " .. pos[1] ..
-			" col: " .. pos[2])
 	else
 		pos = { this_cursor[1] + (nj_child_b.parent_range.s_row + 1),
 			(this_cursor[2]) }
