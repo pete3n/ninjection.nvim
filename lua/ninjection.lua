@@ -102,7 +102,7 @@ M.select = function()
 	end
 	bufnr = raw_output
 	if not bufnr then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.select(): Could not get current buffer calling " ..
 			"vim.api.nvim_get_current_buf()", vim.log.levels.WARN)
 		end
@@ -111,7 +111,7 @@ M.select = function()
 
 	node_info, err = nts.get_node_table(M.cfg.inj_lang_query, M.cfg.file_lang)
 	if not node_info then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.select(): get_node_table() returned nil.",
 			vim.log.levels.WARN)
 		end
@@ -122,7 +122,7 @@ M.select = function()
 		return nil
 	end
 	if not node_info.node then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.select(): get_node_table() returned a nil node.",
 			vim.log.levels.WARN)
 		end
@@ -133,7 +133,7 @@ M.select = function()
 	local v_range
 	v_range, err = nts.get_visual_range(node_info.node, bufnr)
 	if not v_range then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.select(): get_visual_range() returned a nil range.",
 			vim.log.levels.WARN)
 		end
@@ -215,7 +215,7 @@ M.edit = function()
 	local inj_node_info
 	inj_node_info, err = nts.get_node_table(M.cfg.inj_lang_query, M.cfg.file_lang)
 	if not inj_node_info then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.edit(): Failed to get injected node information " ..
 			"calling get_node_table()", vim.log.levels.WARN)
 		end
@@ -308,7 +308,7 @@ M.edit = function()
 	---@type integer[]|nil
 	local parent_cursor = raw_output
 	if not parent_cursor then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.edit(): No cursor position returned from " ..
 			"vim.api.nvim_win_get_cursor(0)", vim.log.levels.WARN)
 		end
@@ -328,7 +328,7 @@ M.edit = function()
 	---@type string|nil
 	local parent_name = raw_output
 	if not parent_name or parent_name == "" then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.edit(): No name returned from " ..
 			"vim.api.nvim_buf_get_name(0)", vim.log.levels.WARN)
 		end
@@ -439,7 +439,7 @@ M.edit = function()
 		return vim.api.nvim_win_set_cursor(0, offset_cur)
 	end)
 	if not ok then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 		err = tostring(raw_output)
 			vim.notify("ninjection.edit(): Error calling vim.api.nvim_win_set_cursor(0" ..
 			", {(" .. tostring(offset_cur) .. "})" .. "\n" .. err, vim.log.levels.WARN)
@@ -452,7 +452,7 @@ M.edit = function()
 			return vim.cmd("lua " .. M.cfg.format_cmd)
 		end)
 		if not ok then
-			if M.cfg.suppress_warnings == false then
+			if not M.cfg.suppress_warnings then
 				err = tostring(raw_output)
 				vim.notify("ninjection.edit(): Error calling vim.cmd(\"lua \"" ..
 				M.cfg.format_cmd .. ")\n" .. err, vim.log.levels.WARN)
@@ -465,7 +465,7 @@ M.edit = function()
 	local lsp_status
 	lsp_status, err = util.start_lsp(inj_node_lang, root_dir)
 	if not lsp_status then
-		if M.cfg.suppress_warnings == false then
+		if not M.cfg.suppress_warnings then
 			err = tostring(err) ---@cast err string
 			vim.notify("ninjection.edit(): Error starting LSP: " ..err,
 			vim.log.levels.WARN)
@@ -484,12 +484,11 @@ M.edit = function()
 	if ok then
 		parent_ninjection = raw_output
 	else
-		local err_msg = tostring(raw_output)
-		if err_msg:find("Key not found: ninjection") then
+		err = tostring(raw_output)
+		if err:find("Key not found: ninjection") then
 			parent_ninjection = { children = {} }
 		else
-			-- If it's a different error, propagate it or handle it as needed.
-			error(err_msg)
+			error(err)
 		end
 	end
 	parent_ninjection.children = parent_ninjection.children or {}
@@ -528,75 +527,93 @@ end
 
 
 --- Function: Replace the original injected language text in the parent buffer
---- with the current text in the child buffer.
---- This state is stored by its vim.b.ninjection table as a NJParent object.
----@param bufnr? integer Default: current buffer handle
+--- with the current buffer text. This state is stored by in the vim.b.ninjection
+--- table as an NJParent table in the child, and NJChild table indexed by the
+--- child bufnr in the parent. This relationship is validated before replacing.
 ---@return nil|string err Returns err string, if applicable
-M.replace = function(bufnr)
-	---@type boolean, any|nil, string|nil, NJChild|nil, integer|nil, integer[]|nil
-	local ok, raw_output, err, nj_child_b, child_bufnr, child_cursor
-
-	if bufnr then
-		child_bufnr = bufnr
-		---@cast child_bufnr integer
-	else
-		ok, raw_output = pcall(function()
-			return vim.api.nvim_get_current_buf()
-		end)
-		if not ok then
-			err = tostring(raw_output)
-			vim.notify("ninjection.replace(): Error calling vim.api.nvim_get_current_buf()" ..
-			": " .. err, vim.log.levels.ERROR)
-		end
-		child_bufnr = raw_output
-		if not child_bufnr then
-			vim.notify("ninjection.replace(): Error, could not retrieve a buffer handle " ..
-			"calling vim.api.nvim_get_current_buf().", vim.log.levels.ERROR)
-		end
-	end
-	---@cast child_bufnr integer
+M.replace = function()
+	---@type boolean, any|nil, string|nil, NJChild|nil, NJParent|nil, integer|nil
+	local ok, raw_output, err, nj_child_b, nj_parent_b, this_bufnr
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_get_var(child_bufnr, "ninjection")
+		return vim.api.nvim_get_current_buf()
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		vim.notify("ninjection.replace(): Error calling vim.api.nvim_buf_get_var(): " ..
-		err, vim.log.levels.ERROR)
-		return err
+		error(err,2)
+	end
+	this_bufnr = raw_output
+	if not this_bufnr then
+		err = "ninjection.replace() error: Could not retrieve a buffer handle " ..
+		"calling vim.api.nvim_get_current_buf()."
+		error(err,2)
+	end
+	---@cast this_bufnr integer
+
+	-- We need to validate that this buffer has a parent buffer, and that the
+	-- parent buffer has this buffer as a child.
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_buf_get_var(this_bufnr, "ninjection")
+	end)
+	if not ok then
+		err = tostring(raw_output)
+		if err:find("Key not found: ninjection") then
+			if not M.cfg.suppress_warnings then
+				vim.notify("ninjection.replace() warning: This buffer is not a valid " ..
+				"ninjection buffer.", vim.log.levels.WARN)
+			end
+			return nil
+		end
 	end
 	nj_child_b = raw_output
-	if not nj_child_b or not nj_child_b.parent.bufnr then
-		err = "ninjection.replace(): No valid child object returned from " ..
-		"vim.api.nvim_buf_get_var()"
-		vim.notify(err, vim.log.levels.ERROR)
-		return err
+	if not nj_child_b.parent_bufnr then
+		err = "ninjection.replace() error: Could not retrieve valid parent buffer for " ..
+		"this buffer."
+		error(err,2)
 	end
 	---@cast nj_child_b NJChild
 
-	---@type boolean, integer[]
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_buf_get_var(nj_child_b.parent_bufnr, "ninjection")
+	end)
+	if not ok then
+		err = tostring(raw_output)
+		if err:find("Key not found: ninjection") then
+			err = "ninjection.replace() error: This buffer appears to be an orphan. " ..
+			"The recorded parent has no ninjection table."
+			error(err,2)
+		end
+		error(err,2)
+	end
+	nj_parent_b = raw_output
+	if not nj_parent_b.children[this_bufnr] then
+			err = "ninjection.replace() error: The recorded parent buffer has no " ..
+			"record of this buffer."
+			error(err,2)
+	end
+	---@cast nj_parent_b NJParent
+
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_win_get_cursor(0)
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		vim.notify("ninjection.replace(): Error calling vim.api.nvim_win_get_cursor(0): " ..
-		err, vim.log.levels.ERROR)
-		return err
+		error(err,2)
 	end
-	child_cursor = raw_output
-	if not child_cursor then
-		if M.cfg.suppress_warnings == false then
-			vim.notify("ninjection.replace(): No child cursor values returned from " ..
-			"vim.api.nvim_win_get_cursor(0)", vim.log.levels.WARN)
+	---@type integer[]|nil
+	local this_cursor = raw_output
+	if not this_cursor then
+		if not M.cfg.suppress_warnings then
+			vim.notify("ninjection.replace() warning: No child cursor values returned " ..
+			"by vim.api.nvim_win_get_cursor(0)", vim.log.levels.WARN)
 		end
 	end
-	---@cast child_cursor integer[]
+	---@cast this_cursor integer[]
 
-	if not (nj_child_b.parent.bufnr or nj_child_b.parent.range) then
-		vim.notify("ninjection.replace(): missing parent buffer " ..
-			"information. Cannot sync changes.", vim.log.levels.ERROR)
-		return nil
+	if not nj_child_b.parent_range then
+		err = "ninjection.replace() error: missing parent buffer range values. " ..
+		"Cannot sync changes."
+		error(err,2)
 	end
 
 	ok, raw_output = pcall(function()
@@ -604,17 +621,14 @@ M.replace = function(bufnr)
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		vim.notify("ninjection.replace(): Error calling vim.api.nvim_buf_get_lines()" ..
-		": " .. err, vim.log.levels.ERROR)
-		vim.api.nvim_err_writeln(err)
-		return err
+		error(err,2)
 	end
 	---@type string[]|nil
 	local rep_text = raw_output
 	if not rep_text or rep_text == "" then
-		if M.cfg.suppress_warnings == false then
-			vim.notify("ninjection.replace(): No replacement text return from " ..
-			"vim.api.nvim_buf_get_lines()", vim.log.levels.WARN)
+		if not M.cfg.suppress_warnings then
+			vim.notify("ninjection.replace() warning: No replacement text returned " ..
+			"by vim.api.nvim_buf_get_lines()", vim.log.levels.WARN)
 		end
 		return nil
 	end
@@ -623,12 +637,14 @@ M.replace = function(bufnr)
 	if M.cfg.preserve_indents then
 			raw_output, err = util.restore_indents(rep_text, nj_child_b.parent_indents)
 			if err then
-				if M.cfg.suppress_warnings == false then
-					vim.notify("ninjection.replace(): Error restoring indents: " .. err,
+				if not M.cfg.suppress_warnings then
+					vim.notify("ninjection.replace() warning: util.restore_indents() " ..
+					"could not restore indents: " .. err,
 					vim.log.levels.WARN)
 				end
+			else
+				rep_text = raw_output
 			end
-			rep_text = raw_output
 			---@cast rep_text string[]
 	end
 
@@ -644,43 +660,57 @@ M.replace = function(bufnr)
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		vim.notify("ninjection.replace(): Error replacing parent buffer text: " ..
-		err, vim.log.levels.ERROR)
-		vim.api.nvim_err_writeln(err)
-		return err
+		error(err,2)
 	end
+
 
 	ok, raw_output = pcall(function()
 		return vim.cmd("bdelete!")
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		vim.notify("ninjection.replace(): Error deleting child buffer: " ..
-		err, vim.log.levels.ERROR)
-		vim.api.nvim_err_writeln(err)
-		return err
+		error(err,2)
+	end
+
+	-- Remove the child entry in the parent after deleting the buffer
+	nj_parent_b.children[this_bufnr] = nil
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_buf_set_var(nj_child_b.parent_bufnr, "ninjection",
+			nj_parent_b)
+	end)
+	if not ok then
+		if not M.cfg.suppress_warnings then
+			vim.notify("ninjection.replace() warning: could not remove child buffer " ..
+			"entry from parent buffer after deleting buffer.", vim.log.levels.WARN)
+		end
 	end
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_set_current_buf(nj_child_b.parent.bufnr)
+		return vim.api.nvim_set_current_buf(nj_child_b.parent_bufnr)
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		vim.notify("ninjection.replace(): Error switching to parent buffer: " ..
-		err, vim.log.levels.ERROR)
-		vim.api.nvim_err_writeln(err)
-		return err
+		error(err,2)
 	end
 
+	-- Reset the cursor to the same relative position in the parent buffer
+	---@type integer[]|nil
+	local pos
+	if M.cfg.preserve_indents then
+		pos = { this_cursor[1] + nj_child_b.parent_range.s_row, this_cursor[2] +
+		nj_child_b.parent_indents.l_indent }
+	else
+		pos = { this_cursor[1] + nj_child_b.parent_range.s_row, this_cursor[2] }
+	end
+	---@cast pos integer[]
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_cursor(0, nj_child_b.parent_cursor)
+		return vim.api.nvim_win_set_cursor(0, pos)
 	end)
 	if not ok then
-		err = tostring(raw_output)
-		vim.notify("ninjection.replace(): Error resetting parent cursor: " ..
-		err, vim.log.levels.ERROR)
-		vim.api.nvim_err_writeln(err)
-		return err
+		if not M.cfg.suppress_warnings then
+			vim.notify("ninjection.replace() warning: could not restore cursor " ..
+			"position in the parent buffer.", vim.log.levels.WARN)
+		end
 	end
 end
 
