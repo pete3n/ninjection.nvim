@@ -602,9 +602,10 @@ M.replace = function()
 			nj_parent_b)
 	end)
 	if not ok then
+		err = tostring(raw_output)
 		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.replace() warning: could not remove child buffer " ..
-			"entry from parent buffer after deleting buffer.", vim.log.levels.WARN)
+			"entry from parent buffer after deleting buffer." .. err, vim.log.levels.WARN)
 		end
 	end
 
@@ -619,8 +620,10 @@ M.replace = function()
 	---@type integer[]|nil
 	local pos
 	if M.cfg.preserve_indents then
-		pos = { this_cursor[1] + (nj_child_b.parent_range.s_row + 1),
+		pos = { this_cursor[1] + nj_child_b.parent_range.s_row + 1,
 			this_cursor[2] + nj_child_b.parent_indents.l_indent }
+		print("DEBUG preserving indents, resetting cursor to row: " .. pos[1] ..
+			" col: " .. pos[2])
 	else
 		pos = { this_cursor[1] + (nj_child_b.parent_range.s_row + 1),
 			(this_cursor[2]) }
@@ -630,9 +633,10 @@ M.replace = function()
 		return vim.api.nvim_win_set_cursor(0, pos)
 	end)
 	if not ok then
+		err = tostring(raw_output)
 		if not M.cfg.suppress_warnings then
 			vim.notify("ninjection.replace() warning: could not restore cursor " ..
-			"position in the parent buffer.", vim.log.levels.WARN)
+			"position in the parent buffer." .. err, vim.log.levels.WARN)
 		end
 	end
 end
