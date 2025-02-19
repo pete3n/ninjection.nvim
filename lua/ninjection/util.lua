@@ -144,7 +144,11 @@ M.restore_indents = function(text, indents)
 
   -- Append bottom indent lines.
   for _ = 1, (indents.b_indent or 0) do
-    table.insert(lines, "")
+		if cfg.restore_indents then
+			table.insert(lines, l_indent)
+		else
+			table.insert(lines, "")
+		end
   end
 
   return lines
