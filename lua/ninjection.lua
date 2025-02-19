@@ -355,11 +355,18 @@ M.edit = function()
 		error(tostring(raw_output),2)
 	end
 
-	--- We want to keep the same relative cursor position in the child buffer as 
+	--- We want to keep the same relative cursor position in the child buffer as
 	--- in the parent buffer.
-	---@type integer[]
-	local offset_cur = { parent_cursor[1] - inj_node_info.range.s_row,
+	---@type integer[]|nil
+	local offset_cur
+	if M.cfg.preserve_indents and M.cfg.auto_format then
+		offset_cur = { parent_cursor[1] - inj_node_info.range.s_row,
+		parent_cursor[2] - parent_indents.l_indent}
+	else
+		offset_cur = { parent_cursor[1] - inj_node_info.range.s_row,
 		parent_cursor[2] }
+	end
+	---@cast offset_cur integer[]
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_win_set_cursor(0, offset_cur)
@@ -373,6 +380,9 @@ M.edit = function()
 		end
 	end
 
+	print("DEBUG auto_format...")
+	print("auto_format: " .. tostring(M.cfg.auto_format))
+	print("format_cmd: " .. tostring(M.cfg.format_cmd))
 	if M.cfg.auto_format then
 		ok, raw_output = pcall(function()
 			return vim.cmd("lua " .. M.cfg.format_cmd)
