@@ -222,25 +222,6 @@ M.edit = function()
 	end
 	---@cast inj_node_lang string
 
-	---@type NJIndents|nil
-	local parent_indents
-	if M.cfg.preserve_indents then
-		parent_indents, err = util.get_indents(0)
-		if not parent_indents then
-			if not M.cfg.suppress_warnings then
-				vim.notify("ninjection.edit() warning: Unable to preserve indentation " ..
-				"with get_indents(): " .. tostring(err), vim.log.levels.WARN)
-			end
-			-- Don't return early on indentation errors
-		end
-		---@cast parent_indents NJIndents
-	end
-	-- Initialized to 0 if unset
-	if not parent_indents then
-		parent_indents = {t_indent = 0, b_indent = 0, l_indent = 0}
-		---@cast parent_indents NJIndents
-	end
-
 	ok, raw_output = pcall(function()
 		return vim.fn.setreg(M.cfg.register, inj_node_text)
 	end)
@@ -346,6 +327,27 @@ M.edit = function()
 	end)
 	if not ok then
 		error(tostring(raw_output),2)
+	end
+
+	-- Preserve indentation after creating and pasting buffer contents, but before
+	-- autoformatting.
+	---@type NJIndents|nil
+	local parent_indents
+	if M.cfg.preserve_indents then
+		parent_indents, err = util.get_indents(0)
+		if not parent_indents then
+			if not M.cfg.suppress_warnings then
+				vim.notify("ninjection.edit() warning: Unable to preserve indentation " ..
+				"with get_indents(): " .. tostring(err), vim.log.levels.WARN)
+			end
+			-- Don't return early on indentation errors
+		end
+		---@cast parent_indents NJIndents
+	end
+	-- Initialized to 0 if unset
+	if not parent_indents then
+		parent_indents = {t_indent = 0, b_indent = 0, l_indent = 0}
+		---@cast parent_indents NJIndents
 	end
 
 	ok, raw_output = pcall(function()
