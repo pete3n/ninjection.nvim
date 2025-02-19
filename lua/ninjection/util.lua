@@ -40,8 +40,6 @@ M.get_indents = function(bufnr)
 	end
 	---@cast lines string[]
 
-	print("DEBUG lines: " .. vim.inspect(lines))
-
 	---@type NJIndents
   local indents = { t_indent = 0, b_indent = 0, l_indent = math.huge }
 
