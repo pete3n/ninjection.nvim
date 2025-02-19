@@ -46,7 +46,6 @@ M.get_indents = function(bufnr)
   for _, line in ipairs(lines) do
 		---@cast line string
     if line:match("^%s*$") then
-			print("Top blank line: [" .. line .. "]")
 			indents.t_indent = indents.t_indent + 1
     else
       break
@@ -56,7 +55,6 @@ M.get_indents = function(bufnr)
   for i = #lines, 1, -1 do
 		---@cast i number
     if lines[i]:match("^%s*$") then
-			print("Bottom blank line: [" .. lines[i] .. "]")
       indents.b_indent = indents.b_indent + 1
     else
       break
