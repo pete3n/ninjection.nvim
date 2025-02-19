@@ -201,10 +201,17 @@ M.get_node_table = function(query, lang)
 			---@type integer, integer, integer, integer
 			local s_row, s_col, e_row, e_col = node:range()
 			---@type NJRange
-			local inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
-			---@type integer[]
-			local cur_point = { cur_row, cur_col, cur_row, cur_col }
+			local inj_range
+			if cfg.injected_comment_newline then
+				inj_range = { s_row = s_row + 1, s_col = s_col,
+					e_row = e_row + 1, e_col = e_col }
+			else
+				inj_range = { s_row = s_row, s_col = s_col, e_row = e_row,
+					e_col = e_col }
+			end
+			---@cast inj_range integer[]
 
+			local cur_point = { cur_row, cur_col, cur_row, cur_col }
 			ok, raw_output = pcall(function()
 				return ts.node_contains(node, cur_point)
 			end)
