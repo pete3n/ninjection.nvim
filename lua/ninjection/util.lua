@@ -102,26 +102,21 @@ M.restore_indents = function(text, indents)
 			return vim.split(text, "\n")
 		end)
 		if not ok then
-			err = tostring(raw_output)
-			vim.notify("ninjection.util.restore_indents(): Error calling vim.split()",
-				vim.log.levels.ERROR)
-			return nil, err
+			error(tostring(raw_output),2)
 		end
     lines = raw_output
 		if not lines then
 			if cfg.suppress_warnings == false then
-				vim.notify("ninjection.util.restore_indents(): No lines returned from "
-					.. "calling vim.split()", vim.log.levels.WARN)
+				vim.notify("ninjection.util.restore_indents() warning: No lines " ..
+					"returned from calling vim.split()", vim.log.levels.WARN)
 			end
 			return nil
 		end
   elseif type(text) == "table" then
     lines = text
   else
-		err = "ninjection.util.restore_indents(): Error text must be a string or "
-			.. "a table of lines"
-		vim.notify(err, vim.log.levels.ERROR)
-		return nil, err
+		error("ninjection.util.restore_indents() error: Text must be a string or "
+			.. "a table of lines", 2)
   end
 	---@cast lines table
 
@@ -177,9 +172,8 @@ M.start_lsp = function(lang, root_dir)
 	-- The injected langauge must be mapped to an LSP value
 	lang_lsp = cfg.lsp_map[lang]
   if not lang_lsp then
-		err = "ninjection.util.start_lsp(): No LSP mapped to language: " .. lang ..
-			" check your configuration."
-		vim.notify(err, vim.log.levels.WARN)
+		vim.notify("ninjection.util.start_lsp() warning: No LSP mapped to " ..
+			"language: " .. lang .. " check your configuration.", vim.log.levels.WARN)
     return {"unmapped", -1}
   end
 	---@cast lang_lsp string
@@ -189,17 +183,14 @@ M.start_lsp = function(lang, root_dir)
 		return lspconfig[lang_lsp]
 	end)
 	if not ok then
-		err = tostring(raw_output)
-		vim.notify("ninjection.util.start_lsp(): Error calling lspconfig for " ..
-			lang_lsp, vim.log.levels.ERROR)
-		return nil, err
+		error(tostring(raw_output),2)
 	end
 	---@type table|nil
 	local lsp_def = raw_output
 	if not lsp_def or not lsp_def.config_def then
-		vim.notify("ninjection.util.start_lsp(): Could not find default_config " ..
-			"for " .. lang_lsp .. ". Ensure it is installed and properly configured " ..
-			"for lspconfig.", vim.log.levels.WARN)
+		vim.notify("ninjection.util.start_lsp() warning: Could not find " ..
+			"default_config for " .. lang_lsp .. ". Ensure it is installed and " ..
+			"properly configured for lspconfig.", vim.log.levels.WARN)
 		return {"unconfigured", -1}
 	end
 	---@cast lsp_def table
@@ -208,7 +199,7 @@ M.start_lsp = function(lang, root_dir)
 	---@type table|nil
 	local lsp_cmd = lsp_def.cmd
 	if not lsp_cmd or #lsp_cmd == 0 then
-		vim.notify("ninjection.util.start_lsp(): Command to execute " .. lang_lsp ..
+		vim.notify("ninjection.util.start_lsp() warning: Command to execute " .. lang_lsp ..
 			" does not exist. Ensure it is installed and configured.", vim.log.levels.WARN)
 		return {"unavailable", -1}
 	end
@@ -219,22 +210,19 @@ M.start_lsp = function(lang, root_dir)
 		return vim.fn.executable(lsp_cmd[1])
 	end)
 	if not ok then
-		err = tostring(raw_output)
-		vim.notify("ninjection.util.start_lsp(): Error calling vim.fn.executable() " ..
-			" to confirm " .. lsp_cmd[1] .. " is executable.", vim.log.levels.ERROR)
-		return {"no-exec", -1}, err
+		error(tostring(raw_output),2)
 	end
 	if raw_output ~= 1 then
-		vim.notify("ninjection.util.start_lsp(): The LSP command: " .. lsp_cmd[1] ..
-			" is not executable.", vim.log.levels.WARN)
+		vim.notify("ninjection.util.start_lsp() warning: The LSP command: " ..
+			lsp_cmd[1] .. " is not executable.", vim.log.levels.WARN)
 		return {"no-exec", -1}
 	end
 
 	-- The LSP must support our injected language
 	if not vim.tbl_contains(lsp_def.config_def.default_config.filetypes, lang) then
-		vim.notify("ninjection.util.start_lsp(): The configured LSP: " .. lang_lsp ..
-			" does not support " .. lang .. " modify your configuration to use an " ..
-			"appropriate LSP.", vim.log.levels.WARN)
+		vim.notify("ninjection.util.start_lsp() warning: The configured LSP: " ..
+			lang_lsp .. " does not support " .. lang .. " modify your configuration " ..
+			" to use an appropriate LSP.", vim.log.levels.WARN)
 		return {"unsupported", -1}
 	end
 
@@ -246,17 +234,12 @@ M.start_lsp = function(lang, root_dir)
 		})
 	end)
 	if not ok then
-		err = tostring(raw_output)
-		vim.notify("ninjection.util.start_lsp(): Error starting LSP with " ..
-			"vim.lsp.start({ \n  name = " .. lang_lsp .. ",\n  cmd = " .. lsp_cmd[1] ..
-			",\n  root_dir = " .. root_dir .. ",\n})" .. "\n" .. err,
-			vim.log.levels.ERROR)
-		return {"failed_start", -1}, err
+		error(tostring(raw_output),2)
 	end
 	---@type integer|nil
 	local client_id = raw_output
 	if client_id == nil then
-		vim.notify("ninjection.util.start_lsp(): The LSP: " .. lang_lsp ..
+		vim.notify("ninjection.util.start_lsp() warning: The LSP: " .. lang_lsp ..
 			" did not return a client_id, check your language client logs " ..
 			"(default ~/.local/state/nvim/lsp.log) for more information.",
 			vim.log.levels.WARN)
