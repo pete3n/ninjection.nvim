@@ -21,6 +21,18 @@ jobs:
           repository: "folke/neodev.nvim"
           path: "deps/neodev.nvim"
 
+      - name: Checkout dependency nvim-treesitter
+        uses: actions/checkout@v3
+        with:
+          repository: "nvim-treesitter/nvim-treesitter"
+          path: "deps/nvim-treesitter"
+
+      - name: Checkout dependency nvim-lspconfig
+        uses: actions/checkout@v3
+        with:
+          repository: "neovim/nvim-lspconfig"
+          path: "deps/nvim-lspconfig"
+
       - name: Type Check Code Base
         uses: mrcjkb/lua-typecheck-action@v0.1.2
         with:
