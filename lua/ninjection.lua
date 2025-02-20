@@ -394,7 +394,8 @@ M.edit = function()
 	-- the cursor for the removed indents.
 	if M.cfg.preserve_indents and M.cfg.auto_format then
 		---@type integer
-		local relative_row = parent_cursor[1] - inj_node_info.range.s_row
+		local relative_row = parent_cursor[1] - (inj_node_info.range.s_row +
+		M.cfg.injected_comment_lines)
 		relative_row = math.max(1, relative_row)
 		print("DEBUG relative_row: ", relative_row)
 		---@type integer
