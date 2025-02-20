@@ -22,6 +22,9 @@ jobs:
           repository: "neovim/neovim"
           path: "deps/"
 
+      - name: Debug - List deps
+        run: find deps/ -type f
+
       - name: Type Check Code Base
         uses: mrcjkb/lua-typecheck-action@v1
         with:
