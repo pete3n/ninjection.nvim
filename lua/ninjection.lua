@@ -382,9 +382,11 @@ M.edit = function()
 		---@type integer
 		local relative_row = parent_cursor[1] - inj_node_info.range.s_row
 		relative_row = math.max(1, relative_row)
+		print("DEBUG relative_row: ", relative_row)
 		---@type integer
 		local relative_col = parent_cursor[2] - parent_indents.l_indent
 		relative_col = math.max(0, relative_col)
+		print("DEBUG relative_col: ", relative_col)
 		offset_cur = { relative_row, relative_col}
 	else
 		---@type integer
@@ -393,6 +395,8 @@ M.edit = function()
 		offset_cur = { relative_row, parent_cursor[2] }
 	end
 	---@cast offset_cur integer[]
+	print("DEBUG: starting row: ", inj_node_info.range.s_row)
+	print("DEBUG offset_cur: ", vim.inspect(offset_cur))
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_win_set_cursor(0, offset_cur)
