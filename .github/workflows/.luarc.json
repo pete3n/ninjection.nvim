@@ -3,7 +3,11 @@
   "runtime.version": "LuaJIT",
   "runtime.path": ["lua/?.lua", "lua/?/init.lua"],
   "Lua.diagnostics.globals": ["vim"],
-  "Lua.workspace.library": ["/github/workspace/deps/neovim/runtime/lua/vim"],
+  "Lua.workspace.library": ["/github/workspace/deps/neovim/runtime/lua"],
   "Lua.diagnostics.libraryFiles": "Disable",
-  "Lua.workspace.checkThirdParty": "Disable"
+  "Lua.workspace.checkThirdParty": "Disable",
+  "Lua.diagnostics.severity": {
+    "undefined-doc-name": "Warning"
+  },
+  "Lua.log.level": "Debug"
 }
