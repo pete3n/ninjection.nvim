@@ -22,7 +22,7 @@ jobs:
           path: "deps/neovim"
 
       - name: Type Check Code Base
-        uses: mrcjkb/lua-typecheck-action@v0
+        uses: mrcjkb/lua-typecheck-action@v1
         with:
           directories: |
             lua

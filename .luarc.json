@@ -5,6 +5,7 @@
     "lua/?.lua",
     "lua/?/init.lua"
   ],
+	"Lua.diagnostics.globals": ["vim"],
   "Lua.workspace.library": [
     "/github/workspace/deps/neovim/runtime/lua/vim/treesitter"
   ],
