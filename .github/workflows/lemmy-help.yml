@@ -1,12 +1,9 @@
 name: lemmy-help
 
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 env:
-  PLUGIN_NAME: plugin-name
+  PLUGIN_NAME: ninjection.nvim
 
 jobs:
   docs:
@@ -18,7 +15,7 @@ jobs:
       - name: Generating help
         run: |
           curl -Lq https://github.com/numToStr/lemmy-help/releases/latest/download/lemmy-help-x86_64-unknown-linux-gnu.tar.gz | tar xz
-          ./lemmy-help [args] <path> > doc/${{env.PLUGIN_NAME}}.txt
+          ./lemmy-help --input lua/ --output-format vimdoc > doc/${{env.PLUGIN_NAME}}.txt
 
       - name: Commit
         uses: stefanzweifel/git-auto-commit-action@v4
