@@ -27,4 +27,4 @@ jobs:
         with:
           directories: |
             lua
-          configpath: ".luarc.json"
+          configpath: ".github/workflows/.luarc.json"
