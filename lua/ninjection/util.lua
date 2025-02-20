@@ -95,7 +95,7 @@ end
 --- @return nil|string err  Error message, if applicable
 M.restore_indents = function(text, indents)
 	---@type boolean, any|nil, string|nil, table|nil
-  local ok, raw_output, err, lines
+  local ok, raw_output, lines
 
   if type(text) == "string" then
 		ok, raw_output = pcall(function()
@@ -167,7 +167,7 @@ end
 --- @return nil|string err Error message, if applicable
 M.start_lsp = function(lang, root_dir)
 	---@type boolean, any|nil, string|nil, string|nil
-	local ok, raw_output, err, lang_lsp
+	local ok, raw_output, lang_lsp
 
 	-- The injected langauge must be mapped to an LSP value
 	lang_lsp = cfg.lsp_map[lang]

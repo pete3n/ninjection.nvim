@@ -67,9 +67,9 @@ M.cfg = {
 	},
 	inj_lang_query = nil, -- Dyanmically configured from file_lang and inj_lang_queries.
 
-	-- LSPs associated with injected languages. The keys must match the language 
+	-- LSPs associated with injected languages. The keys must match the language
 	-- comment used to identify injected languages, and the value must match the
-	-- LSP configured in your lspconfig. 
+	-- LSP configured in your lspconfig.
 	lsp_map = {
 		bash = "bashls",
 		c = "clangd",

@@ -266,7 +266,7 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 	if not node_s_row then
 		if cfg.suppress_warnings == false then
 			vim.notify("ninjection.treesitter.get_inj_lang() warning: Could not " ..
-				"determine injected language starting row calling get_node_table(): ", 
+				"determine injected language starting row calling get_node_table(): ",
 				vim.log.levels.WARN)
 		end
 		return nil
