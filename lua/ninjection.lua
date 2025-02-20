@@ -372,6 +372,20 @@ M.edit = function()
 		error(tostring(raw_output),2)
 	end
 
+	if M.cfg.auto_format then
+		ok, raw_output = pcall(function()
+			return vim.cmd("lua " .. M.cfg.format_cmd)
+		end)
+		if not ok then
+			if not M.cfg.suppress_warnings then
+				err = tostring(raw_output)
+				vim.notify("ninjection.edit() warning: Calling vim.cmd(\"lua \"" ..
+				M.cfg.format_cmd .. ")\n" .. err, vim.log.levels.WARN)
+				-- Don't return early on auto-format error
+			end
+		end
+	end
+
 	--- We want to keep the same relative cursor position in the child buffer as
 	--- in the parent buffer.
 	---@type integer[]|nil
@@ -410,19 +424,6 @@ M.edit = function()
 		end
 	end
 
-	if M.cfg.auto_format then
-		ok, raw_output = pcall(function()
-			return vim.cmd("lua " .. M.cfg.format_cmd)
-		end)
-		if not ok then
-			if not M.cfg.suppress_warnings then
-				err = tostring(raw_output)
-				vim.notify("ninjection.edit() warning: Calling vim.cmd(\"lua \"" ..
-				M.cfg.format_cmd .. ")\n" .. err, vim.log.levels.WARN)
-				-- Don't return early on auto-format error
-			end
-		end
-	end
 
 	---@type NJLspStatus|nil
 	local lsp_status
