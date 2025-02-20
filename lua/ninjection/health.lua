@@ -9,12 +9,12 @@ local M = {}
 local required_plugins = {
 	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
 	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
-	}
+ }
 
 local function lualib_installed(lib_name)
 	local res, _ = pcall(require, lib_name)
 	return res
-	end
+ end
 
 function M.check()
 	start("Checking Neovim version >= 0.8")
@@ -26,17 +26,17 @@ function M.check()
 
 	start("Checking for required plugins")
 	for _, plugin in ipairs(required_plugins) do
-    if lualib_installed(plugin.lib) then
-      ok(plugin.lib .. " installed.")
-    else
-      local lib_not_installed = plugin.lib .. " not found."
-      if plugin.optional then
-        warn(("%s %s"):format(lib_not_installed, plugin.info))
-      else
-        error(lib_not_installed)
-      end
-    end
-  end
+		if lualib_installed(plugin.lib) then
+			ok(plugin.lib .. " installed.")
+		else
+			local lib_not_installed = plugin.lib .. " not found."
+			if plugin.optional then
+				warn(("%s %s"):format(lib_not_installed, plugin.info))
+			else
+				error(lib_not_installed)
+			end
+		end
+	end
 end
 
 return M
