@@ -127,6 +127,7 @@ M.restore_indents = function(text, indents)
   -- Create the left indentation string.
 	---@type string
   local l_indent = string.rep(" ", indents.l_indent or 0)
+	print("DEBUG l_indent: ", string.len(l_indent))
 
   -- Only apply the left indent to non-blank lines
   for i, line in ipairs(lines) do
@@ -151,6 +152,8 @@ M.restore_indents = function(text, indents)
 			local adjusted_indent = string.rep(" ", math.max(0,
 				(indents.l_indent or 0) - tab_size))
 			table.insert(lines, adjusted_indent)
+			print("DEBUG: tab_size: ", string.len(tab_size))
+			print("DEBUG: adjusted_indent:", string.len(adjusted_indent))
 		else
 			table.insert(lines, "")
 		end
