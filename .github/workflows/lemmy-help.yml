@@ -19,8 +19,9 @@ jobs:
 
       - name: Commit
         uses: stefanzweifel/git-auto-commit-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.LEMMY_HELP_PAT }}
         with:
-          token: ${{ secrets.LEMMY_HELP_PAT }}
           branch: ${{ github.head_ref }}
           commit_message: "chore(docs): auto-generate vimdoc"
           file_pattern: doc/*.txt
