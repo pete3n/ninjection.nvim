@@ -29,37 +29,40 @@ M.get_indents = function(bufnr)
 		return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 	end)
 	if not ok then
-		error(tostring(raw_output),2)
+		error(tostring(raw_output), 2)
 	end
 	lines = raw_output
 	if not lines or #lines == 0 then
 		if cfg.suppress_warnings == false then
-			vim.notify("ninjection.util.get_indents() warning: No lines returned " ..
-			"from calling vim.api.nvim_buf_get_lines()", vim.log.levels.WARN)
+			vim.notify(
+				"ninjection.util.get_indents() warning: No lines returned "
+					.. "from calling vim.api.nvim_buf_get_lines()",
+				vim.log.levels.WARN
+			)
 		end
 	end
 	---@cast lines string[]
 
 	---@type NJIndents
-  local indents = { t_indent = 0, b_indent = 0, l_indent = math.huge }
+	local indents = { t_indent = 0, b_indent = 0, l_indent = math.huge }
 
-  for _, line in ipairs(lines) do
+	for _, line in ipairs(lines) do
 		---@cast line string
-    if line:match("^%s*$") then
+		if line:match("^%s*$") then
 			indents.t_indent = indents.t_indent + 1
-    else
-      break
-    end
-  end
+		else
+			break
+		end
+	end
 
-  for i = #lines, 1, -1 do
+	for i = #lines, 1, -1 do
 		---@cast i number
-    if lines[i]:match("^%s*$") then
-      indents.b_indent = indents.b_indent + 1
-    else
-      break
-    end
-  end
+		if lines[i]:match("^%s*$") then
+			indents.b_indent = indents.b_indent + 1
+		else
+			break
+		end
+	end
 
 	for _, line in ipairs(lines) do
 		---@cast line string
@@ -77,13 +80,12 @@ M.get_indents = function(bufnr)
 		end
 	end
 
-  if indents.l_indent == math.huge then
-    indents.l_indent = 0
-  end
+	if indents.l_indent == math.huge then
+		indents.l_indent = 0
+	end
 
-  return indents, nil
+	return indents, nil
 end
-
 
 --- Restores the recorded whitespace indents (top, bottom, and left indent)
 --- to a block of text.
@@ -95,64 +97,64 @@ end
 --- @return nil|string err  Error message, if applicable
 M.restore_indents = function(text, indents)
 	---@type boolean, any|nil, string|nil, table|nil
-  local ok, raw_output, lines
+	local ok, raw_output, lines
 
-  if type(text) == "string" then
+	if type(text) == "string" then
 		ok, raw_output = pcall(function()
 			return vim.split(text, "\n")
 		end)
 		if not ok then
-			error(tostring(raw_output),2)
+			error(tostring(raw_output), 2)
 		end
-    lines = raw_output
+		lines = raw_output
 		if not lines then
 			if cfg.suppress_warnings == false then
-				vim.notify("ninjection.util.restore_indents() warning: No lines " ..
-					"returned from calling vim.split()", vim.log.levels.WARN)
+				vim.notify(
+					"ninjection.util.restore_indents() warning: No lines " .. "returned from calling vim.split()",
+					vim.log.levels.WARN
+				)
 			end
 			return nil
 		end
-  elseif type(text) == "table" then
-    lines = text
-  else
-		error("ninjection.util.restore_indents() error: Text must be a string or "
-			.. "a table of lines", 2)
-  end
+	elseif type(text) == "table" then
+		lines = text
+	else
+		error("ninjection.util.restore_indents() error: Text must be a string or " .. "a table of lines", 2)
+	end
 	---@cast lines table
 
-  -- Create the left indentation string.
+	-- Create the left indentation string.
 	---@type string
-  local l_indent = string.rep(" ", indents.l_indent or 0)
+	local l_indent = string.rep(" ", indents.l_indent or 0)
 
-  -- Only apply the left indent to non-blank lines
-  for i, line in ipairs(lines) do
+	-- Only apply the left indent to non-blank lines
+	for i, line in ipairs(lines) do
 		---@cast i number
 		---@cast line string
-    if line:match("%S") then
-      lines[i] = l_indent .. line
-    end
-  end
+		if line:match("%S") then
+			lines[i] = l_indent .. line
+		end
+	end
 
-  -- Prepend top indent lines.
-  for _ = 1, (indents.t_indent or 0) do
-    table.insert(lines, 1, "")
-  end
+	-- Prepend top indent lines.
+	for _ = 1, (indents.t_indent or 0) do
+		table.insert(lines, 1, "")
+	end
 
-  -- Append bottom indent lines.
-  for _ = 1, (indents.b_indent or 0) do
+	-- Append bottom indent lines.
+	for _ = 1, (indents.b_indent or 0) do
 		if cfg.preserve_indents then
 			-- Compute the left indent string, subtracting one tab size.
 			local tab_size = vim.o.tabstop or 8
 			-- Ensure the resulting indent length is not negative.
-			local adjusted_indent = string.rep(" ", math.max(0,
-				(indents.l_indent or 0) - tab_size))
+			local adjusted_indent = string.rep(" ", math.max(0, (indents.l_indent or 0) - tab_size))
 			table.insert(lines, adjusted_indent)
 		else
 			table.insert(lines, "")
 		end
-  end
+	end
 
-  return lines
+	return lines
 end
 
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
@@ -171,11 +173,16 @@ M.start_lsp = function(lang, root_dir)
 
 	-- The injected langauge must be mapped to an LSP value
 	lang_lsp = cfg.lsp_map[lang]
-  if not lang_lsp then
-		vim.notify("ninjection.util.start_lsp() warning: No LSP mapped to " ..
-			"language: " .. lang .. " check your configuration.", vim.log.levels.WARN)
-    return {"unmapped", -1}
-  end
+	if not lang_lsp then
+		vim.notify(
+			"ninjection.util.start_lsp() warning: No LSP mapped to "
+				.. "language: "
+				.. lang
+				.. " check your configuration.",
+			vim.log.levels.WARN
+		)
+		return { "unmapped", -1 }
+	end
 	---@cast lang_lsp string
 
 	-- The LSP must have an available configuration
@@ -183,15 +190,20 @@ M.start_lsp = function(lang, root_dir)
 		return lspconfig[lang_lsp]
 	end)
 	if not ok then
-		error(tostring(raw_output),2)
+		error(tostring(raw_output), 2)
 	end
 	---@type table|nil
 	local lsp_def = raw_output
 	if not lsp_def or not lsp_def.config_def then
-		vim.notify("ninjection.util.start_lsp() warning: Could not find " ..
-			"default_config for " .. lang_lsp .. ". Ensure it is installed and " ..
-			"properly configured for lspconfig.", vim.log.levels.WARN)
-		return {"unconfigured", -1}
+		vim.notify(
+			"ninjection.util.start_lsp() warning: Could not find "
+				.. "default_config for "
+				.. lang_lsp
+				.. ". Ensure it is installed and "
+				.. "properly configured for lspconfig.",
+			vim.log.levels.WARN
+		)
+		return { "unconfigured", -1 }
 	end
 	---@cast lsp_def table
 
@@ -199,9 +211,13 @@ M.start_lsp = function(lang, root_dir)
 	---@type table|nil
 	local lsp_cmd = lsp_def.cmd
 	if not lsp_cmd or #lsp_cmd == 0 then
-		vim.notify("ninjection.util.start_lsp() warning: Command to execute " .. lang_lsp ..
-			" does not exist. Ensure it is installed and configured.", vim.log.levels.WARN)
-		return {"unavailable", -1}
+		vim.notify(
+			"ninjection.util.start_lsp() warning: Command to execute "
+				.. lang_lsp
+				.. " does not exist. Ensure it is installed and configured.",
+			vim.log.levels.WARN
+		)
+		return { "unavailable", -1 }
 	end
 	---@cast lsp_cmd table
 
@@ -210,20 +226,28 @@ M.start_lsp = function(lang, root_dir)
 		return vim.fn.executable(lsp_cmd[1])
 	end)
 	if not ok then
-		error(tostring(raw_output),2)
+		error(tostring(raw_output), 2)
 	end
 	if raw_output ~= 1 then
-		vim.notify("ninjection.util.start_lsp() warning: The LSP command: " ..
-			lsp_cmd[1] .. " is not executable.", vim.log.levels.WARN)
-		return {"no-exec", -1}
+		vim.notify(
+			"ninjection.util.start_lsp() warning: The LSP command: " .. lsp_cmd[1] .. " is not executable.",
+			vim.log.levels.WARN
+		)
+		return { "no-exec", -1 }
 	end
 
 	-- The LSP must support our injected language
 	if not vim.tbl_contains(lsp_def.config_def.default_config.filetypes, lang) then
-		vim.notify("ninjection.util.start_lsp() warning: The configured LSP: " ..
-			lang_lsp .. " does not support " .. lang .. " modify your configuration " ..
-			" to use an appropriate LSP.", vim.log.levels.WARN)
-		return {"unsupported", -1}
+		vim.notify(
+			"ninjection.util.start_lsp() warning: The configured LSP: "
+				.. lang_lsp
+				.. " does not support "
+				.. lang
+				.. " modify your configuration "
+				.. " to use an appropriate LSP.",
+			vim.log.levels.WARN
+		)
+		return { "unsupported", -1 }
 	end
 
 	ok, raw_output = pcall(function()
@@ -234,20 +258,23 @@ M.start_lsp = function(lang, root_dir)
 		})
 	end)
 	if not ok then
-		error(tostring(raw_output),2)
+		error(tostring(raw_output), 2)
 	end
 	---@type integer|nil
 	local client_id = raw_output
 	if client_id == nil then
-		vim.notify("ninjection.util.start_lsp() warning: The LSP: " .. lang_lsp ..
-			" did not return a client_id, check your language client logs " ..
-			"(default ~/.local/state/nvim/lsp.log) for more information.",
-			vim.log.levels.WARN)
-		return {"failed_start", -1}
+		vim.notify(
+			"ninjection.util.start_lsp() warning: The LSP: "
+				.. lang_lsp
+				.. " did not return a client_id, check your language client logs "
+				.. "(default ~/.local/state/nvim/lsp.log) for more information.",
+			vim.log.levels.WARN
+		)
+		return { "failed_start", -1 }
 	end
 	---@cast client_id integer
 
-	return {"started", client_id}
+	return { "started", client_id }
 end
 
 return M
