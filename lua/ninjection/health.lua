@@ -7,28 +7,24 @@ local error = health.warn or health.report_error
 local M = {}
 
 local required_plugins = {
-  { lib = "lspconfig", optional = false,
-		info = "Required for LSP integration" },
-  { lib = "nvim-treesitter",
-    optional = false,
-    info = "Required for injected language parsing",
-  },
-}
+	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
+	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
+	}
 
 local function lualib_installed(lib_name)
-  local res, _ = pcall(require, lib_name)
-  return res
-end
+	local res, _ = pcall(require, lib_name)
+	return res
+	end
 
 function M.check()
-	start "Checking Neovim version >= 0.8"
+	start("Checking Neovim version >= 0.8")
 	if vim.version().major == 0 and vim.version().minor < 8 then
 		error("Neovim 0.8 or greater required")
 	else
 		ok("Neovim >= 0.8 detected")
 	end
 
-	start "Checking for required plugins"
+	start("Checking for required plugins")
 	for _, plugin in ipairs(required_plugins) do
     if lualib_installed(plugin.lib) then
       ok(plugin.lib .. " installed.")
