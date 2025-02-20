@@ -16,18 +16,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Checkout dependency neovim runtime treesitter
+      - name: Checkout dependency neovim runtime
         uses: actions/checkout@v3
         with:
           repository: "neovim/neovim"
           path: "deps/"
-
-      - name: Debug - List deps
-        run: find deps/ -type f
 
       - name: Type Check Code Base
         uses: mrcjkb/lua-typecheck-action@v1
         with:
           directories: |
             lua
-          configpath: ".github/workflows/.luarc.json"
+          configpath: ".luarc.json"
