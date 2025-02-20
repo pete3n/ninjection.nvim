@@ -1,6 +1,3 @@
----@alias vim.treesitter.Query userdata
----@alias TSNode userdata
-
 ---@class NJRange
 ---@field s_row integer
 ---@field s_col integer
