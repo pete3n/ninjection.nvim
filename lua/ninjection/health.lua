@@ -9,12 +9,12 @@ local M = {}
 local required_plugins = {
 	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
 	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
-	}
+}
 
 local function lualib_installed(lib_name)
 	local res, _ = pcall(require, lib_name)
 	return res
-	end
+end
 
 function M.check()
 	start("Checking Neovim version >= 0.8")
