@@ -61,20 +61,21 @@ M.get_indents = function(bufnr)
     end
   end
 
-  for _, line in ipairs(lines) do
+	for _, line in ipairs(lines) do
 		---@cast line string
-    if not line:match("^%s*$") then
+		if not line:match("^%s*$") then
 			---@type string|nil
-      local indent = line:match("^(%s*)")
-      if indent then
-				---@type number
-        local count = #indent
-        if count < indents.l_indent then
-          indents.l_indent = count
-        end
-      end
-    end
-  end
+			local indent = line:match("^(%s*)")
+			if indent then
+				-- Use vim.fn.strdisplaywidth() to calculate the visible width of the indent,
+				-- which will account for tabs.
+				local count = vim.fn.strdisplaywidth(indent)
+				if count < indents.l_indent then
+					indents.l_indent = count
+				end
+			end
+		end
+	end
 
   if indents.l_indent == math.huge then
     indents.l_indent = 0
