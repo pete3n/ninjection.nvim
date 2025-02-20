@@ -111,15 +111,15 @@ M.restore_indents = function(text, indents)
 		if not lines then
 			if cfg.suppress_warnings == false then
 				vim.notify("ninjection.util.restore_indents(): No lines returned from "
-				.. "calling vim.split()", vim.log.levels.WARN)
+					.. "calling vim.split()", vim.log.levels.WARN)
 			end
 			return nil
 		end
   elseif type(text) == "table" then
     lines = text
   else
-		err = "ninjection.util.restore_indents(): Error text must be a string or " ..
-		"a table of lines"
+		err = "ninjection.util.restore_indents(): Error text must be a string or "
+			.. "a table of lines"
 		vim.notify(err, vim.log.levels.ERROR)
 		return nil, err
   end
@@ -128,7 +128,6 @@ M.restore_indents = function(text, indents)
   -- Create the left indentation string.
 	---@type string
   local l_indent = string.rep(" ", indents.l_indent or 0)
-	print("DEBUG l_indent: ", string.len(l_indent))
 
   -- Only apply the left indent to non-blank lines
   for i, line in ipairs(lines) do
@@ -153,8 +152,6 @@ M.restore_indents = function(text, indents)
 			local adjusted_indent = string.rep(" ", math.max(0,
 				(indents.l_indent or 0) - tab_size))
 			table.insert(lines, adjusted_indent)
-			print("DEBUG: tab_size: ", string.len(tab_size))
-			print("DEBUG: adjusted_indent:", string.len(adjusted_indent))
 		else
 			table.insert(lines, "")
 		end

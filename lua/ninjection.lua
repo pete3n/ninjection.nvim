@@ -376,11 +376,21 @@ M.edit = function()
 	--- in the parent buffer.
 	---@type integer[]|nil
 	local offset_cur
+	-- Assuming autoformat will remove any existing indents, we need to offset
+	-- the cursor for the removed indents.
 	if M.cfg.preserve_indents and M.cfg.auto_format then
-		offset_cur = { parent_cursor[1] - (inj_node_info.range.s_row + 1),
-		parent_cursor[2] - parent_indents.l_indent }
+		---@type integer
+		local relative_row = parent_cursor[1] - inj_node_info.range.s_row
+		relative_row = math.max(1, relative_row)
+		---@type integer
+		local relative_col = parent_cursor[2] - parent_indents.l_indent
+		relative_col = math.max(0, relative_col)
+		offset_cur = { relative_row, relative_col}
 	else
-		offset_cur = { parent_cursor[1] - inj_node_info.range.s_row, parent_cursor[2] }
+		---@type integer
+		local relative_row = parent_cursor[1] - inj_node_info.range.s_row
+		relative_row = math.max(1, relative_row)
+		offset_cur = { relative_row, parent_cursor[2] }
 	end
 	---@cast offset_cur integer[]
 
