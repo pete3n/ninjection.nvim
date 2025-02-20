@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "runtime.version": "LuaJIT",
+  "runtime.path": [
+    "lua/?.lua",
+    "lua/?/init.lua"
+  ],
+  "Lua.workspace.library": [
+    "/github/workspace/deps/neovim/runtime/lua/vim/treesitter"
+  ],
+  "Lua.diagnostics.libraryFiles": "Disable",
+  "Lua.workspace.checkThirdParty": "Disable"
+}
