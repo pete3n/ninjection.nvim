@@ -74,6 +74,12 @@
 --- @class TSQueryMatch: userdata
 --- @field captures fun(self: TSQueryMatch): table<integer,TSNode[]>
 
+---@class vim.treesitter.query.TSMetadata
+---@field range? Range
+---@field conceal? string
+---@field [integer] vim.treesitter.query.TSMetadata
+---@field [string] integer|string
+
 ---@class vim.treesitter.Query
 ---@field lang string name of the language for this parser
 ---@field captures string[] list of (unique) capture names defined in query
