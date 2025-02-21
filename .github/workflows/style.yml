@@ -1,0 +1,16 @@
+name: Style checking
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  stylua:
+    name: stylua
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          # CLI arguments
+          args: --color always --check lua/

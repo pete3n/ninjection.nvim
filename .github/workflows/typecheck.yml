@@ -1,5 +1,5 @@
 ---
-name: Run Lua Language Server check
+name: Type checking
 
 on:
   workflow_call:
