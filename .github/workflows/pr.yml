@@ -1,0 +1,50 @@
+---
+name: Pull request check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+    with:
+      neovim_versions: |
+        [ "stable", "v0.10.2" ]
+
+  typecheck:
+    uses: ./.github/workflows/typecheck.yml
+    with:
+      lua_ls_version: 3.9.1
+      neovim_versions: |
+        [ "stable", "v0.10.2" ]
+
+  style:
+    name: stylua
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: JohnnyMorganz/stylua-action@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --color always --check .
+
+  lint:
+    name: luacheck
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y luarocks
+          sudo luarocks install luacheck
+
+      - name: Lint
+        run: sudo make luacheck
