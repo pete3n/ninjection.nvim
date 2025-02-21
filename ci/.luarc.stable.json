@@ -6,7 +6,8 @@
     "before_each",
     "after_each",
     "setup",
-    "teardown"
+    "teardown",
+    "vim"
   ],
   "diagnostics.ignoredFiles": "Disable",
   "diagnostics.libraryFiles": "Disable",
