@@ -1,27 +1,17 @@
 {
-  "Lua": {
-    "runtime": {
-      "version": "LuaJIT"
-    },
-    "diagnostics": {
-      "globals": [
-        "it",
-        "describe",
-        "before_each",
-        "after_each",
-        "setup",
-        "teardown",
-        "vim"
-      ],
-      "ignoredFiles": "Disable",
-      "libraryFiles": "Disable"
-    },
-    "workspace": {
-      "library": [
-        "/usr/local/share/nvim/runtime/lua",
-        ".ci/neovim/share/nvim/runtime/lua",
-        ".ci/vendor/pack/vendor/start/neodev.nvim/types/stable"
-      ]
-    }
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "runtime.version": "LuaJIT",
+  "runtime.path": ["lua/?.lua", "lua/?/init.lua", "plugin/?.lua"],
+  "diagnostics": {
+    "globals": ["vim"],
+    "ignoredFiles": "Disable",
+    "libraryFiles": "Disable"
+  },
+  "workspace": {
+    "library": [
+      "/usr/local/share/nvim/runtime/lua",
+      ".ci/neovim/share/nvim/runtime/lua",
+      ".ci/vendor/pack/vendor/start/neodev.nvim/types/stable"
+    ]
   }
 }
