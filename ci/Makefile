@@ -21,7 +21,13 @@ lua-language-server: dependencies
 		echo "Error: Configuration file .luarc.$(version).json not found."; \
 		exit 1; \
 	fi
-	
+
+
+	git clone --depth 1 \
+		https://github.com/nvim-treesitter/nvim-treesitter \
+		.ci/vendor/pack/vendor/start/nvim-treesitter;
+		ls -la .ci/vendor/pack/vendor/start/nvim-treesitter/lua/nvim-treesitter; 
+
 	rm -rf .ci/lua-language-server-log
 	cat $(CURDIR)/ci/.luarc.$(version).json
 	lua-language-server --configpath $(CURDIR)/ci/.luarc.$(version).json --logpath .ci/lua-language-server-log --check lua/
@@ -32,8 +38,4 @@ dependencies:
 		git clone --depth 1 \
 			https://github.com/nvim-lua/plenary.nvim \
 			.ci/vendor/pack/vendor/start/plenary.nvim; \
-		git clone --depth 1 \
-			https://github.com/nvim-treesitter/nvim-treesitter \
-			.ci/vendor/pack/vendor/start/nvim-treesitter; \
-			ls -la .ci/vendor/pack/vendor/start/nvim-treesitter/lua/nvim-treesitter; \
 	fi
