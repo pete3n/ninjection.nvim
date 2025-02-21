@@ -1,4 +1,4 @@
-name: lemmy-help
+name: Docgen
 
 on: [push]
 

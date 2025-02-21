@@ -10,6 +10,16 @@ on:
       neovim_versions:
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      lua_ls_version:
+        description: "Lua LS version"
+        required: true
+        default: "latest"
+      neovim_versions:
+        description: "Neovim versions"
+        required: true
+        default: '["nightly"]'
 
 jobs:
   lua-language-server:
