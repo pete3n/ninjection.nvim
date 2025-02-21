@@ -17,6 +17,11 @@ stylua:
 	stylua --check .
 
 lua-language-server: dependencies
+	if [ ! -f .luarc.$(version).json ]; then \
+		echo "Error: Configuration file .luarc.$(version).json not found."; \
+		exit 1; \
+	fi
+	
 	rm -rf .ci/lua-language-server-log
 	lua-language-server --configpath .luarc.$(version).json --logpath .ci/lua-language-server-log --check lua
 	[ -f .ci/lua-language-server-log/check.json ] && { cat .ci/lua-language-server-log/check.json 2>/dev/null; exit 1; } || true
