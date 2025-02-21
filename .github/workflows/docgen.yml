@@ -1,3 +1,4 @@
+---
 name: Docgen
 
 on: [workflow_dispatch pull_request]
