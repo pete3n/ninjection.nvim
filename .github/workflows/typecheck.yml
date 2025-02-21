@@ -19,7 +19,7 @@ on:
       neovim_versions:
         description: "Neovim versions"
         required: true
-        default: '["nightly"]'
+        default: "0.10.2"
 
 jobs:
   lua-language-server:
