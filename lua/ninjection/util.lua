@@ -96,7 +96,7 @@ end
 --- @return table|nil restored_lines  A table of lines with the indents restored.
 --- @return nil|string err  Error message, if applicable
 M.restore_indents = function(text, indents)
-	---@type boolean, any|nil, string|nil, table|nil
+	---@type boolean, any|nil, table|nil
 	local ok, raw_output, lines
 
 	if type(text) == "string" then

@@ -12,12 +12,13 @@ end
 
 --- Function: Get a parsed query from Treesitter given a language and pattern.
 ---@param query string Lua-literal string for Treesitter query.
----@param lang? string Default: "nix", language grammar to parse with.
+---@param lang? string|nil Default: "nix", language grammar to parse with.
 ---@return vim.treesitter.Query|nil parsed_query The parsed Treesitter Query object
 ---@return nil|string err Error string, if applicable
 M.get_query = function(query, lang)
 	---@type string|nil
 	lang = lang or "nix"
+	---@cast lang string
 	---@type boolean, any|nil, vim.treesitter.Query|nil
 	local ok, raw_output, parsed_query
 
@@ -51,7 +52,7 @@ end
 ---@return nil|string err Error string, if applicable.
 M.get_root = function(bufnr, lang)
 	lang = lang or "nix"
-	---@type boolean, any|nil, string|nil, vim.treesitter.LanguageTree|nil
+	---@type boolean, any|nil, vim.treesitter.LanguageTree|nil
 	local ok, raw_output, parser
 	ok, raw_output = pcall(function()
 		return vim.treesitter.get_parser(bufnr, "nix")
