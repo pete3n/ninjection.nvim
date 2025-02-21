@@ -51,7 +51,7 @@ jobs:
         run: |
           test -d .ci/neovim || {
             mkdir -p .ci/neovim
-            curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}/nvim-linux64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"
+            curl -sL "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"
           }
           test -d .ci/lua-ls || {
             mkdir -p .ci/lua-ls
