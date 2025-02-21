@@ -140,4 +140,4 @@
 ---@field private _valid boolean|table<integer,boolean> If the parsed tree is valid
 ---@field private _logger? fun(logtype: string, msg: string)
 ---@field private _logfile? file*
----@field parse fun(range: boolean|Range?): table: <integer, TSTree>
+---@field parse fun(range: boolean|Range?): table: { [integer]: TSTree }
