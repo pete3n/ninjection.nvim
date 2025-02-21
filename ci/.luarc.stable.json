@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
   "runtime.version": "LuaJIT",
   "runtime.path": ["lua/?.lua", "lua/?/init.lua", "plugin/?.lua"],
   "diagnostics": {
@@ -7,11 +7,9 @@
     "ignoredFiles": "Disable",
     "libraryFiles": "Disable"
   },
-  "workspace": {
-    "library": [
-      "/usr/local/share/nvim/runtime/lua",
-      "$(pwd)/.ci/neovim/share/nvim/runtime/lua",
-      "$(pwd)/.ci/vendor/pack/vendor/start/nvim-treesitter/lua"
-    ]
-  }
+  "workspace.library": [
+    "/usr/local/share/nvim/runtime/lua",
+    ".ci/neovim/share/nvim/runtime/lua",
+    ".ci/vendor/pack/vendor/start/nvim-treesitter/lua"
+  ]
 }

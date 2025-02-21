@@ -35,4 +35,5 @@ dependencies:
 		git clone --depth 1 \
 			https://github.com/nvim-treesitter/nvim-treesitter \
 			.ci/vendor/pack/vendor/start/nvim-treesitter; \
+			ls -la .ci/vendor/pack/vendor/start/nvim-treesitter/lua/nvim-treesitter
 	fi
