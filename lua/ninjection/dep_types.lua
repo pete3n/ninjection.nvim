@@ -70,12 +70,13 @@
 ---@class (exact) TSQueryInfo
 ---@field captures string[]
 ---@field patterns table<integer, (integer|string)[][]>
----
+
 ---@class vim.treesitter.Query
 ---@field lang string name of the language for this parser
 ---@field captures string[] list of (unique) capture names defined in query
 ---@field info vim.treesitter.QueryInfo contains information used in the query (e.g. captures, predicates, directives)
 ---@field query TSQuery userdata query object
+---@field iter_captures fun( node: TSnode, source: integer|string, start: integer, stop: integer): fun(end_line: integer?): id: integer, node: TSnode, metadata: vim.treesitter.query.TSMetadata, match: TSQueryMatch
 
 ---@class TSTree: userdata
 ---@field root fun(self: TSTree): TSNode
@@ -99,7 +100,8 @@
 ---| 'on_detach'
 ---| 'on_child_added'
 ---| 'on_child_removed'
-
+---@class vim.treesitter.LanguageTree
+---
 ---@class TSParser: userdata
 ---@field parse fun(self: TSParser, tree: TSTree?, source: integer|string, include_bytes: boolean): TSTree, (Range4|Range6)[]
 ---@field reset fun(self: TSParser)
