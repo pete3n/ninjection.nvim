@@ -23,7 +23,7 @@ lua-language-server: dependencies
 	fi
 	
 	rm -rf .ci/lua-language-server-log
-	lua-language-server --configpath $(pwd)/ci/.luarc.$(version).json --logpath .ci/lua-language-server-log
+	lua-language-server --configpath $(pwd)/ci/.luarc.$(version).json --logpath .ci/lua-language-server-log --check lua/
 	[ -f .ci/lua-language-server-log/check.json ] && { cat .ci/lua-language-server-log/check.json 2>/dev/null; exit 1; } || true
 
 dependencies:
