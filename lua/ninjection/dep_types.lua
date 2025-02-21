@@ -71,12 +71,15 @@
 ---@field captures string[]
 ---@field patterns table<integer, (integer|string)[][]>
 
+--- @class TSQueryMatch: userdata
+--- @field captures fun(self: TSQueryMatch): table<integer,TSNode[]>
+
 ---@class vim.treesitter.Query
 ---@field lang string name of the language for this parser
 ---@field captures string[] list of (unique) capture names defined in query
 ---@field info vim.treesitter.QueryInfo contains information used in the query (e.g. captures, predicates, directives)
 ---@field query TSQuery userdata query object
----@field iter_captures fun( node: TSnode, source: integer|string, start: integer, stop: integer): fun(end_line: integer?): id: integer, node: TSnode, metadata: vim.treesitter.query.TSMetadata, match: TSQueryMatch
+---@field iter_captures fun( node: TSNode, source: integer|string, start: integer, stop: integer): fun(end_line: integer?): id: integer, node: TSNode, metadata: vim.treesitter.query.TSMetadata, match: TSQueryMatch
 
 ---@class TSTree: userdata
 ---@field root fun(self: TSTree): TSNode
