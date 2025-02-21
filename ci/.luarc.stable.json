@@ -1,19 +1,27 @@
 {
-  "runtime.version": "LuaJIT",
-  "diagnostics.globals": [
-    "it",
-    "describe",
-    "before_each",
-    "after_each",
-    "setup",
-    "teardown",
-    "vim"
-  ],
-  "diagnostics.ignoredFiles": "Disable",
-  "diagnostics.libraryFiles": "Disable",
-  "workspace.library": [
-    "/usr/local/share/nvim/runtime/lua",
-    ".ci/neovim/share/nvim/runtime/lua",
-    ".ci/vendor/pack/vendor/start/neodev.nvim/types/stable"
-  ]
+  "Lua": {
+    "runtime": {
+      "version": "LuaJIT"
+    },
+    "diagnostics": {
+      "globals": [
+        "it",
+        "describe",
+        "before_each",
+        "after_each",
+        "setup",
+        "teardown",
+        "vim"
+      ],
+      "ignoredFiles": "Disable",
+      "libraryFiles": "Disable"
+    },
+    "workspace": {
+      "library": [
+        "/usr/local/share/nvim/runtime/lua",
+        ".ci/neovim/share/nvim/runtime/lua",
+        ".ci/vendor/pack/vendor/start/neodev.nvim/types/stable"
+      ]
+    }
+  }
 }
