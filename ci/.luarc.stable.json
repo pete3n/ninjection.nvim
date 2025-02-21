@@ -11,7 +11,7 @@
     "library": [
       "/usr/local/share/nvim/runtime/lua",
       ".ci/neovim/share/nvim/runtime/lua",
-      ".ci/vendor/pack/vendor/start/neodev.nvim/types/stable"
+      ".ci/vendor/pack/vendor/start/nvim-treesitter/lua"
     ]
   }
 }

@@ -33,6 +33,6 @@ dependencies:
 			https://github.com/nvim-lua/plenary.nvim \
 			.ci/vendor/pack/vendor/start/plenary.nvim; \
 		git clone --depth 1 \
-			https://github.com/folke/lazydev.nvim \
-			.ci/vendor/pack/vendor/start/lazydev.nvim; \
+			https://github.com/nvim-treesitter/nvim-treesitter \
+			.ci/vendor/pack/vendor/start/nvim-treesitter; \
 	fi
