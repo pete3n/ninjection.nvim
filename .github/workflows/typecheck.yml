@@ -1,36 +1,57 @@
 ---
-name: Type Check Code Base
+name: Run Lua Language Server check
+
 on:
-  pull_request: ~
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      lua_ls_version:
+        required: true
+        type: string
+      neovim_versions:
+        required: true
+        type: string
 
 jobs:
-  build:
-    name: Type Check Code Base
-    runs-on: ubuntu-latest
-
+  lua-language-server:
+    name: lua language server
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        rev: ${{ fromJson(inputs.neovim_versions) }}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Checkout dependency neovim runtime
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - run: date +%F > todays-date
+      - name: Restore cache for Neovim
+        uses: actions/cache@v3
         with:
-          repository: "neovim/neovim"
-          path: "deps/neovim"
-
-      - name: Checkout dependency neodev
-        uses: actions/checkout@v3
+          path: .ci/neovim
+          key: ${{ matrix.rev }}-${{ hashFiles('todays-date') }}
+      - name: Restore cache for vendor dependencies
+        uses: actions/cache@v3
         with:
-          repository: "folke/neodev.nvim"
-          path: "deps/neodev.nvim"
-
-      - name: Type Check Code Base
-        uses: mrcjkb/lua-typecheck-action@v1
+          path: .ci/vendor
+          key: ${{ hashFiles('todays-date') }}
+      - name: Restore cache for lua LS
+        uses: actions/cache@v3
         with:
-          directories: |
-            lua
-          configpath: ".github/workflows/.luarc.json"
+          path: .ci/lua-ls
+          key: ${{ inputs.lua_ls_version }}
+      - name: Prepare
+        run: |
+          test -d .ci/neovim || {
+            mkdir -p .ci/neovim
+            curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}/nvim-linux64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"
+          }
+          test -d .ci/lua-ls || {
+            mkdir -p .ci/lua-ls
+            curl -sL "https://github.com/LuaLS/lua-language-server/releases/download/${{ inputs.lua_ls_version }}/lua-language-server-${{ inputs.lua_ls_version }}-linux-x64.tar.gz" | tar xzf - -C "${PWD}/.ci/lua-ls"
+          }
+
+      - name: Run check
+        run: |
+          export PATH="${PWD}/.ci/neovim/bin:${PATH}"
+          export PATH="${PWD}/.ci/lua-ls/bin:${PATH}"
+          export VIM="${PWD}/.ci/neovim/share/nvim/runtime"
+          nvim --version
+          make -f ci/Makefile lua-language-server version=${{ matrix.rev == 'nightly' && 'nightly' || 'stable' }}
