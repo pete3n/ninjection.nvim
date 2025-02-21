@@ -15,7 +15,7 @@ on:
       lua_ls_version:
         description: "Lua LS version"
         required: true
-        default: "latest"
+        default: "3.13.0"
       neovim_versions:
         description: "Neovim versions"
         required: true

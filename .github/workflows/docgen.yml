@@ -1,6 +1,6 @@
 name: Docgen
 
-on: [push]
+on: [workflow_dispatch pull_request]
 
 env:
   PLUGIN_NAME: ninjection.nvim
