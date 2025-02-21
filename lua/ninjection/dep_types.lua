@@ -109,8 +109,7 @@
 ---| 'on_detach'
 ---| 'on_child_added'
 ---| 'on_child_removed'
----@class vim.treesitter.LanguageTree
----
+
 ---@class TSParser: userdata
 ---@field parse fun(self: TSParser, tree: TSTree?, source: integer|string, include_bytes: boolean): TSTree, (Range4|Range6)[]
 ---@field reset fun(self: TSParser)
@@ -141,3 +140,4 @@
 ---@field private _valid boolean|table<integer,boolean> If the parsed tree is valid
 ---@field private _logger? fun(logtype: string, msg: string)
 ---@field private _logfile? file*
+---@field parse fun(range: boolean|Range?): table: <integer, TSTree>
