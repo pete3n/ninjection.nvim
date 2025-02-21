@@ -23,6 +23,7 @@ lua-language-server: dependencies
 	fi
 	
 	rm -rf .ci/lua-language-server-log
+	cat $(pwd)/ci/.luarc.$(version).json
 	lua-language-server --configpath $(pwd)/ci/.luarc.$(version).json --logpath .ci/lua-language-server-log --check lua/
 	[ -f .ci/lua-language-server-log/check.json ] && { cat .ci/lua-language-server-log/check.json 2>/dev/null; exit 1; } || true
 
@@ -32,6 +33,6 @@ dependencies:
 			https://github.com/nvim-lua/plenary.nvim \
 			.ci/vendor/pack/vendor/start/plenary.nvim; \
 		git clone --depth 1 \
-			https://github.com/folke/neodev.nvim \
-			.ci/vendor/pack/vendor/start/neodev.nvim; \
+			https://github.com/folke/lazydev.nvim \
+			.ci/vendor/pack/vendor/start/lazydev.nvim; \
 	fi
