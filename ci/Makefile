@@ -33,19 +33,20 @@ lua-language-server: dependencies
 		exit 1; \
 	fi
 
+	# Print check.json safely using printf to avoid shell parsing issues
 	echo "Contents of check.json:"
-	cat .ci/lua-language-server-log/check.json
+	printf "%s\n" "$$(cat .ci/lua-language-server-log/check.json)"
 
 	# Count total errors across all files
 	ERROR_COUNT=`jq -r 'map(length) | add // 0' .ci/lua-language-server-log/check.json`
 
 	if [ "$$ERROR_COUNT" -gt 0 ]; then \
 		echo "Diagnostics found ($$ERROR_COUNT errors):"; \
-		cat .ci/lua-language-server-log/check.json; \
+		printf "%s\n" "$$(cat .ci/lua-language-server-log/check.json)"; \
 		exit 1; \
 	else \
 		echo "No errors found."; \
-	fied"
+	fi
 
 dependencies:
 	if [ ! -d .ci/vendor ]; then \
