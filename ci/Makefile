@@ -24,13 +24,23 @@ lua-language-server: dependencies
 
 	rm -rf .ci/lua-language-server-log
 	cat $(CURDIR)/ci/.luarc.$(version).json
+	# Run lua-language-server with the --check option
 	lua-language-server --configpath $(CURDIR)/ci/.luarc.$(version).json \
-		--logpath .ci/lua-language-server-log --check lua;
-	[ -f .ci/lua-language-server-log/check.json ] && \
-	if [ "$(cat .ci/lua-language-server-log/check.json)" != "[]" ]; then \
-			cat .ci/lua-language-server-log/check.json 2>/dev/null; \
-			echo "check.json empty test failed"; \
-			exit 1; \
+		--logpath .ci/lua-language-server-log --check lua
+
+	# Check if check.json exists
+	if [ ! -f .ci/lua-language-server-log/check.json ]; then \
+		echo "Error: check.json not found."; \
+		exit 1; \
+	fi
+
+	# Check if check.json contains diagnostics
+	if [ "$(jq '. | length' .ci/lua-language-server-log/check.json)" -ne 0 ]; then \
+		echo "Diagnostics found:"; \
+		cat .ci/lua-language-server-log/check.json; \
+		exit 1; \
+	else \
+		echo "No errors found."; \
 	fi
 
 dependencies:
