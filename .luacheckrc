@@ -20,10 +20,10 @@ read_globals = {
 
 -- Ignore line length in type annotations because they cannot be multi-line
 files = {
-	["lua/types.lua"] = {
+	["lua/ninjection/types.lua"] = {
 		ignore = { "631" }
 	},
-	["lua/dep_types.lua"] = {
+	["lua/ninjection/dep_types.lua"] = {
 		ignore = { "631" }
 	}
 }
