@@ -35,6 +35,7 @@ lua-language-server: dependencies
 	fi
 
 	# Check if check.json contains diagnostics
+	cat .ci/lua-language-server-log/check.json | jq
 	if [ "$(jq '. | length' .ci/lua-language-server-log/check.json)" -ne 0 ]; then \
 		echo "Diagnostics found:"; \
 		cat .ci/lua-language-server-log/check.json; \
