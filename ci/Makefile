@@ -33,7 +33,7 @@ lua-language-server: dependencies
 		exit 1; \
 	fi
 
-	ERROR_COUNT=`jq 'if type == "array" then length else 0 end' .ci/lua-language-server-log/check.json`
+	ERROR_COUNT=`jq -r 'if type == "array" then length else 0 end' .ci/lua-language-server-log/check.json`
 
 	if [ "$$ERROR_COUNT" -gt 0 ]; then \
 		echo "Diagnostics found:"; \
