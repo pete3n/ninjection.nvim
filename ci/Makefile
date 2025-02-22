@@ -24,20 +24,18 @@ lua-language-server: dependencies
 
 	rm -rf .ci/lua-language-server-log
 	cat $(CURDIR)/ci/.luarc.$(version).json
-	# Run lua-language-server with the --check option
+	
 	lua-language-server --configpath $(CURDIR)/ci/.luarc.$(version).json \
 		--logpath .ci/lua-language-server-log --check lua
 
-	# Check if check.json exists
 	if [ ! -f .ci/lua-language-server-log/check.json ]; then \
 		echo "Error: check.json not found."; \
 		exit 1; \
 	fi
 
-	# Use jq with a fallback value of 0
-	ERROR_COUNT=`jq 'length // 0' .ci/lua-language-server-log/check.json`
+	ERROR_COUNT=`jq 'if type == "array" then length else 0 end' .ci/lua-language-server-log/check.json`
 
-	if [ "$$ERROR_COUNT" -ne 0 ]; then \
+	if [ "$$ERROR_COUNT" -gt 0 ]; then \
 		echo "Diagnostics found:"; \
 		cat .ci/lua-language-server-log/check.json; \
 		exit 1; \
