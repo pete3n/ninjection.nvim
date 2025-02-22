@@ -34,9 +34,10 @@ lua-language-server: dependencies
 		exit 1; \
 	fi
 
-	# Check if check.json contains diagnostics
-	cat .ci/lua-language-server-log/check.json | jq
-	if [ "$(jq '. | length' .ci/lua-language-server-log/check.json)" -ne 0 ]; then \
+	# Use jq with a fallback value of 0
+	ERROR_COUNT=$(jq 'length // 0' .ci/lua-language-server-log/check.json)
+
+	if [ "$$ERROR_COUNT" -ne 0 ]; then \
 		echo "Diagnostics found:"; \
 		cat .ci/lua-language-server-log/check.json; \
 		exit 1; \
