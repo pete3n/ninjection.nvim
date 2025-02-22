@@ -22,16 +22,14 @@ lua-language-server: dependencies
 		exit 1; \
 	fi
 
-
-	git clone --depth 1 \
-		https://github.com/nvim-treesitter/nvim-treesitter \
-		.ci/vendor/pack/vendor/start/nvim-treesitter;
-		ls -la .ci/vendor/pack/vendor/start/nvim-treesitter/lua/nvim-treesitter; 
-
 	rm -rf .ci/lua-language-server-log
 	cat $(CURDIR)/ci/.luarc.$(version).json
 	lua-language-server --configpath $(CURDIR)/ci/.luarc.$(version).json --logpath .ci/lua-language-server-log --check lua/
-	[ -f .ci/lua-language-server-log/check.json ] && { cat .ci/lua-language-server-log/check.json 2>/dev/null; exit 1; } || true
+	[ -f .ci/lua-language-server-log/check.json ] && \
+	if [ "$(cat .ci/lua-language-server-log/check.json)" != "[]" ]; then \
+			cat .ci/lua-language-server-log/check.json 2>/dev/null; \
+			exit 1; \
+	fi || true
 
 dependencies:
 	if [ ! -d .ci/vendor ]; then \
