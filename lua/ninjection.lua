@@ -42,8 +42,14 @@ M.cfg = {
 	-- If ninjection is not functioning properly, ensure this is false to debug
 
 	-- TODO: Implement other scratch buffer types, currently only std
-	buffer_styles = { "std", "popup", "v_split", "h_split", "tab_r", "tab_l" },
-	buffer_style = "std",
+	-- _buffer_styles is needed to validate the configured buffer_style,
+	-- do not modify it unless you have implemented a new style method.
+	---@private
+	---@type table<number, string>
+	_buffer_styles = { "std", "popup", "v_split", "h_split", "tab_r", "tab_l" },
+	---@type BufferStyle
+	buffer_style = "popup",
+
 	-- TODO: Implement auto-inject on buffer close
 	inject_on_close = false,
 
@@ -99,6 +105,37 @@ M.setup = function(args)
 		end
 	end
 end
+
+---@param bufnr integer The buffer to create a viewport for.
+---@param style BufferStyle The window style to create.
+---@return integer|nil win_id Handle for the new window.
+---@return nil|string err Error string, if applicable.
+M.create_window = function(bufnr, style)
+
+	if style == "popup" then
+		local width = math.floor(vim.o.columns * 0.8)
+		local height = math.floor(vim.o.lines * 0.8)
+		local row = math.floor((vim.o.lines - height) / 2)
+		local col = math.floor((vim.o.columns - width) / 2)
+
+		---@type table
+		local opts = {
+			style = "minimal",
+			relative = "editor",  -- relative to the whole editor
+			width = width,
+			height = height,
+			row = row,
+			col = col,
+			border = "single",  -- can also be a table of characters
+		}
+
+		local winid = vim.api.nvim_open_win(bufnr, true, opts)
+		return winid
+	end
+
+	return nil
+end
+
 
 --- Function: Identify and select injected content text in visual mode.
 ---@return nil|string err Error string, if applicable.
@@ -407,6 +444,9 @@ M.edit = function()
 			end
 		end
 	end
+
+	-- Create the window viewport for our new buffer based on the user config
+	M.create_window(child_bufnr, M.cfg.buffer_style)
 
 	--- We want to keep the same relative cursor position in the child buffer as
 	--- in the parent buffer.
