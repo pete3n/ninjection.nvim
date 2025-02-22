@@ -111,8 +111,10 @@ end
 ---@return integer|nil win_id Handle for the new window.
 ---@return nil|string err Error string, if applicable.
 M.create_window = function(bufnr, style)
+	print("DEBUG: Creating window")
 
 	if style == "popup" then
+		print("DEBUG: Popup style")
 		local width = math.floor(vim.o.columns * 0.8)
 		local height = math.floor(vim.o.lines * 0.8)
 		local row = math.floor((vim.o.lines - height) / 2)
@@ -130,6 +132,7 @@ M.create_window = function(bufnr, style)
 		}
 
 		local winid = vim.api.nvim_open_win(bufnr, true, opts)
+		print("DEBUG winid: " .. tostring(winid))
 		return winid
 	end
 
