@@ -33,9 +33,13 @@ lua-language-server: dependencies
 		exit 1; \
 	fi
 
-	if [ $(wc -m .ci/lua/lua-language-server-log/check.json) -gt 2 ]; then \
-		printf "%s\n" "$$(cat .ci/lua-language-server-log/check.json)"; \
+	# If file length is more than 2 characters (not just "[]"), print and exit
+	if [ `wc -m < .ci/lua-language-server-log/check.json` -gt 2 ]; then \
+		echo "Diagnostics found:"; \
+		cat .ci/lua-language-server-log/check.json; \
 		exit 1; \
+	else \
+		echo "No errors found."; \
 	fi
 
 dependencies:
