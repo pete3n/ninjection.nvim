@@ -189,6 +189,13 @@ M.create_child_win = function(bufnr, style)
 		return winid
 	end
 
+	if style == "v_split" then
+		vim.cmd("vsplit")
+		local winid = vim.api.nvim_get_current_win()
+		vim.api.nvim_win_set_buf(winid, bufnr)
+		return winid
+	end
+
 	return 0
 end
 
