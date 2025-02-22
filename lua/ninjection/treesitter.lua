@@ -73,7 +73,7 @@ M.get_root = function(bufnr, lang)
 	---@cast parser vim.treesitter.LanguageTree
 
 	---@type TSTree|nil
-	local tree = parser.parse()[1]
+	local tree = parser:parse()[1]
 	if not tree then
 		if cfg.suppress_warnings == false then
 			vim.notify(
