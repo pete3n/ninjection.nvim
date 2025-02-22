@@ -106,221 +106,6 @@ M.setup = function(args)
 end
 
 
----@param bufnr integer The buffer to create a viewport for.
----@param style EditorStyle The window style to edit the buffer with.
----@return integer win_id Default: 0, child window handle, if created.
----@return nil|string err Error string, if applicable.
-M.create_child_win = function(bufnr, style)
-	print("DEBUG: Creating window")
-
-	if style == "floating" then
-		print("DEBUG: floating style")
-		local width = math.floor(vim.o.columns * 0.8)
-		local height = math.floor(vim.o.lines * 0.8)
-		local row = math.floor((vim.o.lines - height) / 2)
-		local col = math.floor((vim.o.columns - width) / 2)
-
-		---@type table
-		local opts = {
-			style = "minimal",
-			relative = "editor",  -- relative to the whole editor
-			width = width,
-			height = height,
-			row = row,
-			col = col,
-			border = "single",  -- can also be a table of characters
-		}
-
-		local winid = vim.api.nvim_open_win(bufnr, true, opts)
-		print("DEBUG winid: " .. tostring(winid))
-		return winid
-	end
-
-	return 0
-end
-
--- Function: Create a child buffer and window to edit injected language text.
----@param p_bufnr integer Buffer handle for parent buffer.
----@param p_name string Name for parent buffer.
----@param p_range NJRange Text range for the injected text.
----@param root_dir string Root directory for project, or cwd.
----@param text string Text to populate the child buffer with.
----@param lang string Language to configure buffer for.
----@return {bufnr: integer|nil, win: integer|nil, indents: NJIndents} c_table
--- containing handles for the child buffer and window, if available, and parent
--- indents.
----@return string|nil err Error string, if applicable.
-M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
-	---@type boolean, any|nil, string|nil, integer|nil
-	local ok, raw_output, err, c_bufnr
-
-	ok, raw_output = pcall(function()
-		return vim.fn.setreg(M.cfg.register, text)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	vim.notify("ninjection.edit(): Copied injected content text to register: " ..
-		M.cfg.register, vim.log.levels.INFO)
-
-	---@type integer|nil
-	c_bufnr = vim.api.nvim_create_buf(true, true)
-	if not c_bufnr then
-		error("ninjection.edit() error: Failed to create a child buffer.", 2)
-	end
-	---@cast c_bufnr integer
-
-	---@type integer
-	local c_win = M.create_child_win(c_bufnr, M.cfg.editor_style)
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_set_current_buf(c_bufnr)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	ok, raw_output = pcall(function()
-		return vim.cmd('normal! "zp')
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	ok, raw_output = pcall(function()
-		return vim.cmd("file " .. p_name .. ":" .. lang .. ":" .. c_bufnr)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	ok, raw_output = pcall(function()
-		return vim.cmd("set filetype=" .. lang)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	-- Preserve indentation after creating and pasting buffer contents, before
-	-- autoformatting, or they will be lost.
-	---@type NJIndents|nil
-	local p_indents
-	if M.cfg.preserve_indents then
-		p_indents, err = util.get_indents(0)
-		if not p_indents then
-			if not M.cfg.suppress_warnings then
-				vim.notify(
-					"ninjection.edit() warning: Unable to preserve indentation "
-						.. "with get_indents(): "
-						.. tostring(err),
-					vim.log.levels.WARN
-				)
-			end
-			-- Don't return early on indentation errors
-		end
-		---@cast p_indents NJIndents
-	end
-	-- Initialized to 0 if unset
-	if not p_indents then
-		p_indents = { t_indent = 0, b_indent = 0, l_indent = 0 }
-		---@cast p_indents NJIndents
-	end
-
-	ok, raw_output = pcall(function()
-		return vim.cmd("doautocmd FileType " .. lang)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	if M.cfg.auto_format then
-		ok, raw_output = pcall(function()
-			return vim.cmd("lua " .. M.cfg.format_cmd)
-		end)
-		if not ok then
-			if not M.cfg.suppress_warnings then
-				err = tostring(raw_output)
-				vim.notify(
-					'ninjection.edit() warning: Calling vim.cmd("lua "' .. M.cfg.format_cmd .. ")\n" .. err,
-					vim.log.levels.WARN
-				)
-				-- Don't return early on auto-format error
-			end
-		end
-	end
-
-	---@type NJChild
-	local child_ninjection = {
-		bufnr = c_bufnr,
-		root_dir = root_dir,
-		p_bufnr = p_bufnr,
-		p_indents = p_indents,
-		p_range = p_range,
-	}
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child_ninjection)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	return {bufnr = c_bufnr, win = c_win, indents = p_indents}
-end
-
----@param c_win integer Handle for child window to set the cursor in.
----@param p_cursor integer[] Parent cursor pos.
----@param s_row integer Starting row from the parent to offset the child cursor by.
----@param indents NJIndents? Indents to calculate additional offsets with.
----@return nil|string err Error string, if applicable.
-M.set_child_cur = function(c_win, p_cursor, s_row, indents)
-	---@type boolean, any|nil, string|nil
-	local ok, raw_output, err
-	--- We want to keep the same relative cursor position in the child buffer as
-	--- in the parent buffer.
-	---@type integer[]|nil
-	local offset_cur
-	-- Assuming autoformat will remove any existing indents, we need to offset
-	-- the cursor for the removed indents.
-	if M.cfg.preserve_indents and M.cfg.auto_format then
-		---@type integer
-		local relative_row = p_cursor[1] - (s_row + M.cfg.injected_comment_lines)
-		relative_row = math.max(1, relative_row)
-		---@type integer
-		if indents then
-			local relative_col = p_cursor[2] - indents.l_indent
-			relative_col = math.max(0, relative_col)
-			offset_cur = { relative_row, relative_col }
-		end
-	else
-		---@type integer
-		local relative_row = p_cursor[1] - s_row
-		relative_row = math.max(1, relative_row)
-		offset_cur = { relative_row, p_cursor[2] }
-	end
-	---@cast offset_cur integer[]
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_cursor(c_win, offset_cur)
-	end)
-	if not ok then
-		if not M.cfg.suppress_warnings then
-			err = tostring(raw_output)
-			vim.notify(
-				"ninjection.edit() warning: Calling vim.api.nvim_win_set_cursor"
-					.. "(0, "
-					.. tostring(offset_cur)
-					.. "\n"
-					.. err,
-				vim.log.levels.WARN
-			)
-		end
-	end
-
-	return nil
-end
-
-
 --- Function: Identify and select injected content text in visual mode.
 ---@return nil|string err Error string, if applicable.
 M.select = function()
@@ -393,7 +178,8 @@ M.select = function()
 	return nil
 end
 
---- Function: Detects injected language at the cursor position and begins
+
+--- Function: Detect injected languages at the cursor position and begin
 --- editing supported languages according to configured preferences.
 --- Creates a child buffer with an NJChild object that stores config information
 --- for itself and information to replace text in the parent buffer. It also
@@ -539,7 +325,7 @@ M.edit = function()
 
 	---@type {bufnr: integer|nil, win: integer|nil, indents: NJIndents}
 	local c_table
-	c_table, err = M.create_child_buf(p_bufnr, p_name, inj_node_info.range,
+	c_table, err = util.create_child_buf(p_bufnr, p_name, inj_node_info.range,
 		root_dir, inj_node_text, inj_node_lang)
 	if not c_table.bufnr or not c_table.win then
 		error("ninjection.edit() error: Could not create child buffer and window: " ..
@@ -547,7 +333,7 @@ M.edit = function()
 	end
 
 	if M.cfg.preserve_indents then
-		M.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row,
+		util.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row,
 			c_table.indents)
 	else
 		M.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row)
@@ -597,6 +383,7 @@ M.edit = function()
 
 	return nil
 end
+
 
 --- Function: Replace the original injected language text in the parent buffer
 --- with the current buffer text. This state is stored by in the vim.b.ninjection
