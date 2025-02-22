@@ -300,17 +300,18 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 	end
 	---@cast node_s_row integer
 
-	---@type table|nil
+	---@type {node: TSNode, e_row: integer}|nil
 	local candidate_info
-	for id, node, _ in parsed_query:iter_captures(root, bufnr, 0, -1) do
+	for id, node, _, _ in parsed_query:iter_captures(root, bufnr, 0, -1) do
 		---@cast id integer
 		---@cast node TSNode
+		---@type string
 		local capture_name = parsed_query.captures[id]
 		if capture_name == "injection.language" then
-			---@type table, integer
-			local capture_range, e_row
-			capture_range = { node:range() }
-			e_row = capture_range[3]
+			---@type integer[]
+			local capture_range = { node:range() }
+			---@type integer
+			local e_row = capture_range[3]
 			-- Assuming the language comment is entirely above the injection block,
 			-- we will find the matching node that has the greatest end row.
 			if e_row < node_s_row then
@@ -320,7 +321,7 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 			end
 		end
 	end
-	---@cast candidate_info table
+	---@cast candidate_info {node: TSNode, e_row: integer}
 
 	if candidate_info then
 		---@type string|nil
@@ -404,7 +405,7 @@ end
 --- @return NJRange|nil vs_range Range of text selected.
 --- @return nil|string err Error string, if applicable.
 M.get_visual_range = function(node, bufnr)
-	---@type boolean, any|nil, string|nil, table|nil
+	---@type boolean, any|nil, string|nil, integer[]|nil
 	local ok, raw_output, err, range
 
 	range = { node:range() }
@@ -417,7 +418,7 @@ M.get_visual_range = function(node, bufnr)
 		end
 		return nil
 	end
-	---@cast range table
+	---@cast range integer[]
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_get_lines(bufnr, range[1], range[3], false)
