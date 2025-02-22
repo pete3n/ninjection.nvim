@@ -29,8 +29,9 @@ lua-language-server: dependencies
 	[ -f .ci/lua-language-server-log/check.json ] && \
 	if [ "$(cat .ci/lua-language-server-log/check.json)" != "[]" ]; then \
 			cat .ci/lua-language-server-log/check.json 2>/dev/null; \
+			echo "check.json empty test failed"
 			exit 1; \
-	fi || true
+	fi
 
 dependencies:
 	if [ ! -d .ci/vendor ]; then \
