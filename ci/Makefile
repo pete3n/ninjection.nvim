@@ -24,7 +24,8 @@ lua-language-server: dependencies
 
 	rm -rf .ci/lua-language-server-log
 	cat $(CURDIR)/ci/.luarc.$(version).json
-	lua-language-server --configpath $(CURDIR)/ci/.luarc.$(version).json --logpath .ci/lua-language-server-log --check lua/
+	lua-language-server --configpath $(CURDIR)/ci/.luarc.$(version).json \
+		--logpath .ci/lua-language-server-log --check lua;
 	[ -f .ci/lua-language-server-log/check.json ] && \
 	if [ "$(cat .ci/lua-language-server-log/check.json)" != "[]" ]; then \
 			cat .ci/lua-language-server-log/check.json 2>/dev/null; \
