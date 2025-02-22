@@ -267,7 +267,7 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 		error(tostring(raw_output), 2)
 	end
 
-	return {c_bufnr, c_win, p_indents}
+	return {bufnr = c_bufnr, win = c_win, indents = p_indents}
 end
 
 M.set_child_cur = function()
