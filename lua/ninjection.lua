@@ -139,7 +139,7 @@ M.create_child_win = function(bufnr, style)
 	return 0
 end
 
-
+-- Function: Create a child buffer and window to edit injected language text.
 ---@param p_bufnr integer Buffer handle for parent buffer.
 ---@param p_name string Name for parent buffer.
 ---@param p_range NJRange Text range for the injected text.
@@ -170,11 +170,9 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	end
 	---@cast c_bufnr integer
 
-	-- Create the editor window for the new buffer based on the user config
 	---@type integer
 	local c_win = M.create_child_win(c_bufnr, M.cfg.editor_style)
 
-	-- Setup the child buffer
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_set_current_buf(c_bufnr)
 	end)
@@ -203,8 +201,8 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 		error(tostring(raw_output), 2)
 	end
 
-	-- Preserve indentation after creating and pasting buffer contents, but before
-	-- autoformatting.
+	-- Preserve indentation after creating and pasting buffer contents, before
+	-- autoformatting, or they will be lost.
 	---@type NJIndents|nil
 	local p_indents
 	if M.cfg.preserve_indents then
@@ -270,7 +268,56 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	return {bufnr = c_bufnr, win = c_win, indents = p_indents}
 end
 
-M.set_child_cur = function()
+---@param c_win integer Handle for child window to set the cursor in.
+---@param p_cursor integer[] Parent cursor pos.
+---@param s_row integer Starting row from the parent to offset the child cursor by.
+---@param indents NJIndents? Indents to calculate additional offsets with.
+---@return nil|string err Error string, if applicable.
+M.set_child_cur = function(c_win, p_cursor, s_row, indents)
+	---@type boolean, any|nil, string|nil
+	local ok, raw_output, err
+	--- We want to keep the same relative cursor position in the child buffer as
+	--- in the parent buffer.
+	---@type integer[]|nil
+	local offset_cur
+	-- Assuming autoformat will remove any existing indents, we need to offset
+	-- the cursor for the removed indents.
+	if M.cfg.preserve_indents and M.cfg.auto_format then
+		---@type integer
+		local relative_row = p_cursor[1] - (s_row + M.cfg.injected_comment_lines)
+		relative_row = math.max(1, relative_row)
+		---@type integer
+		if indents then
+			local relative_col = p_cursor[2] - indents.l_indent
+			relative_col = math.max(0, relative_col)
+			offset_cur = { relative_row, relative_col }
+		end
+	else
+		---@type integer
+		local relative_row = p_cursor[1] - s_row
+		relative_row = math.max(1, relative_row)
+		offset_cur = { relative_row, p_cursor[2] }
+	end
+	---@cast offset_cur integer[]
+
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_win_set_cursor(c_win, offset_cur)
+	end)
+	if not ok then
+		if not M.cfg.suppress_warnings then
+			err = tostring(raw_output)
+			vim.notify(
+				"ninjection.edit() warning: Calling vim.api.nvim_win_set_cursor"
+					.. "(0, "
+					.. tostring(offset_cur)
+					.. "\n"
+					.. err,
+				vim.log.levels.WARN
+			)
+		end
+	end
+
+	return nil
 end
 
 
@@ -499,45 +546,11 @@ M.edit = function()
 			tostring(err), 2)
 	end
 
-	--- We want to keep the same relative cursor position in the child buffer as
-	--- in the parent buffer.
-	---@type integer[]|nil
-	local offset_cur
-	-- Assuming autoformat will remove any existing indents, we need to offset
-	-- the cursor for the removed indents.
-	if M.cfg.preserve_indents and M.cfg.auto_format then
-		---@type integer
-		local relative_row = p_cursor[1] - (inj_node_info.range.s_row +
-			M.cfg.injected_comment_lines)
-		relative_row = math.max(1, relative_row)
-		---@type integer
-		local relative_col = p_cursor[2] - c_table.indents.l_indent
-		relative_col = math.max(0, relative_col)
-		offset_cur = { relative_row, relative_col }
+	if M.cfg.preserve_indents then
+		M.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row,
+			c_table.indents)
 	else
-		---@type integer
-		local relative_row = p_cursor[1] - inj_node_info.range.s_row
-		relative_row = math.max(1, relative_row)
-		offset_cur = { relative_row, p_cursor[2] }
-	end
-	---@cast offset_cur integer[]
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_cursor(c_table.win, offset_cur)
-	end)
-	if not ok then
-		if not M.cfg.suppress_warnings then
-			err = tostring(raw_output)
-			vim.notify(
-				"ninjection.edit() warning: Calling vim.api.nvim_win_set_cursor"
-					.. "(0, "
-					.. tostring(offset_cur)
-					.. "\n"
-					.. err,
-				vim.log.levels.WARN
-			)
-			-- Don't return early on cursor set error
-		end
+		M.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row)
 	end
 
 	---@type NJLspStatus|nil
