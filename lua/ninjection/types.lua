@@ -27,3 +27,5 @@
 ---@field status string -- The LSP startup status. Possible values: "unmapped",
 --- "unconfigured", "unavailable", "no-exec", "unsupported", "failed_start", "started"
 ---@field client_id integer -- The client ID of the started LSP, or -1 on failure
+
+---@alias BufferStyle "std" | "popup" | "v_split" | "h_split" | "tab_r" | "tab_l"
