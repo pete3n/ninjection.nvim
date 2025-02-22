@@ -255,9 +255,9 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	local child_ninjection = {
 		bufnr = c_bufnr,
 		root_dir = root_dir,
-		parent_bufnr = p_bufnr,
-		parent_indents = p_indents,
-		parent_range = p_range,
+		p_bufnr = p_bufnr,
+		p_indents = p_indents,
+		p_range = p_range,
 	}
 
 	ok, raw_output = pcall(function()
@@ -428,8 +428,8 @@ M.edit = function()
 		error(tostring(raw_output), 2)
 	end
 	---@type integer[]|nil
-	local parent_cursor = raw_output
-	if not parent_cursor then
+	local p_cursor = raw_output
+	if not p_cursor then
 		if not M.cfg.suppress_warnings then
 			vim.notify(
 				"ninjection.edit() warning: No cursor position returned from " .. "vim.api.nvim_win_get_cursor(0)",
@@ -438,7 +438,7 @@ M.edit = function()
 		end
 		-- Don't return on failed cursor
 	end
-	---@cast parent_cursor integer[]
+	---@cast p_cursor integer[]
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_get_name(0)
@@ -507,18 +507,18 @@ M.edit = function()
 	-- the cursor for the removed indents.
 	if M.cfg.preserve_indents and M.cfg.auto_format then
 		---@type integer
-		local relative_row = parent_cursor[1] - (inj_node_info.range.s_row +
+		local relative_row = p_cursor[1] - (inj_node_info.range.s_row +
 			M.cfg.injected_comment_lines)
 		relative_row = math.max(1, relative_row)
 		---@type integer
-		local relative_col = parent_cursor[2] - c_table.indents.l_indent
+		local relative_col = p_cursor[2] - c_table.indents.l_indent
 		relative_col = math.max(0, relative_col)
 		offset_cur = { relative_row, relative_col }
 	else
 		---@type integer
-		local relative_row = parent_cursor[1] - inj_node_info.range.s_row
+		local relative_row = p_cursor[1] - inj_node_info.range.s_row
 		relative_row = math.max(1, relative_row)
-		offset_cur = { relative_row, parent_cursor[2] }
+		offset_cur = { relative_row, p_cursor[2] }
 	end
 	---@cast offset_cur integer[]
 
@@ -555,28 +555,28 @@ M.edit = function()
 	-- are opened for the same injected content.
 	-- Retrieve the existing ninjection table or initialize a new one
 	---@type NJParent
-	local parent_ninjection
+	local p_ninjection
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_get_var(p_bufnr, "ninjection")
 	end)
 	if ok then
-		parent_ninjection = raw_output
+		p_ninjection = raw_output
 	else
 		err = tostring(raw_output)
 		if err:find("Key not found: ninjection") then
-			parent_ninjection = { children = {} }
+			p_ninjection = { children = {} }
 		else
 			error(err)
 		end
 	end
-	parent_ninjection.children = parent_ninjection.children or {}
+	p_ninjection.children = p_ninjection.children or {}
 
 	-- Append the new child_bufnr to the children array.
-	table.insert(parent_ninjection.children, c_table.bufnr)
+	table.insert(p_ninjection.children, c_table.bufnr)
 
 	-- Write it back to the buffer variable.
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_var(p_bufnr, "ninjection", parent_ninjection)
+		return vim.api.nvim_buf_set_var(p_bufnr, "ninjection", p_ninjection)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
@@ -592,7 +592,7 @@ end
 ---@return nil|string err Returns err string, if applicable
 M.replace = function()
 	---@type boolean, any|nil, string|nil, NJChild|nil, NJParent|nil, integer|nil
-	local ok, raw_output, err, nj_child_b, nj_parent_b, this_bufnr
+	local ok, raw_output, err, nj_child_b, nj_p_b, this_bufnr
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_get_current_buf()
@@ -628,13 +628,13 @@ M.replace = function()
 		end
 	end
 	nj_child_b = raw_output
-	if not nj_child_b.parent_bufnr then
+	if not nj_child_b.p_bufnr then
 		error("ninjection.replace() error: Could not retrieve valid parent buffer " .. "for this buffer.", 2)
 	end
 	---@cast nj_child_b NJChild
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_get_var(nj_child_b.parent_bufnr, "ninjection")
+		return vim.api.nvim_buf_get_var(nj_child_b.p_bufnr, "ninjection")
 	end)
 	if not ok then
 		err = tostring(raw_output)
@@ -647,11 +647,11 @@ M.replace = function()
 		end
 		error(err, 2)
 	end
-	nj_parent_b = raw_output
-	if not vim.tbl_contains(nj_parent_b.children, this_bufnr) then
+	nj_p_b = raw_output
+	if not vim.tbl_contains(nj_p_b.children, this_bufnr) then
 		error("ninjection.replace() error: The recorded parent buffer has no " .. "record of this buffer.", 2)
 	end
-	---@cast nj_parent_b NJParent
+	---@cast nj_p_b NJParent
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_win_get_cursor(0)
@@ -671,7 +671,7 @@ M.replace = function()
 	end
 	---@cast this_cursor integer[]
 
-	if not nj_child_b.parent_range then
+	if not nj_child_b.p_range then
 		error("ninjection.replace() error: missing parent buffer range values. " .. "Cannot sync changes.", 2)
 	end
 
@@ -711,11 +711,11 @@ M.replace = function()
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_set_text(
-			nj_child_b.parent_bufnr,
-			nj_child_b.parent_range.s_row,
-			nj_child_b.parent_range.s_col,
-			nj_child_b.parent_range.e_row,
-			nj_child_b.parent_range.e_col,
+			nj_child_b.p_bufnr,
+			nj_child_b.p_range.s_row,
+			nj_child_b.p_range.s_col,
+			nj_child_b.p_range.e_row,
+			nj_child_b.p_range.e_col,
 			rep_text
 		)
 	end)
@@ -731,9 +731,9 @@ M.replace = function()
 	end
 
 	-- Remove the child entry in the parent after deleting the buffer
-	nj_parent_b.children[this_bufnr] = nil
+	nj_p_b.children[this_bufnr] = nil
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_var(nj_child_b.parent_bufnr, "ninjection", nj_parent_b)
+		return vim.api.nvim_buf_set_var(nj_child_b.p_bufnr, "ninjection", nj_p_b)
 	end)
 	if not ok then
 		err = tostring(raw_output)
@@ -748,7 +748,7 @@ M.replace = function()
 	end
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_set_current_buf(nj_child_b.parent_bufnr)
+		return vim.api.nvim_set_current_buf(nj_child_b.p_bufnr)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
@@ -759,11 +759,11 @@ M.replace = function()
 	local pos
 	if M.cfg.preserve_indents then
 		pos = {
-			this_cursor[1] + nj_child_b.parent_range.s_row + 1,
+			this_cursor[1] + nj_child_b.p_range.s_row + 1,
 			this_cursor[2] + nj_child_b.p_indents.l_indent,
 		}
 	else
-		pos = { this_cursor[1] + nj_child_b.parent_range.s_row, this_cursor[2] }
+		pos = { this_cursor[1] + nj_child_b.p_range.s_row, this_cursor[2] }
 	end
 	---@cast pos integer[]
 	ok, raw_output = pcall(function()

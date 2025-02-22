@@ -19,9 +19,9 @@
 ---@class NJChild
 ---@field bufnr integer
 ---@field root_dir string
----@field parent_bufnr integer
----@field parent_indents NJIndents
----@field parent_range NJRange
+---@field p_bufnr integer
+---@field p_indents NJIndents
+---@field p_range NJRange
 
 ---@class NJLspStatus
 ---@field status string -- The LSP startup status. Possible values: "unmapped",
