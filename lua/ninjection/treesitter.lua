@@ -185,7 +185,7 @@ M.get_node_table = function(query, lang)
 	end
 	---@cast root TSNode
 
-	for id, node, _, _ in parsed_query.iter_captures(root, bufnr, 0, -1) do
+	for id, node, _, _ in parsed_query:iter_captures(root, bufnr, 0, -1) do
 		---@cast id integer
 		---@cast node TSNode
 		---@type string
