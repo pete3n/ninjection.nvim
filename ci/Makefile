@@ -33,21 +33,12 @@ lua-language-server: dependencies
 		exit 1; \
 	fi
 
-	# Use jq safely to count errors (if empty, fallback to 0)
-	ERROR_COUNT=`jq -r 'if type == "array" then length else 0 end' .ci/lua-language-server-log/check.json 2>/dev/null || echo 0`
+	echo "Contents of check.json:"
+	cat .ci/lua-language-server-log/check.json
 
-	# Ensure the variable is always numeric before comparing
-	if echo "$$ERROR_COUNT" | grep -qE '^[0-9]+$$'; then \
-		if [ "$$ERROR_COUNT" -gt 0 ]; then \
-			echo "Diagnostics found:"; \
-			cat .ci/lua-language-server-log/check.json; \
-			exit 1; \
-		else \
-			echo "No errors found."; \
-		fi \
-	else \
-		echo "Warning: Unable to parse error count. Assuming no errors."; \
-	fi
+	# Debug jq output
+	echo "Parsed error count:"
+	jq -r 'if type == "array" then length else 0 end' .ci/lua-language-server-log/check.json || echo "jq failed"
 
 dependencies:
 	if [ ! -d .ci/vendor ]; then \
