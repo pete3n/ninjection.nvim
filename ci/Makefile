@@ -35,7 +35,7 @@ lua-language-server: dependencies
 	fi
 
 	# Use jq with a fallback value of 0
-	ERROR_COUNT=$(jq 'length // 0' .ci/lua-language-server-log/check.json)
+	ERROR_COUNT=`jq 'length // 0' .ci/lua-language-server-log/check.json`
 
 	if [ "$$ERROR_COUNT" -ne 0 ]; then \
 		echo "Diagnostics found:"; \
