@@ -18,10 +18,12 @@ read_globals = {
 	"vim",
 }
 
+-- Ignore line length in type annotations because they cannot be multi-line
 files = {
-	["lua/ninjection.lua"] = {
-		ignore = {
-			"631", -- allow line len > 120
-		},
+	["lua/types.lua"] = {
+		ignore = { "631" }
 	},
+	["lua/dep_types.lua"] = {
+		ignore = { "631" }
+	}
 }
