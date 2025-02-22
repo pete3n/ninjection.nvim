@@ -90,13 +90,14 @@ end
 --- Restores the recorded whitespace indents (top, bottom, and left indent)
 --- to a block of text.
 ---
---- @param text string|table The text for which indents should be restored.
+--- @param text string|table<integer, string> The text to restore indents in.
 --- Can be either a string (with newline separators) or a table of lines.
---- @param indents NJIndents  Table with indent values for t, b, l
---- @return table|nil restored_lines  A table of lines with the indents restored.
+--- @param indents NJIndents Table with indent values for t, b, l
+--- @return table<integer, string>|nil restored_lines A table of lines with
+--- the indents restored.
 --- @return nil|string err  Error message, if applicable
 M.restore_indents = function(text, indents)
-	---@type boolean, any|nil, table|nil
+	---@type boolean, any|nil, table<integer, string>|nil
 	local ok, raw_output, lines
 
 	if type(text) == "string" then
@@ -121,7 +122,7 @@ M.restore_indents = function(text, indents)
 	else
 		error("ninjection.util.restore_indents() error: Text must be a string or " .. "a table of lines", 2)
 	end
-	---@cast lines table
+	---@cast lines table<integer, string>
 
 	-- Create the left indentation string.
 	---@type string
@@ -192,9 +193,9 @@ M.start_lsp = function(lang, root_dir)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
-	---@type table|nil
+	---@type lspconfig.Config|nil
 	local lsp_def = raw_output
-	if not lsp_def or not lsp_def.config_def then
+	if not lsp_def then
 		vim.notify(
 			"ninjection.util.start_lsp() warning: Could not find "
 				.. "default_config for "
@@ -205,10 +206,11 @@ M.start_lsp = function(lang, root_dir)
 		)
 		return { "unconfigured", -1 }
 	end
-	---@cast lsp_def table
+	---@cast lsp_def lspconfig.Config
 
 	-- The LSP binary path must exist
-	---@type table|nil
+	-- RPC function support is not implemented
+	---@type string[]|fun(dispatchers: vim.lsp.rpc.Dispatchers): vim.lsp.rpc.PublicClient|nil
 	local lsp_cmd = lsp_def.cmd
 	if not lsp_cmd or #lsp_cmd == 0 then
 		vim.notify(
@@ -219,9 +221,10 @@ M.start_lsp = function(lang, root_dir)
 		)
 		return { "unavailable", -1 }
 	end
-	---@cast lsp_cmd table
+	---@cast lsp_cmd string[]
 
 	-- The LSP binary path must be executable
+	-- The command must be the first element
 	ok, raw_output = pcall(function()
 		return vim.fn.executable(lsp_cmd[1])
 	end)
@@ -237,7 +240,7 @@ M.start_lsp = function(lang, root_dir)
 	end
 
 	-- The LSP must support our injected language
-	if not vim.tbl_contains(lsp_def.config_def.default_config.filetypes, lang) then
+	if not vim.tbl_contains(lsp_def.filetypes, lang) then
 		vim.notify(
 			"ninjection.util.start_lsp() warning: The configured LSP: "
 				.. lang_lsp
