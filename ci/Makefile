@@ -36,9 +36,16 @@ lua-language-server: dependencies
 	echo "Contents of check.json:"
 	cat .ci/lua-language-server-log/check.json
 
-	# Debug jq output
-	echo "Parsed error count:"
-	jq -r 'if type == "array" then length else 0 end' .ci/lua-language-server-log/check.json || echo "jq failed"
+	# Count total errors across all files
+	ERROR_COUNT=`jq -r 'map(length) | add // 0' .ci/lua-language-server-log/check.json`
+
+	if [ "$$ERROR_COUNT" -gt 0 ]; then \
+		echo "Diagnostics found ($$ERROR_COUNT errors):"; \
+		cat .ci/lua-language-server-log/check.json; \
+		exit 1; \
+	else \
+		echo "No errors found."; \
+	fied"
 
 dependencies:
 	if [ ! -d .ci/vendor ]; then \
