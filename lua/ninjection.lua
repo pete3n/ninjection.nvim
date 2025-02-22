@@ -106,11 +106,17 @@ M.setup = function(args)
 	end
 end
 
+M.create_child_buf = function()
+end
+
+M.set_child_cur = function()
+end
+
 ---@param bufnr integer The buffer to create a viewport for.
 ---@param style BufferStyle The window style to create.
----@return integer|nil win_id Handle for the new window.
+---@return integer win_id Default: 0, child window handle, if created.
 ---@return nil|string err Error string, if applicable.
-M.create_window = function(bufnr, style)
+M.create_child_win = function(bufnr, style)
 	print("DEBUG: Creating window")
 
 	if style == "popup" then
@@ -136,7 +142,7 @@ M.create_window = function(bufnr, style)
 		return winid
 	end
 
-	return nil
+	return 0
 end
 
 
@@ -217,7 +223,7 @@ end
 --- Creates a child buffer with an NJChild object that stores config information
 --- for itself and information to replace text in the parent buffer. It also
 --- appends the child buffer handle to an NJParent object in the parent buffer.
----@return nil|string err Erring, if applicable.
+---@return nil|string err Error string, if applicable.
 M.edit = function()
 	---@type boolean, any|nil, string|nil, string|nil, string|nil, integer|nil
 	local ok, raw_output, err, inj_node_text, inj_node_lang, parent_bufnr
@@ -371,6 +377,10 @@ M.edit = function()
 	end
 	---@cast child_bufnr integer
 
+	-- Create the window viewport for our new buffer based on the user config
+	---@type integer
+	local child_win = M.create_child_win(child_bufnr, M.cfg.buffer_style)
+
 	-- Setup the child buffer
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_set_current_buf(child_bufnr)
@@ -448,9 +458,6 @@ M.edit = function()
 		end
 	end
 
-	-- Create the window viewport for our new buffer based on the user config
-	M.create_window(child_bufnr, M.cfg.buffer_style)
-
 	--- We want to keep the same relative cursor position in the child buffer as
 	--- in the parent buffer.
 	---@type integer[]|nil
@@ -474,7 +481,7 @@ M.edit = function()
 	---@cast offset_cur integer[]
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_cursor(0, offset_cur)
+		return vim.api.nvim_win_set_cursor(child_win, offset_cur)
 	end)
 	if not ok then
 		if not M.cfg.suppress_warnings then
