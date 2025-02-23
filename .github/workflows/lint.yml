@@ -29,18 +29,13 @@ jobs:
         run: |
           test -d .ci/luacheck || {
             mkdir -p .ci/luacheck
-
             git clone https://github.com/mpeterv/luacheck.git .ci/luacheck/src
             cd .ci/luacheck/src
-
-            luarocks --local make
-
-            mkdir -p ~/.luarocks/bin
+            luarocks --tree=../../luacheck make
           }
 
       - name: Run Luacheck
         run: |
-          export PATH="${HOME}/.luarocks/bin:${PWD}/.ci/luacheck/src:${PATH}"
+          export PATH="${PWD}/.ci/luacheck/bin:${PATH}"
           luacheck --version
           make -f ci/Makefile luacheck
-
