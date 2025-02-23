@@ -1,5 +1,5 @@
 ---
-name: Type checking
+name: Type checking debug
 
 on:
   workflow_call:
@@ -64,4 +64,4 @@ jobs:
           export PATH="${PWD}/.ci/lua-ls/bin:${PATH}"
           export VIMRUNTIME="${PWD}/.ci/neovim/share/nvim/runtime"
           nvim --version
-          make -f ci/Makefile lua_ls-check version=${{ matrix.rev == 'nightly' && 'nightly' || 'stable' }}
+          make -f ci/Makefile lua_ls-debug version=${{ matrix.rev == 'nightly' && 'nightly' || 'stable' }}
