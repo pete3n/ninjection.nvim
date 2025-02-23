@@ -20,23 +20,27 @@ jobs:
           path: .ci/luacheck
           key: luacheck-${{ hashFiles('todays-date') }}
 
-      - name: Install dependencies
+      - name: Install Lua and Luarocks
         run: |
-          sudo apt-get update
-          sudo apt-get install -y lua5.1 luarocks build-essential
+          sudo apt update
+          sudo apt install -y lua5.1 luarocks
 
       - name: Prepare Luacheck
         run: |
           test -d .ci/luacheck || {
             mkdir -p .ci/luacheck
+
             git clone https://github.com/mpeterv/luacheck.git .ci/luacheck/src
             cd .ci/luacheck/src
-            luarocks make
-            ln -s $(luarocks which luacheck) ../../luacheck/luacheck
+
+            luarocks --local make
+
+            mkdir -p ~/.luarocks/bin
           }
 
       - name: Run Luacheck
         run: |
-          export PATH="${PWD}/.ci/luacheck:${PATH}"
+          export PATH="${HOME}/.luarocks/bin:${PWD}/.ci/luacheck/src:${PATH}"
           luacheck --version
           make -f ci/Makefile luacheck
+
