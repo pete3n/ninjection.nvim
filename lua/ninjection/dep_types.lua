@@ -143,8 +143,6 @@
 ---@field private _logfile? file*
 ---@field parse fun(self: vim.treesitter.LanguageTree, range: boolean|Range|nil?): table<integer, TSTree>
 
-
-
 --- @class vim.lsp.ClientConfig
 --- command string[] that launches the language
 --- server (treated as in |jobstart()|, must be absolute or on `$PATH`, shell constructs like

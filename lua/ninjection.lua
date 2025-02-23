@@ -102,7 +102,6 @@ M.setup = function(args)
 	end
 end
 
-
 --- Function: Identify and select injected content text in visual mode.
 ---@return nil|string err Error string, if applicable.
 M.select = function()
@@ -174,7 +173,6 @@ M.select = function()
 
 	return nil
 end
-
 
 --- Function: Detect injected languages at the cursor position and begin
 --- editing supported languages according to configured preferences.
@@ -322,16 +320,13 @@ M.edit = function()
 
 	---@type {bufnr: integer|nil, win: integer|nil, indents: NJIndents}
 	local c_table
-	c_table, err = util.create_child_buf(p_bufnr, p_name, inj_node_info.range,
-		root_dir, inj_node_text, inj_node_lang)
+	c_table, err = util.create_child_buf(p_bufnr, p_name, inj_node_info.range, root_dir, inj_node_text, inj_node_lang)
 	if not c_table.bufnr or not c_table.win then
-		error("ninjection.edit() error: Could not create child buffer and window: " ..
-			tostring(err), 2)
+		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end
 
 	if M.cfg.preserve_indents then
-		util.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row,
-			c_table.indents)
+		util.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row, c_table.indents)
 	else
 		M.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row)
 	end
@@ -380,7 +375,6 @@ M.edit = function()
 
 	return nil
 end
-
 
 --- Function: Replace the original injected language text in the parent buffer
 --- with the current buffer text. This state is stored by in the vim.b.ninjection

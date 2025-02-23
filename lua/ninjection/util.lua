@@ -8,7 +8,6 @@ M.set_config = function(config)
 	cfg = config
 end
 
-
 -- We need to provide a way of recording and restoring whitespace from the parent
 -- buffer to allow easily formatting the buffer without worrying about its
 -- relative placement in the parent buffer.
@@ -166,19 +165,19 @@ end
 local function open_split_win(split_cmd, bufnr)
 	---@type boolean, any|nil, integer|nil
 	local ok, raw_output, winid
-  vim.cmd(split_cmd)
-  ok, winid = pcall(vim.api.nvim_get_current_win)
-  if not ok or not winid then
-    error("create_child_win() error: no handle returned for window: " ..
-			tostring(winid), 2)
-  end
-  ok, raw_output = pcall(function() return vim.api.nvim_win_set_buf(winid, bufnr) end)
-  if not ok then
-    error("create_child_win() error: failed to set buffer in new window: " ..
-			tostring(raw_output), 2)
-  end
+	vim.cmd(split_cmd)
+	ok, winid = pcall(vim.api.nvim_get_current_win)
+	if not ok or not winid then
+		error("create_child_win() error: no handle returned for window: " .. tostring(winid), 2)
+	end
+	ok, raw_output = pcall(function()
+		return vim.api.nvim_win_set_buf(winid, bufnr)
+	end)
+	if not ok then
+		error("create_child_win() error: failed to set buffer in new window: " .. tostring(raw_output), 2)
+	end
 	---@cast winid integer
-  return winid
+	return winid
 end
 
 -- Function: Set the child window cursor to the same relative position as it was
@@ -200,7 +199,7 @@ local function create_child_win(bufnr, style)
 		---@type table
 		local opts = {
 			style = "minimal",
-			relative = "editor",  -- relative to the whole editor
+			relative = "editor", -- relative to the whole editor
 			width = width,
 			height = height,
 			row = row,
@@ -217,28 +216,23 @@ local function create_child_win(bufnr, style)
 		---@type integer|nil
 		winid = raw_output
 		if not winid then
-			error("create_child_win() error: no handle returned for window: " ..
-				tostring(raw_output), 2)
+			error("create_child_win() error: no handle returned for window: " .. tostring(raw_output), 2)
 		end
 		---@cast winid integer
 		return winid
-
-		elseif style == "v_split" then
-			winid = open_split_win("vsplit", bufnr)
-			---@cast winid integer
-			return winid
-
-		elseif style == "h_split" then
-			winid = open_split_win("split", bufnr)
-			---@cast winid integer
-			return winid
-
+	elseif style == "v_split" then
+		winid = open_split_win("vsplit", bufnr)
+		---@cast winid integer
+		return winid
+	elseif style == "h_split" then
+		winid = open_split_win("split", bufnr)
+		---@cast winid integer
+		return winid
 	end
 
 	-- Default return of cur_win
 	return 0
 end
-
 
 -- Function: Create a child buffer and window to edit injected language text.
 ---@param p_bufnr integer Buffer handle for parent buffer.
@@ -261,8 +255,7 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
-	vim.notify("ninjection.edit(): Copied injected content text to register: " ..
-		cfg.register, vim.log.levels.INFO)
+	vim.notify("ninjection.edit(): Copied injected content text to register: " .. cfg.register, vim.log.levels.INFO)
 
 	---@type integer|nil
 	c_bufnr = vim.api.nvim_create_buf(true, true)
@@ -366,9 +359,8 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 		error(tostring(raw_output), 2)
 	end
 
-	return {bufnr = c_bufnr, win = c_win, indents = p_indents}
+	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
 end
-
 
 -- Function: Set the child cursor to the same relative position as in the
 -- parent window.
