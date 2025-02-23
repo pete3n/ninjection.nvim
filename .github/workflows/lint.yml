@@ -13,5 +13,4 @@ jobs:
           export PATH="${PWD}/.ci/neovim/bin:${PATH}"
           export PATH="${PWD}/.ci/lua-ls/bin:${PATH}"
           export VIMRUNTIME="${PWD}/.ci/neovim/share/nvim/runtime"
-          nvim --version
           make -f ci/Makefile luacheck
