@@ -47,10 +47,7 @@ M.cfg = {
 	---@type table<number, string>
 	_editor_styles = { "cur_win", "floating", "v_split", "h_split" },
 	---@type EditorStyle
-	editor_style = "h_split",
-
-	-- TODO: Implement auto-inject on buffer close
-	inject_on_close = false,
+	editor_style = "cur_win",
 
 	-- Contains per-language string literals for Treesitter queries to Identify
 	-- injected content nodes.
