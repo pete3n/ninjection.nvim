@@ -1,6 +1,6 @@
 ---@module "ninjection"
 local M = {}
--- test extra long                                                                                                      line
+
 local ts = require("vim.treesitter")
 local util = require("ninjection.util")
 local nts = require("ninjection.treesitter")
