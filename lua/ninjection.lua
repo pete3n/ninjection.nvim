@@ -6,7 +6,9 @@ local util = require("ninjection.util")
 local nts = require("ninjection.treesitter")
 
 if vim.fn.exists(":checkhealth") == 2 then
-	require("ninjection.health").check()
+	require(
+		"ninjection.health"
+	).check()
 end
 
 M.cfg = {
