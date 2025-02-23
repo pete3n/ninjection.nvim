@@ -6,12 +6,11 @@ local util = require("ninjection.util")
 local nts = require("ninjection.treesitter")
 
 if vim.fn.exists(":checkhealth") == 2 then
-	require(
-		"ninjection.health"
-	).check()
+	require("ninjection.health").check()
 end
 
 M.cfg = {
+	---@type BogusType
 	file_lang = "nix", -- Native file type to search for injected languages in.
 	-- Must have a matching entry in inj_lang_queries.
 	-- Currently only supports nix, but could be extended.
