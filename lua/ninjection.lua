@@ -10,19 +10,22 @@ if vim.fn.exists(":checkhealth") == 2 then
 end
 
 M.cfg = {
-	---@type BogusType
+	---@type string
 	file_lang = "nix", -- Native file type to search for injected languages in.
 	-- Must have a matching entry in inj_lang_queries.
 	-- Currently only supports nix, but could be extended.
+	---@type boolean
 	preserve_indents = true, -- Re-apply indents from the parent buffer.
 	-- This option should be used in conjunction with auto_format because
 	-- This will re-apply indents that auto_format normally removes.
 	-- If you don't remove them, then they will be re-applied which will increase
 	-- the original indenation.
+	---@type  boolean
 	auto_format = true, -- Format the new child buffer with the provided command
 	format_cmd = "_G.format_with_conform()", -- Command for auto_format
 	-- TODO: Safety checks for auto_format, and require command, default should
 	-- be blank.
+	---@type integer
 	injected_comment_lines = 1, -- Offset comment delimiting lines based on style
 	-- preferences. For example, offsetting 1 line would function with this format:
 	-- # injected_lang
@@ -35,7 +38,9 @@ M.cfg = {
 	-- ''injected content
 	-- more injected content
 	-- end content'';
+	---@type string
 	register = "z", -- Register to use to copy injected content.
+	---@type boolean
 	suppress_warnings = false, -- true|false only show critical errors
 	-- If ninjection is not functioning properly, ensure this is false to debug
 
@@ -49,6 +54,7 @@ M.cfg = {
 
 	-- Contains per-language string literals for Treesitter queries to Identify
 	-- injected content nodes.
+	---@type table<string, string>
 	inj_lang_queries = {
 		nix = [[
 						(
@@ -65,11 +71,13 @@ M.cfg = {
 						)
 					]],
 	},
+	---@type string
 	inj_lang_query = nil, -- Dyanmically configured from file_lang and inj_lang_queries.
 
 	-- LSPs associated with injected languages. The keys must match the language
 	-- comment used to identify injected languages, and the value must match the
 	-- LSP configured in your lspconfig.
+	---@type table<string,string>
 	lsp_map = {
 		bash = "bashls",
 		c = "clangd",
