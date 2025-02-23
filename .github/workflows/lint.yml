@@ -42,8 +42,7 @@ jobs:
 
       - name: Run Luacheck
         run: |
-          export PATH="${PWD}/.ci/luacheck/bin:${PWD}/.ci/luacheck/src/bin:${HOME}/.luarocks/bin:${PATH}"
+          export PATH="${PWD}/.ci/luacheck/src/bin:${HOME}/.luarocks/bin:${PATH}"
           echo "PATH is $PATH"
-          which luacheck || echo "Luacheck not found in PATH"
-          luacheck --version
-          make -f ci/Makefile luacheck
+          lua ${PWD}/.ci/luacheck/src/bin/luacheck.lua --version
+          lua ${PWD}/.ci/luacheck/src/bin/luacheck.lua .
