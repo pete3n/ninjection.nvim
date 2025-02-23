@@ -30,8 +30,7 @@ jobs:
           test -d .ci/luacheck || {
             mkdir -p .ci/luacheck
             git clone https://github.com/mpeterv/luacheck.git .ci/luacheck/src
-            cd .ci/luacheck/src
-            luarocks --tree=../../luacheck make
+            luarocks --tree=.ci/luacheck make .ci/luacheck/src
           }
 
       - name: Run Luacheck
