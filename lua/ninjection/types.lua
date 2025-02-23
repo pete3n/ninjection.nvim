@@ -19,11 +19,13 @@
 ---@class NJChild
 ---@field bufnr integer
 ---@field root_dir string
----@field parent_bufnr integer
----@field parent_indents NJIndents
----@field parent_range NJRange
+---@field p_bufnr integer
+---@field p_indents NJIndents
+---@field p_range NJRange
 
 ---@class NJLspStatus
 ---@field status string -- The LSP startup status. Possible values: "unmapped",
 --- "unconfigured", "unavailable", "no-exec", "unsupported", "failed_start", "started"
 ---@field client_id integer -- The client ID of the started LSP, or -1 on failure
+
+---@alias EditorStyle "cur_win" | "floating" | "v_split" | "h_split"
