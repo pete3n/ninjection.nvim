@@ -60,7 +60,7 @@ jobs:
           test -d .ci/lua-ls || {
             mkdir -p .ci/lua-ls
             curl -sL \
-              "https://github.com/LuaLS/lua-language-server/releases/download/${{ inpjuts.lua_ls_version || '3.13.0' }}/\
+              "https://github.com/LuaLS/lua-language-server/releases/download/${{ inputs.lua_ls_version || '3.13.0' }}/\
               lua-language-server-${{ inputs.lua_ls_version || '3.13.0' }}-linux-x64.tar.gz" \
               | tar xzf - -C "${PWD}/.ci/lua-ls"
           }
