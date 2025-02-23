@@ -47,3 +47,13 @@ vim.api.nvim_create_user_command("Ninjection", ninjection_cmd, {
 		end, keys)
 	end,
 })
+
+vim.keymap.set("n", "<Plug>(NinjectionEdit)", function()
+	require("ninjection").edit()
+end, { noremap = true, silent = true })
+vim.keymap.set("n", "<Plug>(NinjectionReplace)", function()
+	require("ninjection").replace()
+end, { noremap = true, silent = true })
+vim.keymap.set("n", "<Plug>(NinjectionSelect)", function()
+	require("ninjection").select()
+end, { noremap = true, silent = true })
