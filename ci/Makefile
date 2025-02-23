@@ -2,9 +2,6 @@ ifndef VERBOSE
 .SILENT:
 endif
 
-luacheck:
-	luacheck  lua
-
 stylua:
 	stylua --color always --check .
 
