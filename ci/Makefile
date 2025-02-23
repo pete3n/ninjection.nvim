@@ -37,15 +37,16 @@ lua_ls-check:
 
 lua_ls-debug:
 	@echo "Running lua-language-server debug for version: $(version)"
-	if [ ! -f ci/.luarc.$(version).json ]; then \
-		echo "Error: Configuration file .luarc.$(version).json not found."; \
+	CONFIG_FILE = $(shell realpath ci/.luarc.$(version).json); \
+	if [ ! -f $${CONFIG_FILE} ]; then \
+		echo "Error: Configuration file $${CONFIG_FILE} not found."; \
 		exit 1; \
 	fi
 
 	rm -rf .ci/lua_ls-log
-	cat $(CURDIR)/ci/.luarc.$(version).json
+	cat $${CONFIG_FILE}
 	
-	lua-language-server --configpath $(CURDIR)/ci/.luarc.$(version).json \
+	lua-language-server --configpath $${CONFIG_FILE}\
 		--logpath .ci/lua_ls-log --check lua
 
 	echo "Debug log outputs: "; \
