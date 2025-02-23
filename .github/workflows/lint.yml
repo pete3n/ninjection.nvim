@@ -30,11 +30,20 @@ jobs:
           test -d .ci/luacheck || {
             mkdir -p .ci/luacheck
             git clone https://github.com/mpeterv/luacheck.git .ci/luacheck/src
-            luarocks --tree=.ci/luacheck make .ci/luacheck/src
+            luarocks --tree=${PWD}/.ci/luacheck make .ci/luacheck/src
           }
+
+      - name: Verify Installation
+        run: |
+          echo "Luacheck installed in:"
+          find ${PWD}/.ci/luacheck -name "luacheck" -type f || echo "Luacheck not found"
+          ls -la ${PWD}/.ci/luacheck/bin || echo "No binaries found in .ci/luacheck/bin"
+          ls -la ${PWD}/.ci/luacheck/src/bin || echo "No binaries found in .ci/luacheck/src/bin"
 
       - name: Run Luacheck
         run: |
-          export PATH="${PWD}/.ci/luacheck/bin:${PATH}"
+          export PATH="${PWD}/.ci/luacheck/bin:${PWD}/.ci/luacheck/src/bin:${HOME}/.luarocks/bin:${PATH}"
+          echo "PATH is $PATH"
+          which luacheck || echo "Luacheck not found in PATH"
           luacheck --version
           make -f ci/Makefile luacheck
