@@ -53,6 +53,20 @@ lua_ls-debug:
 	echo "Debug log outputs: "; \
 	find .ci/lua_ls-log -type f -name "*.log" -exec cat {} \;
 
+	echo "VIMRUNTIME Environment Variable: $${VIMRUNTIME}";
+
+	echo "Absolute Runtime path: "; \
+	realpath .ci/neovim/share/nvim/runtime; \
+	echo "Absolute Treesitter runtime path: "; \
+	realpath .ci/neovim/share/nvim/runtime/lua/vim/treesitter/query.lua;
+
+	echo "Runtime path: "; \
+	ls -la .ci/neovim/share/nvim/runtime; \
+	echo "Treesitter runtime path: "; \
+	ls -la .ci/neovim/share/nvim/runtime/lua/vim/treesitter; \
+	echo "Treesitter query.lua: "; \
+	head .ci/neovim/share/nvim/runtime/lua/vim/treesitter/query.lua; 
+
 	if [ ! -f .ci/lua_ls-log/check.json ]; then \
 		echo "Error: check.json not found."; \
 		exit 1; \
