@@ -25,11 +25,12 @@ local function ninjection_cmd(opts)
 	local subcommand_key = fargs[1]
 
 	if not subcommand_key or not subcommand_tbl[subcommand_key] then
-		vim.notify("Ninjection: Unknown subcommand: " .. tostring(subcommand_key), vim.log.levels.ERROR)
+		local available = table.concat(vim.tbl_keys(subcommand_tbl), ", ")
+		vim.notify("Ninjection: Unknown subcommand: " .. tostring(subcommand_key) ..
+			". Available subcommands: " .. available, vim.log.levels.ERROR)
 		return
 	end
 
-	-- Directly execute the subcommand's implementation
 	subcommand_tbl[subcommand_key].impl()
 end
 
