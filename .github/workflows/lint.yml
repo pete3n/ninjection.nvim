@@ -8,13 +8,10 @@ jobs:
     name: Luacheck
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Prepare
+      - name: Run check
         run: |
-          sudo apt-get update
-          sudo apt-get install -y luarocks
-          sudo luarocks install luacheck
-
-      - name: Lint
-        run: luacheck lua/
+          export PATH="${PWD}/.ci/neovim/bin:${PATH}"
+          export PATH="${PWD}/.ci/lua-ls/bin:${PATH}"
+          export VIMRUNTIME="${PWD}/.ci/neovim/share/nvim/runtime"
+          nvim --version
+          make -f ci/Makefile luacheck

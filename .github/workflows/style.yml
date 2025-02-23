@@ -7,10 +7,10 @@ jobs:
     name: stylua
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: JohnnyMorganz/stylua-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-          # CLI arguments
-          args: --color always --check lua/
+      - name: Run check
+        run: |
+          export PATH="${PWD}/.ci/neovim/bin:${PATH}"
+          export PATH="${PWD}/.ci/lua-ls/bin:${PATH}"
+          export VIMRUNTIME="${PWD}/.ci/neovim/share/nvim/runtime"
+          nvim --version
+          make -f ci/Makefile stylua

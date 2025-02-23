@@ -3,10 +3,10 @@ ifndef VERBOSE
 endif
 
 luacheck:
-	luacheck .
+	luacheck  lua
 
 stylua:
-	stylua --check .
+	stylua --color always --check .
 
 lua_ls-check:
 	@echo "Running lua-language-server check for version: $(version)"
