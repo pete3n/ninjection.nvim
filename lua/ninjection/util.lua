@@ -159,16 +159,39 @@ M.restore_indents = function(text, indents)
 	return lines
 end
 
+-- Function: Open a vertical or horizontal split window for the child buffer.
+---@param split_cmd string vsplit or split.
+---@param bufnr integer child bufnr.
+---@return integer|nil winid Handle for new window.
+local function open_split_win(split_cmd, bufnr)
+	---@type boolean, any|nil, integer|nil
+	local ok, raw_output, winid
+  vim.cmd(split_cmd)
+  ok, winid = pcall(vim.api.nvim_get_current_win)
+  if not ok or not winid then
+    error("create_child_win() error: no handle returned for window: " ..
+			tostring(winid), 2)
+  end
+  ok, raw_output = pcall(function() return vim.api.nvim_win_set_buf(winid, bufnr) end)
+  if not ok then
+    error("create_child_win() error: failed to set buffer in new window: " ..
+			tostring(raw_output), 2)
+  end
+	---@cast winid integer
+  return winid
+end
 
 -- Function: Set the child window cursor to the same relative position as it was
 -- in the parent.
 ---@param bufnr integer The buffer to create a viewport for.
 ---@param style EditorStyle The window style to edit the buffer with.
----@return integer win_id Default: 0, child window handle, if created.
----@return nil|string err Error string, if applicable.
-M.create_child_win = function(bufnr, style)
+---@return integer winid Default: 0, child window handle, if created.
+local function create_child_win(bufnr, style)
+	---@type boolean, any|nil, integer|nil
+	local ok, raw_output, winid
 
 	if style == "floating" then
+		---@type number, number, number, number
 		local width = math.floor(vim.o.columns * 0.8)
 		local height = math.floor(vim.o.lines * 0.8)
 		local row = math.floor((vim.o.lines - height) / 2)
@@ -182,20 +205,37 @@ M.create_child_win = function(bufnr, style)
 			height = height,
 			row = row,
 			col = col,
-			border = "single",  -- can also be a table of characters
+			border = "single",
 		}
 
-		local winid = vim.api.nvim_open_win(bufnr, true, opts)
+		ok, raw_output = pcall(function()
+			return vim.api.nvim_open_win(bufnr, true, opts)
+		end)
+		if not ok then
+			error(tostring(raw_output), 2)
+		end
+		---@type integer|nil
+		winid = raw_output
+		if not winid then
+			error("create_child_win() error: no handle returned for window: " ..
+				tostring(raw_output), 2)
+		end
+		---@cast winid integer
 		return winid
+
+		elseif style == "v_split" then
+			winid = open_split_win("vsplit", bufnr)
+			---@cast winid integer
+			return winid
+
+		elseif style == "h_split" then
+			winid = open_split_win("split", bufnr)
+			---@cast winid integer
+			return winid
+
 	end
 
-	if style == "v_split" then
-		vim.cmd("vsplit")
-		local winid = vim.api.nvim_get_current_win()
-		vim.api.nvim_win_set_buf(winid, bufnr)
-		return winid
-	end
-
+	-- Default return of cur_win
 	return 0
 end
 
@@ -232,7 +272,7 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	---@cast c_bufnr integer
 
 	---@type integer
-	local c_win = M.create_child_win(c_bufnr, cfg.editor_style)
+	local c_win = create_child_win(c_bufnr, cfg.editor_style)
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_set_current_buf(c_bufnr)

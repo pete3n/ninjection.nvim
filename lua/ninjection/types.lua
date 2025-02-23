@@ -28,4 +28,4 @@
 --- "unconfigured", "unavailable", "no-exec", "unsupported", "failed_start", "started"
 ---@field client_id integer -- The client ID of the started LSP, or -1 on failure
 
----@alias EditorStyle "cur_win" | "floating" | "v_split" | "h_split" | "tab_r" | "tab_l"
+---@alias EditorStyle "cur_win" | "floating" | "v_split" | "h_split"

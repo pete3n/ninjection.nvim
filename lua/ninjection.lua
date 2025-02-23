@@ -45,9 +45,9 @@ M.cfg = {
 	-- do not modify it unless you have implemented a new style method.
 	---@private
 	---@type table<number, string>
-	_editor_styles = { "cur_win", "floating", "v_split", "h_split", "tab_r", "tab_l" },
+	_editor_styles = { "cur_win", "floating", "v_split", "h_split" },
 	---@type EditorStyle
-	editor_style = "v_split",
+	editor_style = "h_split",
 
 	-- TODO: Implement auto-inject on buffer close
 	inject_on_close = false,
