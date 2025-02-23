@@ -43,7 +43,7 @@ jobs:
       - name: Run Luacheck
         run: |
           export PATH="${PWD}/.ci/luacheck/src/bin:${HOME}/.luarocks/bin:${PATH}"
-          export LUA_PATH="${PWD}/.ci/luacheck/share/lua/5.1/?.lua;;"
+          export LUA_PATH="${PWD}/.ci/luacheck/src/?.lua;${PWD}/.ci/luacheck/src/luacheck/?.lua;;"
           export LUA_CPATH="${PWD}/.ci/luacheck/lib/lua/5.1/?.so;;"
           echo "PATH is $PATH"
           echo "LUA_PATH is $LUA_PATH"
