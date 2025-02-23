@@ -1,9 +1,7 @@
---- Treesitter helper functions for ninjection
----@class ninjection.treesitter
+---@module "ninjection.treesitter"
+
 local M = {}
 local cfg = {}
-require("ninjection.types")
-
 local ts = require("vim.treesitter")
 
 M.set_config = function(config)

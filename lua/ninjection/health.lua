@@ -1,3 +1,5 @@
+---@module "ninjection.health"
+
 local health = require("vim.health")
 local start = health.start
 local ok = health.ok

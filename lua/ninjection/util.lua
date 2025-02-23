@@ -1,7 +1,7 @@
----@class ninjection.util
+---@module "ninjection.util"
+
 local M = {}
 local cfg = {}
-require("ninjection.types")
 local lspconfig = require("lspconfig")
 
 M.set_config = function(config)

@@ -1,11 +1,8 @@
+---@module "ninjection"
 local M = {}
-require("ninjection.types")
+
 local ts = require("vim.treesitter")
-
---- @type ninjection.util
 local util = require("ninjection.util")
-
---- @type ninjection.treesitter
 local nts = require("ninjection.treesitter")
 
 if vim.fn.exists(":checkhealth") == 2 then
