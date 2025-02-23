@@ -1,5 +1,5 @@
 ---
-name: Type checking
+name: Lua_LS Type Check
 
 on:
   workflow_call:
@@ -20,6 +20,8 @@ on:
         description: "Neovim versions"
         required: true
         default: '["0.10.2"]'
+  pull_request:
+  push:
 
 jobs:
   lua-language-server:
@@ -28,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rev: ${{ fromJson(inputs.neovim_versions) }}
+        rev: ${{ fromJson(inputs.neovim_versions || '["0.10.2"]') }}
     steps:
       - uses: actions/checkout@v3
       - run: date +%F > todays-date
@@ -46,18 +48,22 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .ci/lua-ls
-          key: ${{ inputs.lua_ls_version }}
+          key: ${{ inputs.lua_ls_version || '3.13.0' }}
       - name: Prepare
         run: |
           test -d .ci/neovim || {
             mkdir -p .ci/neovim
-            curl -sL "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"
+            curl -sL \
+              "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux64.tar.gz" \
+              | tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"
           }
           test -d .ci/lua-ls || {
             mkdir -p .ci/lua-ls
-            curl -sL "https://github.com/LuaLS/lua-language-server/releases/download/${{ inputs.lua_ls_version }}/lua-language-server-${{ inputs.lua_ls_version }}-linux-x64.tar.gz" | tar xzf - -C "${PWD}/.ci/lua-ls"
+            curl -sL \
+              "https://github.com/LuaLS/lua-language-server/releases/download/${{ inpjuts.lua_ls_version || '3.13.0' }}/\
+              lua-language-server-${{ inputs.lua_ls_version || '3.13.0' }}-linux-x64.tar.gz" \
+              | tar xzf - -C "${PWD}/.ci/lua-ls"
           }
-
       - name: Run check
         run: |
           export PATH="${PWD}/.ci/neovim/bin:${PATH}"

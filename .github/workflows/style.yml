@@ -1,6 +1,10 @@
-name: Style checking
+---
+name: Stylua Formatting Check
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   stylua:
@@ -8,9 +12,26 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - name: Run check
+      - run: date +%F > todays-date
+
+      # Cache Stylua
+      - name: Restore cache for Stylua
+        uses: actions/cache@v3
+        with:
+          path: .ci/stylua
+          key: stylua-${{ hashFiles('todays-date') }}
+
+      - name: Prepare Stylua
         run: |
-          export PATH="${PWD}/.ci/neovim/bin:${PATH}"
-          export PATH="${PWD}/.ci/lua-ls/bin:${PATH}"
-          export VIMRUNTIME="${PWD}/.ci/neovim/share/nvim/runtime"
+          test -d .ci/stylua || {
+            mkdir -p .ci/stylua
+            curl -sL "https://github.com/JohnnyMorganz/StyLua/releases/download/v2.0.2/stylua-linux-x86_64.zip" -o stylua.zip
+            unzip stylua.zip -d .ci/stylua
+            chmod +x .ci/stylua/stylua
+          }
+
+      - name: Run Stylua
+        run: |
+          export PATH="${PWD}/.ci/stylua:${PATH}"
+          stylua --version
           make -f ci/Makefile stylua

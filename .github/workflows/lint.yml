@@ -1,17 +1,42 @@
 ---
-name: Linting
+name: Luacheck Linting Check
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   luacheck:
-    name: Luacheck
+    name: luacheck
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - name: Run check
+      - run: date +%F > todays-date
+
+      - name: Restore cache for Luacheck
+        uses: actions/cache@v3
+        with:
+          path: .ci/luacheck
+          key: luacheck-${{ hashFiles('todays-date') }}
+
+      - name: Install dependencies
         run: |
-          export PATH="${PWD}/.ci/neovim/bin:${PATH}"
-          export PATH="${PWD}/.ci/lua-ls/bin:${PATH}"
-          export VIMRUNTIME="${PWD}/.ci/neovim/share/nvim/runtime"
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 luarocks build-essential
+
+      - name: Prepare Luacheck
+        run: |
+          test -d .ci/luacheck || {
+            mkdir -p .ci/luacheck
+            git clone https://github.com/mpeterv/luacheck.git .ci/luacheck/src
+            cd .ci/luacheck/src
+            luarocks make
+            ln -s $(luarocks which luacheck) ../../luacheck/luacheck
+          }
+
+      - name: Run Luacheck
+        run: |
+          export PATH="${PWD}/.ci/luacheck:${PATH}"
+          luacheck --version
           make -f ci/Makefile luacheck
