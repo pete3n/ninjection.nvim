@@ -48,6 +48,9 @@ lua_ls-debug:
 	lua-language-server --configpath $(CURDIR)/ci/.luarc.$(version).json \
 		--logpath .ci/lua_ls-log --check lua
 
+	echo "Debug log outputs: "; \
+	find .ci/lua_ls-log -type f -name "*.log" -exec cat {} \;
+
 	if [ ! -f .ci/lua_ls-log/check.json ]; then \
 		echo "Error: check.json not found."; \
 		exit 1; \
@@ -61,6 +64,3 @@ lua_ls-debug:
 	else \
 		echo "✅ No errors found."; \
 	fi
-
-	echo "Debug log outputs: "; \
-	find .ci/lua_ls-log -type f -name "*.log" -exec cat {} \;
