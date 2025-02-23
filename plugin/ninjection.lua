@@ -26,8 +26,10 @@ local function ninjection_cmd(opts)
 
 	if not subcommand_key or not subcommand_tbl[subcommand_key] then
 		local available = table.concat(vim.tbl_keys(subcommand_tbl), ", ")
-		vim.notify("Ninjection: Unknown subcommand: " .. tostring(subcommand_key) ..
-			". Available subcommands: " .. available, vim.log.levels.ERROR)
+		vim.notify(
+			"Ninjection: Unknown subcommand: " .. tostring(subcommand_key) .. ". Available subcommands: " .. available,
+			vim.log.levels.ERROR
+		)
 		return
 	end
 
