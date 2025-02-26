@@ -1,12 +1,8 @@
 ---@module "ninjection.util"
 
 local M = {}
-local cfg = {}
+local cfg = require("ninjection.config").cfg
 local lspconfig = require("lspconfig")
-
-M.set_config = function(config)
-	cfg = config
-end
 
 -- We need to provide a way of recording and restoring whitespace from the parent
 -- buffer to allow easily formatting the buffer without worrying about its

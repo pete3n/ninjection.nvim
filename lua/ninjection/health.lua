@@ -1,12 +1,41 @@
 ---@module "ninjection.health"
 
 local health = require("vim.health")
+local config = require("ninjection.config").cfg
 local start = health.start
 local ok = health.ok
 local warn = health.warn
 local error = health.warn
 
 local M = {}
+
+---@return boolean, string|nil
+M.validate_config = function(cfg)
+	cfg = cfg or config
+	local err, is_valid
+	is_valid = true
+
+	local valid_editor_styles = { cur_win = true, floating = true, v_split = true, h_split = true }
+	if not valid_editor_styles[cfg.editor_style] then
+		err = "Ninjection configuration error: Invalid editor_style: " .. tostring(cfg.editor_style)
+		is_valid = false
+	end
+
+	if not vim.tbl_contains(cfg.lsp_map, cfg.file_lang) then
+		err =	"Ninjection configuration error: " .. cfg.file_lang ..
+			" has not associated LSP configured in lsp_map property."
+		is_valid = false
+	end
+
+	if cfg.inj_lang_queries[cfg.file_lang] then
+		---@type string
+		cfg.inj_lang_query = cfg.inj_lang_queries[cfg.file_lang]
+	else
+		err = "Ninjection: No injection query found for file_lang " .. cfg.file_lang
+	end
+
+	return is_valid, err
+end
 
 local required_plugins = {
 	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
@@ -39,6 +68,17 @@ function M.check()
 			end
 		end
 	end
+
+	start("Checking configuration")
+		local is_valid, err = validate_config()
+		if is_valid then
+			ok(" valid config.")
+		elseif err then
+			warn (err)
+		else
+			warn ("Unknown error validating configuration.")
+		end
+
 end
 
 return M

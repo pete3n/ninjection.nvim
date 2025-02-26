@@ -1,12 +1,8 @@
 ---@module "ninjection.treesitter"
 
 local M = {}
-local cfg = {}
+local cfg = require("ninjection.config").cfg
 local ts = require("vim.treesitter")
-
-M.set_config = function(config)
-	cfg = config
-end
 
 --- Function: Get a parsed query from Treesitter given a language and pattern.
 ---@param query string Lua-literal string for Treesitter query.

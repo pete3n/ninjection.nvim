@@ -1,9 +1,92 @@
 ---@meta
 
 ---@alias EditorStyle "cur_win" | "floating" | "v_split" | "h_split"
+-- Supported injected language editor window methods.
+---@alias lspconfig.Config.command {[1]:string|vim.api.keyset.user_command}
 -- Modified from nvim-lspconfig/lua/lspconfig/configs.lua because I can't find
 -- a reference to: vim.api.keyset.create_user_command.command_args
----@alias lspconfig.Config.command {[1]:string|vim.api.keyset.user_command}
+
+-- Ninjection configuration type annotations.
+---@class Ninjection.Config
+---@field file_lang? string (optional) -- default: "nix"
+-- Native file type to search for injected languages in.
+-- Must have a matching entry in inj_lang_queries.
+-- Currently only supports nix, but could be extended.
+---@field preserve_indents? boolean (optional) -- default: true
+-- Re-apply indents from the parent buffer.
+-- This option should be used in conjunction with auto_format because
+-- This will re-apply indents that auto_format normally removes.
+-- If you don't remove them, then they will be re-applied which will increase
+-- the original indenation.
+---@field auto_format? boolean (optional) -- default: false
+-- Whether to auto format the new child buffer.
+---@field format_cmd? string (optional)
+-- Command for auto_format
+---@field injected_comment_lines? integer (optional) -- default: 1
+-- Offset comment delimiting lines based on style preferences.
+-- For example, offsetting 1 line would function with this format:
+-- # injected_lang
+-- ''
+-- 		injected content
+-- '';
+--
+-- Offsetting 0 lines would function with this format:
+-- # injected_lang
+-- ''injected content
+-- more injected content
+-- end content'';
+---@field register? string (optional) -- default: "z"
+-- Register to use to copy injected content.
+---@field suppress_warnings boolean (optional) -- default: false
+-- If true, Ninjection will only show critical errors.
+-- If ninjection is not functioning properly, ensure this is false
+-- for debugging.
+---@field editor_style EditorStyle (optional) -- default: "floating"
+-- Window style to use for the injected context editor:
+-- "cur_win" - edit in the current buffer's window,
+-- "floating" - open a new floating window,
+-- "v_split" - edit in a new vertically split window,
+-- "h_split" - edit in a new horizontally split window
+---@field inj_lang_queries table<string, string> (optional) -- default:
+-- {
+-- nix = [[
+--					(
+--						(comment) @injection.language
+--						.
+--						[
+--							(indented_string_expression
+--								(string_fragment) @injection.content)
+--							(string_expression
+--								(string_fragment) @injection.content)
+--						]
+--						(#gsub! @injection.language "#%s*([%w%p]+)%s*" "%1")
+--						(#set! injection.combined)
+--					)
+-- 				]],
+-- },
+-- Contains per-language string literals for Treesitter queries to Identify
+-- injected content nodes.
+---@field inj_lang_query string (dynamic)
+-- This is configured by referencing file_lang in the table of
+-- inj_lang_queries. This cannot be nil, and should be tested.
+---@field lsp_map table<string, string> (optional) default:
+--	lsp_map = {
+--		bash = "bashls",
+--		c = "clangd",
+--		cpp = "clangd",
+--		javascript = "ts_ls",
+--		json = "jsonls",
+--		lua = "lua_ls",
+--		python = "ruff",
+--		rust = "rust_analyzer",
+--		sh = "bashls",
+--		typescript = "ts_ls",
+--		yaml = "yamlls",
+--		zig = "zls",
+--	},
+-- LSPs associated with injected languages. The keys must match the language
+-- comment used to identify injected languages, and the value must match the
+-- LSP configured in your lspconfig.
 
 ---@class NJRange
 ---@field s_row integer
