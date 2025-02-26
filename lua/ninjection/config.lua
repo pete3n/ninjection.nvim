@@ -1,7 +1,7 @@
 ---@module "ninjection.config"
 local M = {}
 
-local health = require("ninjection.health")
+local vc = require("ninjection.health").validate_config
 
 ---@type Ninjection.Config
 local default_config = {
@@ -62,7 +62,7 @@ local user_config = (type(vim.g.ninjection) == "function" and vim.g.ninjection()
 ---@type Ninjection.Config
 local config = vim.tbl_deep_extend("force", default_config, user_config)
 local is_valid, err
-is_valid, err = health.validate_config(config)
+is_valid, err = vc(config)
 if not is_valid then
 	error(err, 2)
 end
