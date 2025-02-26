@@ -58,10 +58,13 @@ local default_config = {
 }
 
 local function merge_config()
+	print("Merging user and default config")
 	---@type Ninjection.Config
 	local user_config = (type(vim.g.ninjection) == "function" and vim.g.ninjection() or vim.g.ninjection) or {}
+	print("User config: " .. vim.inspect(user_config))
 	---@type Ninjection.Config
 	local config = vim.tbl_deep_extend("force", default_config, user_config)
+	print("Merged config: " .. vim.inspect(config))
 
 	local is_valid, err
 	is_valid, err = vc(config)
