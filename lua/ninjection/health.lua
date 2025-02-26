@@ -22,8 +22,9 @@ M.validate_config = function(cfg)
 	end
 
 	if not vim.tbl_contains(cfg.lsp_map, cfg.file_lang) then
-		err =	"Ninjection configuration error: " .. cfg.file_lang ..
-			" has not associated LSP configured in lsp_map property."
+		err = "Ninjection configuration error: "
+			.. cfg.file_lang
+			.. " has not associated LSP configured in lsp_map property."
 		is_valid = false
 	end
 
@@ -70,15 +71,14 @@ function M.check()
 	end
 
 	start("Checking configuration")
-		local is_valid, err = validate_config()
-		if is_valid then
-			ok(" valid config.")
-		elseif err then
-			warn (err)
-		else
-			warn ("Unknown error validating configuration.")
-		end
-
+	local is_valid, err = M.validate_config()
+	if is_valid then
+		ok(" valid config.")
+	elseif err then
+		warn(err)
+	else
+		warn("Unknown error validating configuration.")
+	end
 end
 
 return M

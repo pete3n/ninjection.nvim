@@ -1,5 +1,5 @@
 ---@module "ninjection.config"
-local health = ("ninjection.health")
+local health = "ninjection.health"
 local M = {}
 
 ---@type Ninjection.Config
