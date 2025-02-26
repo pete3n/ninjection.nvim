@@ -8,7 +8,7 @@ local h_error = health.error
 
 local M = {}
 
----@param cfg Ninjection.Config
+---@param cfg? Ninjection.Config
 ---@return boolean, string|nil
 M.validate_config = function(cfg)
 	cfg = cfg or require("ninjection.config").cfg
