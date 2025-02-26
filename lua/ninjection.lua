@@ -1,4 +1,20 @@
 ---@module "ninjection"
+---@tag ninjection
+---@brief [[
+--- Ninjection is a plugin designed to improve editing injected language text.
+--- Its goal is to provide a seamless, first-class editing experience for injected
+--- code with full support for LSPs, code-snippets, completions, formatting, etc.
+---
+--- Ninjection utilizes Treesitter's language parsing functionality to identify
+--- nodes that contain an injected language, and appropriately designate the
+--- that language. It provides functions to create a new buffer for that language,
+--- and to attach an appropriate LSP to that buffer.
+---
+--- While Ninjection was written primarily to edit injected languages in Nix files,
+--- it should be easily extensible to other languages. Ninjection provides
+--- configuration options to modify language parsing queries, LSP mappings,
+--- window styles, and formatting.
+---]]
 local M = {}
 
 ---@type Ninjection.Config
