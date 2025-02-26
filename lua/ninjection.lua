@@ -1,7 +1,6 @@
 ---@module "ninjection"
 local M = {}
 
-
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").cfg
 local ts = require("vim.treesitter")
