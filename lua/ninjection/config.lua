@@ -72,11 +72,14 @@ local function merge_config()
 		error(err, 2)
 	end
 
+	print("Merged config (after validation): " .. vim.inspect(config))
+
 	return config
 end
 
 function M.refresh()
 	M.cfg = merge_config()
+	print("Final config: " .. vim.inspect(M.cfg))
 	return M.cfg
 end
 
