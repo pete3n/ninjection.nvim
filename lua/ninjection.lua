@@ -4,7 +4,6 @@ local M = {}
 local ts = require("vim.treesitter")
 local util = require("ninjection.util")
 local nts = require("ninjection.treesitter")
-local cfg = require("ninjection.config").cfg
 
 if vim.fn.exists(":checkhealth") == 2 then
 	require("ninjection.health").check()
@@ -13,6 +12,8 @@ end
 --- Function: Identify and select injected content text in visual mode.
 ---@return nil|string err Error string, if applicable.
 M.select = function()
+	local cfg = require("ninjection.config").cfg
+
 	-- TODO: Remove any, use unkown and refine type
 	-- TODO: Style - replace |nil with ?
 	---@type boolean, unknown?, string?, integer?, NJNodeTable?
@@ -92,6 +93,9 @@ end
 --- appends the child buffer handle to an NJParent object in the parent buffer.
 ---@return nil|string err Error string, if applicable.
 M.edit = function()
+	-- Configuration is loaded in the function vs. module to allow for dynamic changes.
+	---@type Ninjection.Config
+	local cfg = require("ninjeciton.config").cfg
 	---@type boolean, unknown?, string?, integer?, string?, string?
 	local ok, raw_output, err, p_bufnr, inj_node_text, inj_node_lang
 
@@ -293,6 +297,8 @@ end
 --- child bufnr in the parent. This relationship is validated before replacing.
 ---@return nil|string err Returns err string, if applicable
 M.replace = function()
+	---@type Ninjection.Config
+	local cfg = require("ninjection.config").cfg
 	---@type boolean, any?, string?, NJChild?, NJParent?, integer?
 	local ok, raw_output, err, nj_child_b, nj_p_b, this_bufnr
 
