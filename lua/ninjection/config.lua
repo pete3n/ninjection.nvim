@@ -78,7 +78,7 @@ local function merge_config()
 		error(err, 2)
 	end
 
-	M.cfg = merge_config()
+	M.cfg = config
 	return M.cfg
 end
 
