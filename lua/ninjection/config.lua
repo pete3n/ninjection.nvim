@@ -39,7 +39,7 @@ local default_config = {
 					]],
 	},
 	---@type string
-	inj_lang_query = M.cfg.inj_lang_queries[M.cfg.file_lang],
+	inj_lang_query = "",
 	---@type table<string,string>
 	lsp_map = {
 		bash = "bashls",
