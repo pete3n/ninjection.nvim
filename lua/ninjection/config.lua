@@ -57,14 +57,21 @@ local default_config = {
 	},
 }
 
+
+-- Force reload all ninjection modules to flush caches and apply a new config.
+M.reload_ninjection_modules = function()
+  for key in pairs(package.loaded) do
+    if key:match("^ninjection") then
+      package.loaded[key] = nil
+    end
+  end
+end
+
 local function merge_config()
-	print("Merging user and default config")
 	---@type Ninjection.Config
 	local user_config = (type(vim.g.ninjection) == "function" and vim.g.ninjection() or vim.g.ninjection) or {}
-	print("User config: " .. vim.inspect(user_config))
 	---@type Ninjection.Config
 	local config = vim.tbl_deep_extend("force", default_config, user_config)
-	print("Merged config: " .. vim.inspect(config))
 
 	local is_valid, err
 	is_valid, err = vc(config)
@@ -72,17 +79,10 @@ local function merge_config()
 		error(err, 2)
 	end
 
-	print("Merged config (after validation): " .. vim.inspect(config))
-
-	return config
-end
-
-function M.refresh()
 	M.cfg = merge_config()
-	print("Final config: " .. vim.inspect(M.cfg))
 	return M.cfg
 end
 
-M.refresh()
+merge_config()
 
 return M
