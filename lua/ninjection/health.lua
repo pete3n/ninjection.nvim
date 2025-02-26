@@ -19,13 +19,6 @@ M.validate_config = function(cfg)
 		is_valid = false
 	end
 
-	if not vim.tbl_contains(cfg.lsp_map, cfg.file_lang) then
-		err = "Ninjection configuration error: "
-			.. cfg.file_lang
-			.. " has not associated LSP configured in lsp_map property."
-		is_valid = false
-	end
-
 	if cfg.inj_lang_queries[cfg.file_lang] then
 		---@type string
 		cfg.inj_lang_query = cfg.inj_lang_queries[cfg.file_lang]
