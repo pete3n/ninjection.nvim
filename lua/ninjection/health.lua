@@ -1,17 +1,15 @@
 ---@module "ninjection.health"
 
 local health = require("vim.health")
-local config = require("ninjection.config").cfg
 local start = health.start
 local ok = health.ok
 local warn = health.warn
-local error = health.warn
 
 local M = {}
 
 ---@return boolean, string|nil
 M.validate_config = function(cfg)
-	cfg = cfg or config
+	cfg = cfg or require("ninjection.config").cfg
 	local err, is_valid
 	is_valid = true
 
