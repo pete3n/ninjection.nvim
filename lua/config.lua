@@ -1,6 +1,7 @@
 ---@module "ninjection.config"
-local health = "ninjection.health"
 local M = {}
+
+local health = require("ninjection.health")
 
 ---@type Ninjection.Config
 local default_config = {

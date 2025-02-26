@@ -1,7 +1,7 @@
 ---@module "ninjection.health"
 
 local health = require("vim.health")
-local config = require("ninjection.config").cfg
+local config = require("config").cfg
 local start = health.start
 local ok = health.ok
 local warn = health.warn
