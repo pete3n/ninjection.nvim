@@ -4,23 +4,28 @@ local health = require("vim.health")
 local start = health.start
 local ok = health.ok
 local warn = health.warn
+local h_error = health.error
 
 local M = {}
 
+---@param cfg Ninjection.Config
 ---@return boolean, string|nil
 M.validate_config = function(cfg)
 	cfg = cfg or require("ninjection.config").cfg
-	local err, is_valid
+	---@type boolean, string?
+	local is_valid, err
 	is_valid = true
 
+	-- Ensure user only configures a supported editor style
+	---@type table<boolean>
 	local valid_editor_styles = { cur_win = true, floating = true, v_split = true, h_split = true }
 	if not valid_editor_styles[cfg.editor_style] then
 		err = "Ninjection configuration error: Invalid editor_style: " .. tostring(cfg.editor_style)
 		is_valid = false
 	end
 
+	-- Ensure there is a Treesitter query available for the parent file language.
 	if cfg.inj_lang_queries[cfg.file_lang] then
-		---@type string
 		cfg.inj_lang_query = cfg.inj_lang_queries[cfg.file_lang]
 	else
 		err = "Ninjection: No injection query found for file_lang " .. cfg.file_lang
@@ -42,7 +47,7 @@ end
 function M.check()
 	start("Checking Neovim version >= 0.8")
 	if vim.version().major == 0 and vim.version().minor < 8 then
-		error("Neovim 0.8 or greater required")
+		h_error("Neovim 0.8 or greater required")
 	else
 		ok("Neovim >= 0.8 detected")
 	end
@@ -56,7 +61,7 @@ function M.check()
 			if plugin.optional then
 				warn(("%s %s"):format(lib_not_installed, plugin.info))
 			else
-				error(lib_not_installed)
+				h_error(lib_not_installed)
 			end
 		end
 	end
@@ -66,9 +71,9 @@ function M.check()
 	if is_valid then
 		ok(" valid config.")
 	elseif err then
-		warn(err)
+		h_error(err)
 	else
-		warn("Unknown error validating configuration.")
+		h_error("Unknown error validating configuration.")
 	end
 end
 
