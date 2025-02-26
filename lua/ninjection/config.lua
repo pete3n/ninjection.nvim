@@ -57,14 +57,13 @@ local default_config = {
 	},
 }
 
-
 -- Force reload all ninjection modules to flush caches and apply a new config.
 M.reload_ninjection_modules = function()
-  for key in pairs(package.loaded) do
-    if key:match("^ninjection") then
-      package.loaded[key] = nil
-    end
-  end
+	for key in pairs(package.loaded) do
+		if key:match("^ninjection") then
+			package.loaded[key] = nil
+		end
+	end
 end
 
 local function merge_config()
