@@ -95,7 +95,7 @@ end
 M.edit = function()
 	-- Configuration is loaded in the function vs. module to allow for dynamic changes.
 	---@type Ninjection.Config
-	local cfg = require("ninjeciton.config").cfg
+	local cfg = require("ninjection.config").cfg
 	---@type boolean, unknown?, string?, integer?, string?, string?
 	local ok, raw_output, err, p_bufnr, inj_node_text, inj_node_lang
 
