@@ -1,12 +1,8 @@
 ---@module "ninjection.treesitter"
 
 local M = {}
-local cfg = {}
+local cfg = require("ninjection.config").cfg
 local ts = require("vim.treesitter")
-
-M.set_config = function(config)
-	cfg = config
-end
 
 --- Function: Get a parsed query from Treesitter given a language and pattern.
 ---@param query string Lua-literal string for Treesitter query.
@@ -194,12 +190,7 @@ M.get_node_table = function(query, lang)
 			local s_row, s_col, e_row, e_col = node:range()
 			---@type NJRange
 			local inj_range
-			if cfg.injected_comment_newline then
-				inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
-			else
-				inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
-			end
-			---@cast inj_range integer[]
+			inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
 
 			local cur_point = { cur_row, cur_col, cur_row, cur_col }
 			ok, raw_output = pcall(function()
