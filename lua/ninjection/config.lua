@@ -57,16 +57,26 @@ local default_config = {
 	},
 }
 
----@type Ninjection.Config
-local user_config = (type(vim.g.ninjection) == "function" and vim.g.ninjection() or vim.g.ninjection) or {}
----@type Ninjection.Config
-local config = vim.tbl_deep_extend("force", default_config, user_config)
-local is_valid, err
-is_valid, err = vc(config)
-if not is_valid then
-	error(err, 2)
+local function merge_config()
+	---@type Ninjection.Config
+	local user_config = (type(vim.g.ninjection) == "function" and vim.g.ninjection() or vim.g.ninjection) or {}
+	---@type Ninjection.Config
+	local config = vim.tbl_deep_extend("force", default_config, user_config)
+
+	local is_valid, err
+	is_valid, err = vc(config)
+	if not is_valid then
+		error(err, 2)
+	end
+
+	return config
 end
 
-M.cfg = config
+function M.refresh()
+	M.cfg = merge_config()
+	return M.cfg
+end
+
+M.refresh()
 
 return M
