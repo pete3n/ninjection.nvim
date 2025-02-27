@@ -17,7 +17,7 @@ local lspconfig = require("lspconfig")
 
 --- Finds whitespace indents (top, bottom, left) in the provided buffer.
 ---@param bufnr integer  Buffer handle
----@return NJIndents? indents, nil|string err
+---@return NJIndents? indents, string? err
 --- Returns, on success, a table containing:
 ---  - t_indent: number of blank lines at the top.
 ---  - b_indent: number of blank lines at the bottom.
@@ -99,7 +99,7 @@ end
 --- @param text string|table<integer, string> The text to restore indents in.
 --- Can be either a string (with newline separators) or a table of lines.
 --- @param indents NJIndents Table with indent values for t, b, l
---- @return string[]? restored_lines, nil|string err Lines with the indents restored.
+--- @return string[]? restored_lines, string? err Lines with the indents restored.
 M.restore_indents = function(text, indents)
 	---@type boolean, unknown, string[]?
 	local ok, raw_output, lines
@@ -256,7 +256,7 @@ end
 ---@param root_dir string Root directory for project, or cwd.
 ---@param text string Text to populate the child buffer with.
 ---@param lang string Language to configure buffer for.
----@return {bufnr: integer?, win: integer?, indents: NJIndents} c_table, nil|string err
+---@return {bufnr: integer?, win: integer?, indents: NJIndents} c_table, string? err
 -- Returns table containing handles for the child buffer and window, if available,
 -- and parent indents.
 M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
@@ -381,7 +381,7 @@ end
 ---@param p_cursor integer[] Parent cursor pos.
 ---@param s_row integer Starting row from the parent to offset the child cursor by.
 ---@param indents NJIndents? Indents to calculate additional offsets with.
----@return nil|string err Error string, if applicable.
+---@return string? err Error string, if applicable.
 M.set_child_cur = function(c_win, p_cursor, s_row, indents)
 	---@type boolean, unknown, string?
 	local ok, raw_output, err
@@ -433,7 +433,7 @@ end
 --- Starts an appropriate LSP for the provided language.
 --- @param lang string The filetype of the injected language (e.g., "lua", "python").
 --- @param root_dir string The root directory for the buffer.
---- @return NJLspStatus? result, nil|string err  A table containing the LSP
+--- @return NJLspStatus? result, string? err  A table containing the LSP
 --- status and client_id. Status can be:
 ---   - "unmapped"
 ---   - "unconfigured"
