@@ -1,6 +1,13 @@
 ---@module "ninjection.util"
-
+---@tag ninjeciton.util
+---@brief [[
+--- The util module contains helper functions utilized by the main ninjection
+--- module ( primarily edit() ). This includes get and recording indentation,
+--- creating new child buffers, creating new windows, setting cursor position,
+--- and starting and attaching the appropriate LSP to the child buffer.
+---]]
 local M = {}
+---@type Ninjection.Config
 local cfg = require("ninjection.config").cfg
 local lspconfig = require("lspconfig")
 
@@ -8,17 +15,15 @@ local lspconfig = require("lspconfig")
 -- buffer to allow easily formatting the buffer without worrying about its
 -- relative placement in the parent buffer.
 
----Function: Find whitespace indents (top, bottom, left) in the provided buffer.
+--- Finds whitespace indents (top, bottom, left) in the provided buffer.
 ---@param bufnr integer  Buffer handle
----@return NJIndents|nil table Stores indentation values
----@return nil|string err Error string, if applicable
---- Return, on success, A table containing:
+---@return NJIndents? indents, nil|string err
+--- Returns, on success, a table containing:
 ---  - t_indent: number of blank lines at the top.
 ---  - b_indent: number of blank lines at the bottom.
 ---  - l_indent: minimum number of leading spaces on nonempty lines.
---- Return, on failure, nil and error string, if applicable
 M.get_indents = function(bufnr)
-	---@type boolean, any|nil, string[]|nil
+	---@type boolean, unknown, string[]
 	local ok, raw_output, lines
 
 	ok, raw_output = pcall(function()
@@ -27,8 +32,13 @@ M.get_indents = function(bufnr)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
+	if type(raw_output) ~= "table" then
+		error("ninjection error: Expected vim.api.nvim_buf_get_lines() to return a table.", 2)
+	end
+	---@cast raw_output string[]
 	lines = raw_output
-	if not lines or #lines == 0 then
+
+	if #lines == 0 then
 		if cfg.suppress_warnings == false then
 			vim.notify(
 				"ninjection.util.get_indents() warning: No lines returned "
@@ -63,11 +73,12 @@ M.get_indents = function(bufnr)
 	for _, line in ipairs(lines) do
 		---@cast line string
 		if not line:match("^%s*$") then
-			---@type string|nil
+			---@type string?
 			local indent = line:match("^(%s*)")
 			if indent then
 				-- Use vim.fn.strdisplaywidth() to calculate the visible width of the indent,
 				-- which will account for tabs.
+				---@type integer
 				local count = vim.fn.strdisplaywidth(indent)
 				if count < indents.l_indent then
 					indents.l_indent = count
@@ -84,16 +95,13 @@ M.get_indents = function(bufnr)
 end
 
 --- Restores the recorded whitespace indents (top, bottom, and left indent)
---- to a block of text.
----
+--- for the provided text.
 --- @param text string|table<integer, string> The text to restore indents in.
 --- Can be either a string (with newline separators) or a table of lines.
 --- @param indents NJIndents Table with indent values for t, b, l
---- @return table<integer, string>|nil restored_lines A table of lines with
---- the indents restored.
---- @return nil|string err  Error message, if applicable
+--- @return string[]? restored_lines, nil|string err Lines with the indents restored.
 M.restore_indents = function(text, indents)
-	---@type boolean, any|nil, table<integer, string>|nil
+	---@type boolean, unknown, string[]?
 	local ok, raw_output, lines
 
 	if type(text) == "string" then
@@ -103,8 +111,12 @@ M.restore_indents = function(text, indents)
 		if not ok then
 			error(tostring(raw_output), 2)
 		end
+		if type(raw_output) ~= "table" then
+			error("ninjection error: Expected a table returned from vim.split()", 2)
+		end
+		---@cast raw_output string[]
 		lines = raw_output
-		if not lines then
+		if #lines == 0 then
 			if cfg.suppress_warnings == false then
 				vim.notify(
 					"ninjection.util.restore_indents() warning: No lines " .. "returned from calling vim.split()",
@@ -118,7 +130,7 @@ M.restore_indents = function(text, indents)
 	else
 		error("ninjection.util.restore_indents() error: Text must be a string or " .. "a table of lines", 2)
 	end
-	---@cast lines table<integer, string>
+	---@cast lines string[]
 
 	-- Create the left indentation string.
 	---@type string
@@ -154,35 +166,43 @@ M.restore_indents = function(text, indents)
 	return lines
 end
 
--- Function: Open a vertical or horizontal split window for the child buffer.
----@param split_cmd string vsplit or split.
+--- Opens a vertically or horizontally split window for the child buffer.
+---@param split_cmd string v_split or split.
 ---@param bufnr integer child bufnr.
----@return integer|nil winid Handle for new window.
+---@return integer winid Handle for new window.
 local function open_split_win(split_cmd, bufnr)
-	---@type boolean, any|nil, integer|nil
+	---@type boolean, unknown, integer|nil
 	local ok, raw_output, winid
 	vim.cmd(split_cmd)
 	ok, winid = pcall(vim.api.nvim_get_current_win)
 	if not ok or not winid then
-		error("create_child_win() error: no handle returned for window: " .. tostring(winid), 2)
+		error(
+			"ninjection error: vim.api.nvim_get_current_win() did not return a " .. " window handle." .. tostring(winid),
+			2
+		)
 	end
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_win_set_buf(winid, bufnr)
 	end)
 	if not ok then
-		error("create_child_win() error: failed to set buffer in new window: " .. tostring(raw_output), 2)
+		error(
+			"ninjection error: vim.api.nvim_win_set_buf() failed to set buffer "
+				.. "in new window: "
+				.. tostring(raw_output),
+			2
+		)
 	end
 	---@cast winid integer
 	return winid
 end
 
--- Function: Set the child window cursor to the same relative position as it was
--- in the parent.
+--- Creates a window for the provided child buffer with either floating, v_split
+--- or h_split styles.
 ---@param bufnr integer The buffer to create a viewport for.
 ---@param style EditorStyle The window style to edit the buffer with.
----@return integer winid Default: 0, child window handle, if created.
+---@return integer winid Default: 0 (cur_win), child window handle, if created.
 local function create_child_win(bufnr, style)
-	---@type boolean, any|nil, integer|nil
+	---@type boolean, unknown, integer
 	local ok, raw_output, winid
 
 	if style == "floating" then
@@ -192,7 +212,7 @@ local function create_child_win(bufnr, style)
 		local row = math.floor((vim.o.lines - height) / 2)
 		local col = math.floor((vim.o.columns - width) / 2)
 
-		---@type table
+		---@type vim.api.keyset.win_config
 		local opts = {
 			style = "minimal",
 			relative = "editor", -- relative to the whole editor
@@ -209,12 +229,11 @@ local function create_child_win(bufnr, style)
 		if not ok then
 			error(tostring(raw_output), 2)
 		end
-		---@type integer|nil
-		winid = raw_output
-		if not winid then
-			error("create_child_win() error: no handle returned for window: " .. tostring(raw_output), 2)
+		if type(raw_output) ~= "number" then
+			error("ninjection error: vim.api.nvim_open_win() did not return a window " .. "handle.")
 		end
-		---@cast winid integer
+		---@cast raw_output integer
+		winid = raw_output
 		return winid
 	elseif style == "v_split" then
 		winid = open_split_win("vsplit", bufnr)
@@ -230,19 +249,18 @@ local function create_child_win(bufnr, style)
 	return 0
 end
 
--- Function: Create a child buffer and window to edit injected language text.
+--- Creates a child buffer to edit injected language text.
 ---@param p_bufnr integer Buffer handle for parent buffer.
 ---@param p_name string Name for parent buffer.
 ---@param p_range NJRange Text range for the injected text.
 ---@param root_dir string Root directory for project, or cwd.
 ---@param text string Text to populate the child buffer with.
 ---@param lang string Language to configure buffer for.
----@return {bufnr: integer|nil, win: integer|nil, indents: NJIndents} c_table
--- containing handles for the child buffer and window, if available, and parent
--- indents.
----@return string|nil err Error string, if applicable.
+---@return {bufnr: integer?, win: integer?, indents: NJIndents} c_table, nil|string err
+-- Returns table containing handles for the child buffer and window, if available,
+-- and parent indents.
 M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
-	---@type boolean, any|nil, string|nil, integer|nil
+	---@type boolean, unknown, string?, integer?
 	local ok, raw_output, err, c_bufnr
 
 	ok, raw_output = pcall(function()
@@ -253,7 +271,7 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	end
 	vim.notify("ninjection.edit(): Copied injected content text to register: " .. cfg.register, vim.log.levels.INFO)
 
-	---@type integer|nil
+	---@type integer?
 	c_bufnr = vim.api.nvim_create_buf(true, true)
 	if not c_bufnr then
 		error("ninjection.edit() error: Failed to create a child buffer.", 2)
@@ -293,7 +311,7 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 
 	-- Preserve indentation after creating and pasting buffer contents, before
 	-- autoformatting, or they will be lost.
-	---@type NJIndents|nil
+	---@type NJIndents?
 	local p_indents
 	if cfg.preserve_indents then
 		p_indents, err = M.get_indents(0)
@@ -358,17 +376,16 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
 end
 
--- Function: Set the child cursor to the same relative position as in the
--- parent window.
+--- Sets the child cursor to the same relative position as in the parent window.
 ---@param c_win integer Handle for child window to set the cursor in.
 ---@param p_cursor integer[] Parent cursor pos.
 ---@param s_row integer Starting row from the parent to offset the child cursor by.
 ---@param indents NJIndents? Indents to calculate additional offsets with.
 ---@return nil|string err Error string, if applicable.
 M.set_child_cur = function(c_win, p_cursor, s_row, indents)
-	---@type boolean, any|nil, string|nil
+	---@type boolean, unknown, string?
 	local ok, raw_output, err
-	---@type integer[]|nil
+	---@type integer[]?
 	local offset_cur
 	-- Assuming autoformat will remove any existing indents, we need to offset
 	-- the cursor for the removed indents.
@@ -413,18 +430,23 @@ end
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
 -- filetypes to buffers, so we need a function to start the appropriate LSP.
 
---- Start an appropriate LSP for the provided language
+--- Starts an appropriate LSP for the provided language.
 --- @param lang string The filetype of the injected language (e.g., "lua", "python").
 --- @param root_dir string The root directory for the buffer.
---- @return NJLspStatus|nil result  A table containing the LSP status and client_id
---- Return: "unmapped", "unconfigured", "unavailable", "no-exec", "unsupported",
---- "failed_start", "started" and client_id if available
---- @return nil|string err Error message, if applicable
+--- @return NJLspStatus? result, nil|string err  A table containing the LSP
+--- status and client_id. Status can be:
+---   - "unmapped"
+---   - "unconfigured"
+---   - "unavailable"
+---   - "no-exec"
+---   - "unsupported"
+---   - "failed_start"
+---   - "started"
 M.start_lsp = function(lang, root_dir)
-	---@type boolean, any|nil, string|nil, string|nil
+	---@type boolean, unknown, string?
 	local ok, raw_output, lang_lsp
 
-	-- The injected langauge must be mapped to an LSP value
+	-- The injected language must be mapped to an LSP
 	lang_lsp = cfg.lsp_map[lang]
 	if not lang_lsp then
 		vim.notify(
@@ -445,7 +467,7 @@ M.start_lsp = function(lang, root_dir)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
-	---@type lspconfig.Config|nil
+	---@type lspconfig.Config?
 	local lsp_def = raw_output
 	if not lsp_def then
 		vim.notify(
@@ -462,7 +484,7 @@ M.start_lsp = function(lang, root_dir)
 
 	-- The LSP binary path must exist
 	-- RPC function support is not implemented
-	---@type string[]|fun(dispatchers: vim.lsp.rpc.Dispatchers): vim.lsp.rpc.PublicClient|nil
+	---@type string[]|fun(dispatchers: vim.lsp.rpc.Dispatchers): vim.lsp.rpc.PublicClient?
 	local lsp_cmd = lsp_def.cmd
 	if not lsp_cmd or #lsp_cmd == 0 then
 		vim.notify(
@@ -515,7 +537,7 @@ M.start_lsp = function(lang, root_dir)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
-	---@type integer|nil
+	---@type integer?
 	local client_id = raw_output
 	if client_id == nil then
 		vim.notify(

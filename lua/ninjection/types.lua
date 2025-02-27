@@ -6,6 +6,18 @@
 -- Modified from nvim-lspconfig/lua/lspconfig/configs.lua because I can't find
 -- a reference to: vim.api.keyset.create_user_command.command_args
 
+---@class Ninjection.Subcommand
+---@field impl fun()
+---@field complete? fun(arg_lead: string): string[]
+
+---@class Ninjection.CmdOpts
+---@field args string			-- The entire argument string as typed.
+---@field fargs string[]	-- The command arguments as an array of strings.
+---@field bang? boolean		-- True if the command was invoked with a bang (!).
+---@field line1? number   -- Starting line number if the command was used with a range.
+---@field line2? number   -- Ending line number if the command was used with a range.
+---@field count? number   -- The count provided, if any.
+
 -- Ninjection configuration type annotations.
 ---@class Ninjection.Config
 ---@field file_lang? string (optional) -- default: "nix"
