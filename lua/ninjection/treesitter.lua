@@ -11,7 +11,7 @@ local ts = require("vim.treesitter")
 --- Retrieves a parsed query from Treesitter given a language and pattern.
 ---@param query string Lua-literal string for Treesitter query.
 ---@param lang? string? Default: "nix", language grammar to parse with.
----@return vim.treesitter.Query? parsed_query, nil|string err The parsed Treesitter Query object
+---@return vim.treesitter.Query? parsed_query, string? err The parsed Treesitter Query object
 M.get_query = function(query, lang)
 	lang = lang or "nix"
 	---@cast lang string
@@ -43,7 +43,7 @@ end
 --- Parses the root tree for a language in a buffer.
 ---@param bufnr integer Handle for buffer to parse.
 ---@param lang? string Default: "nix" language to parse with.
----@return TSNode? root, nil|string err root node of the TSTree for the language.
+---@return TSNode? root, string? err root node of the TSTree for the language.
 M.get_root = function(bufnr, lang)
 	lang = lang or "nix"
 	---@type boolean, unknown, vim.treesitter.LanguageTree?
@@ -54,7 +54,7 @@ M.get_root = function(bufnr, lang)
 	if not ok then
 		error("ninjection.treesitter.get_root() error: " .. tostring(raw_output), 2)
 	end
-	if not raw_output._injection_query then
+	if not raw_output then
 		if cfg.suppress_warnings == false then
 			vim.notify(
 				"ninjection.treesitter.get_root() warning: No parser available " .. "for: " .. lang,
@@ -98,7 +98,7 @@ end
 --- with start and ending coordinates.
 ---@param query string Pattern to identify an injected lang.
 ---@param lang? string Default: "nix" language grammar to use for parsing.
----@return NJNodeTable|nil table, nil|string err
+---@return NJNodeTable? table, string? err
 --- Returns a table containing:
 ---  - node: TSNode - the Treesitter node element (see :h TSNode).
 ---  - range: NJRange - row/col ranges for the node.
@@ -115,10 +115,7 @@ M.get_node_table = function(query, lang)
 		error("ninjection.treesitter.get_node_table() error: " .. tostring(raw_output), 2)
 	end
 	if type(raw_output) ~= "number" then
-		error(
-			"ninjection.treesitter.get_node_table() error: No buffer handle returned: " .. tostring(raw_output),
-			2
-		)
+		error("ninjection.treesitter.get_node_table() error: No buffer handle returned: " .. tostring(raw_output), 2)
 	end
 	bufnr = raw_output
 	---@cast bufnr integer
@@ -129,8 +126,7 @@ M.get_node_table = function(query, lang)
 	if not ok then
 		error("ninjection.treesitter.get_node_table() error: " .. tostring(raw_output), 2)
 	end
-	cursor = raw_output
-	if not cursor then
+	if type(raw_output) ~= "table" then
 		if cfg.suppress_warnings == false then
 			vim.notify(
 				"ninjection.treesitter.get_node_table() warning: Could not "
@@ -141,6 +137,7 @@ M.get_node_table = function(query, lang)
 		end
 		return nil
 	end
+	cursor = raw_output
 	---@cast cursor integer[]
 
 	---@type integer
@@ -148,7 +145,7 @@ M.get_node_table = function(query, lang)
 	---@type integer
 	local cur_col = cursor[2]
 
-	--- @type vim.treesitter.Query|nil
+	--- @type vim.treesitter.Query?
 	local parsed_query
 	parsed_query, err = M.get_query(query, lang)
 	if not parsed_query then
@@ -158,7 +155,7 @@ M.get_node_table = function(query, lang)
 				vim.log.levels.WARN
 			)
 		end
-		return nil
+		return nil, err
 	end
 	---@cast parsed_query vim.treesitter.Query
 
@@ -172,7 +169,7 @@ M.get_node_table = function(query, lang)
 				vim.log.levels.WARN
 			)
 		end
-		return nil
+		return nil, err
 	end
 	---@cast root TSNode
 
