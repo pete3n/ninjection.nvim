@@ -346,8 +346,7 @@ M.replace = function()
 			end
 			return nil
 		else
-			error("ninjection.replace() error: Could not retrieve ninjection table " ..
-				"from child buffer." .. err, 2)
+			error("ninjection.replace() error: Could not retrieve ninjection table " .. "from child buffer." .. err, 2)
 		end
 	end
 	---@type NJChild
@@ -368,8 +367,7 @@ M.replace = function()
 				2
 			)
 		end
-		error("ninjection.replace() error: Could not retrieve ninjection table " ..
-			"for parent buffer." .. err, 2)
+		error("ninjection.replace() error: Could not retrieve ninjection table " .. "for parent buffer." .. err, 2)
 	end
 	---@type NJParent
 	local nj_p_b = raw_output
@@ -381,7 +379,7 @@ M.replace = function()
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_win_get_cursor(0)
 	end)
-	if not ok or type (raw_output) ~= "table" then
+	if not ok or type(raw_output) ~= "table" then
 		error(tostring(raw_output), 2)
 	end
 	---@type integer[]
