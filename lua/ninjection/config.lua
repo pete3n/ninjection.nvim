@@ -71,16 +71,16 @@ M.get_default = function()
 	return default_config
 end
 
----@eval return vim.split((function()
+---@eval return (function()
 ---  local s = vim.inspect(require("ninjection.config").get_default())
----  s = s:gsub("\\t", "  ")
----  s = s:gsub("\\n", "\n")
+---  s = s:gsub("\\t", "  ")   -- Replace literal "\t" with four spaces.
+---  s = s:gsub("\\n", "\n")     -- Replace literal "\n" with actual newlines.
 ---  local lines = vim.split(s, "\n")
 ---  for i, line in ipairs(lines) do
----  	lines[i] = "`" .. line
+---    lines[i] = "`" .. line   -- Prefix each line with a backtick.
 ---  end
 ---  return lines
---- end)()
+---end)()
 ---@minidoc_afterlines_end
 
 --- Reloads all ninjection modules to flush caches and apply a new config.
