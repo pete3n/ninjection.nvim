@@ -75,9 +75,12 @@ end
 ---  local s = vim.inspect(require("ninjection.config").get_default())
 ---  s = s:gsub("\\t", "  ")
 ---  s = s:gsub("\\n", "\n")
----  s = "`lua\n" .. s .. "\n`"
----  return s
---- end)(), "\n")
+---  local lines = vim.split(s, "\n")
+---  for i, line in ipairs(lines) do
+---  	lines[i] = "`" .. line
+---  end
+---  return lines
+--- end)()
 ---@minidoc_afterlines_end
 
 --- Reloads all ninjection modules to flush caches and apply a new config.
