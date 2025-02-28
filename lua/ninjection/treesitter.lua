@@ -1,6 +1,7 @@
 ---@module "ninjection.treesitter"
 ---@tag ninjection.treesitter
----@brief [[
+---@brief
+---[[
 --- The treesitter module contains all treesitter related functions for ninjection.
 ---]]
 

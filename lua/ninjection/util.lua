@@ -1,6 +1,7 @@
 ---@module "ninjection.util"
 ---@tag ninjeciton.util
----@brief [[
+---@brief
+---[[
 --- The util module contains helper functions utilized by the main ninjection
 --- module ( primarily edit() ). This includes get and recording indentation,
 --- creating new child buffers, creating new windows, setting cursor position,
