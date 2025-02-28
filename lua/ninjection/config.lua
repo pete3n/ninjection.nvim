@@ -73,7 +73,7 @@ end
 
 ---@eval return vim.split((function()
 ---  local s = vim.inspect(require("ninjection.config").get_default())
----  s = s:gsub("\t", "    ")
+---  s = s:gsub("\\t", "    ")
 ---  return s
 --- end)(), "\n")
 ---@minidoc_afterlines_end
