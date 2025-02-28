@@ -73,9 +73,9 @@ end
 
 ---@eval return vim.split((function()
 ---  local s = vim.inspect(require("ninjection.config").get_default())
----  s = s:gsub("\\t", "    ")
+---  s = s:gsub("\\t", "  ")
 ---  s = s:gsub("\\n", "\n")
----  s = "```lua\n" .. s .. "\n```"
+---  s = "`lua\n" .. s .. "\n`"
 ---  return s
 --- end)(), "\n")
 ---@minidoc_afterlines_end
