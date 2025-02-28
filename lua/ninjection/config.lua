@@ -64,14 +64,19 @@ local default_config = {
 	},
 }
 
-
+---@nodoc
 --- Provide default_config for inspection, primarily for documentation.
 ---@return Ninjection.Config
 M.get_default = function()
 	return default_config
 end
----@eval return vim.split(vim.inspect(require("ninjection.config").get_default()), "\n")
----minidoc_afterlines_end
+
+---@eval return vim.split((function()
+---  local s = vim.inspect(require("ninjection.config").get_default())
+---  s = s:gsub("\t", "    ")
+---  return s
+--- end)(), "\n")
+---@minidoc_afterlines_end
 
 --- Reloads all ninjection modules to flush caches and apply a new config.
 ---@return nil
