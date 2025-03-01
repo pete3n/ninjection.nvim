@@ -25,7 +25,7 @@ jobs:
         run: make -f ci/Makefile gendocs
 
       - name: List output
-        run: ls -la . && pwd
+        run: ls -la . && pwd && ls -la ./scripts && -la ./scripts/doc
 
       - name: Commit and push documentation
         run: |
