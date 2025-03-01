@@ -45,7 +45,6 @@ M.get_query = function(query, lang)
 	return parsed_query
 end
 
-
 ---@tag ninjection.treesitter.get_root()
 ---@brief
 --- Parses the root tree for a language in a buffer.
@@ -230,7 +229,6 @@ M.get_node_table = function(query, lang)
 
 	return nil
 end
-
 
 ---@tag ninjection.treesitter.get_inj_lang()
 ---@brief
