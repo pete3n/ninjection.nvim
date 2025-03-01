@@ -1,3 +1,4 @@
+---@nodoc
 ---@type table<string, Ninjection.Subcommand>
 local subcommand_tbl = {
 	edit = {
@@ -17,6 +18,7 @@ local subcommand_tbl = {
 	},
 }
 
+---@nodoc
 ---@param opts Ninjection.CmdOpts
 ---@return nil
 local function ninjection_cmd(opts)
@@ -61,3 +63,11 @@ end, { noremap = true, silent = true })
 vim.keymap.set("n", "<Plug>(NinjectionSelect)", function()
 	require("ninjection").select()
 end, { noremap = true, silent = true })
+
+---@mod ninjection-command USER COMMAND
+---@brief :Ninjection <subcommand?>
+---
+---	Subcommands:
+---		edit  	=> |ninjection.edit|
+---		replace => |ninjection.replace|
+---		select  => |ninjection.select|

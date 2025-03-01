@@ -1,13 +1,12 @@
 ---@module "ninjection.util"
----@tag ninjeciton.util
 ---@brief
----[[
 --- The util module contains helper functions utilized by the main ninjection
---- module ( primarily edit() ). This includes get and recording indentation,
---- creating new child buffers, creating new windows, setting cursor position,
---- and starting and attaching the appropriate LSP to the child buffer.
----]]
+--- module for getting and recording indentation, creating new child buffers,
+--- creating new windows, setting cursor position, and starting and attaching
+--- the appropriate LSP to the child buffer.
+---
 local M = {}
+---@nodoc
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").cfg
 local lspconfig = require("lspconfig")
@@ -16,13 +15,19 @@ local lspconfig = require("lspconfig")
 -- buffer to allow easily formatting the buffer without worrying about its
 -- relative placement in the parent buffer.
 
+---@tag ninjection.util.get_indents()
+---@brief
 --- Finds whitespace indents (top, bottom, left) in the provided buffer.
----@param bufnr integer  Buffer handle
+---
+--- Parameters ~
+---@param bufnr integer - Buffer handle.
+---
 ---@return NJIndents? indents, string? err
 --- Returns, on success, a table containing:
----  - t_indent: number of blank lines at the top.
----  - b_indent: number of blank lines at the bottom.
----  - l_indent: minimum number of leading spaces on nonempty lines.
+---  - `t_indent`: number of blank lines at the top.
+---  - `b_indent`: number of blank lines at the bottom.
+---  - `l_indent`: minimum number of leading spaces on nonempty lines.
+---
 M.get_indents = function(bufnr)
 	---@type boolean, unknown, string[]
 	local ok, raw_output, lines
@@ -95,12 +100,19 @@ M.get_indents = function(bufnr)
 	return indents, nil
 end
 
+---@tag ninjection.util.restore_indents()
+---@brief
 --- Restores the recorded whitespace indents (top, bottom, and left indent)
 --- for the provided text.
---- @param text string|table<integer, string> The text to restore indents in.
+---
+--- Parameters ~
+---@param text string|table<integer,string> The text to restore indents to.
 --- Can be either a string (with newline separators) or a table of lines.
---- @param indents NJIndents Table with indent values for t, b, l
---- @return string[]? restored_lines, string? err Lines with the indents restored.
+---@param indents NJIndents Table with indent values for t, b, l
+---
+---@return string[]? restored_lines, string? err
+--- Lines with the indents restored.
+---
 M.restore_indents = function(text, indents)
 	---@type boolean, unknown, string[]?
 	local ok, raw_output, lines
@@ -167,6 +179,7 @@ M.restore_indents = function(text, indents)
 	return lines
 end
 
+---@nodoc
 --- Opens a vertically or horizontally split window for the child buffer.
 ---@param split_cmd string v_split or split.
 ---@param bufnr integer child bufnr.
@@ -197,6 +210,7 @@ local function open_split_win(split_cmd, bufnr)
 	return winid
 end
 
+---@nodoc
 --- Creates a window for the provided child buffer with either floating, v_split
 --- or h_split styles.
 ---@param bufnr integer The buffer to create a viewport for.
@@ -250,16 +264,22 @@ local function create_child_win(bufnr, style)
 	return 0
 end
 
+---@tag ninjection.util.create_child_buf()
+---@brief
 --- Creates a child buffer to edit injected language text.
----@param p_bufnr integer Buffer handle for parent buffer.
----@param p_name string Name for parent buffer.
----@param p_range NJRange Text range for the injected text.
----@param root_dir string Root directory for project, or cwd.
----@param text string Text to populate the child buffer with.
----@param lang string Language to configure buffer for.
----@return {bufnr: integer?, win: integer?, indents: NJIndents} c_table, string? err
--- Returns table containing handles for the child buffer and window, if available,
--- and parent indents.
+---
+--- Parameters ~
+---@param p_bufnr integer - Buffer handle for parent buffer.
+---@param p_name string - Name for parent buffer.
+---@param p_range NJRange - Text range for the injected text.
+---@param root_dir string - Root directory for project, or cwd.
+---@param text string - Text to populate the child buffer with.
+---@param lang string - Language to configure buffer for.
+---
+---@return { bufnr: integer?, win: integer?, indents: NJIndents } c_table, string? err
+-- Returns table containing handles for the child buffer and window, if
+-- available, and parent indents.
+--
 M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	---@type boolean, unknown, string?, integer?
 	local ok, raw_output, err, c_bufnr
@@ -377,12 +397,18 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
 end
 
+---@tag ninjection.util.set_child_cur()
+---@brief
 --- Sets the child cursor to the same relative position as in the parent window.
+---
+--- Parameters ~
 ---@param c_win integer Handle for child window to set the cursor in.
 ---@param p_cursor integer[] Parent cursor pos.
 ---@param s_row integer Starting row from the parent to offset the child cursor by.
 ---@param indents NJIndents? Indents to calculate additional offsets with.
----@return string? err Error string, if applicable.
+---
+---@return string? err
+---
 M.set_child_cur = function(c_win, p_cursor, s_row, indents)
 	---@type boolean, unknown, string?
 	local ok, raw_output, err
@@ -431,18 +457,16 @@ end
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
 -- filetypes to buffers, so we need a function to start the appropriate LSP.
 
+---@tag ninjection.util.start_lsp()
+---@brief
 --- Starts an appropriate LSP for the provided language.
---- @param lang string The filetype of the injected language (e.g., "lua", "python").
---- @param root_dir string The root directory for the buffer.
---- @return NJLspStatus? result, string? err  A table containing the LSP
---- status and client_id. Status can be:
----   - "unmapped"
----   - "unconfigured"
----   - "unavailable"
----   - "no-exec"
----   - "unsupported"
----   - "failed_start"
----   - "started"
+---
+--- Parameters ~
+---@param lang string - The filetype of the injected language (e.g., "lua", "python").
+---@param root_dir string - The root directory for the buffer.
+---
+---@return NJLspStatus? result, string? err - The LSP status.
+---
 M.start_lsp = function(lang, root_dir)
 	---@type boolean, unknown, string?
 	local ok, raw_output, lang_lsp
