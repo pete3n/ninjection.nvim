@@ -77,3 +77,7 @@ lua_ls-debug:
 	else \
 		echo "✅ No errors found."; \
 	fi
+
+.PHONY: gendocs
+	gendocs:
+		sh ./scripts/gendoc.sh
