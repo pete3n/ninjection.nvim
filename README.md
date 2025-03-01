@@ -16,39 +16,38 @@ _Don't be like Pete, use nininjection.nvim!_
 
 ## Current Support
 ninjection.nvim currently is limited to detecting injected languages in Nix 
-files. 
+files. However, it should be easily extensible for other languages. It expects 
+injected languages to be designated with this format:
 ```
-  extraPlugins = [
-    (pkgs.vimUtils.buildVimPlugin {
-      name = "ninjection.nvim";
-      src = pkgs.fetchFromGitHub {
-        owner = "pete3n";
-        repo = "ninjection.nvim";
-        rev = "44496fb3e706c795e87d475d674708919a01cbea";
-        hash = "sha256-tSDIGbTD+5fm1Qo3922DGJ1YIRNAUJF2btWf4kWbCoM=";
-      };
-    })
-  ];
+  injectedLang = # language_comment
+    ''
+      injected language content
+      end
+    '';
 ```
-This will register the NGUpdateRepo command which you can keybind.
-If you call NGUpdateRepo with the cursor in a fetchFromGitHub attribute set, 
-then it will check for the most recent revision, and if it is different from the
-current, updates the revision and the corresponding hash.
+
+Both these limitations are derived from the Treesitter query which is used to
+identify these code blocks. The default query for Nix is:
+```
+    (
+        (comment) @injection.language
+        .
+        [
+            (indented_string_expression
+                (string_fragment) @injection.content)
+            (string_expression
+                (string_fragment) @injection.content)
+        ]
+        (#gsub! @injection.language "#%s*([%w%p]+)%s*" "%1")
+        (#set! injection.combined)
+    )
+```
 
 ## Dependencies
-[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) must be installed.
-jq, and nix-prefetch-git must be executable and available in your path. To confirm
-dependencies are availabe, nix-prefetch includes a health check function that 
-you can run from the nvim commandline with:
-```
-    :checkhealth nix-prefetch
-```
+Ninjection requires Neovim version 0.8.0 or greater, with
+[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) and [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig) both enabled.
 
-## Future Development
-- [x] fetchFromGitHub: update rev and hash
-    - [ ] fetchFromGithub: preserve rev, update hash
-    - [ ] sha256 attribute support
-    - [ ] version tag interpretation/support
-- [ ] fetchFromGitLab support
-- [ ] fetchurl support 
-- [ ] fetchzip support 
+You can verify these dependencies are met by running:
+```
+    :checkhealth ninjection
+```
