@@ -23,3 +23,17 @@ jobs:
 
       - name: Run Documentation Generation
         run: make -f ci/Makefile gendocs
+
+      - name: Commit and push documentation
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add doc/
+          if ! git diff --cached --quiet; then
+            git commit -m "Update generated documentation"
+            git push
+          else
+            echo "No changes to commit"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
