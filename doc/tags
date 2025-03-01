@@ -1,5 +1,4 @@
 EditorStyle	ninjection.txt	/*EditorStyle*
-INTRODUCTION	introduction.txt	/*INTRODUCTION*
 NJChild	ninjection.txt	/*NJChild*
 NJIndents	ninjection.txt	/*NJIndents*
 NJLspStatus	ninjection.txt	/*NJLspStatus*
@@ -14,7 +13,6 @@ default_config	ninjection.txt	/*default_config*
 lspconfig.Config	ninjection.txt	/*lspconfig.Config*
 ninjection.edit()	ninjection.txt	/*ninjection.edit()*
 ninjection.health.validate_config()	ninjection.txt	/*ninjection.health.validate_config()*
-ninjection.nvim	introduction.txt	/*ninjection.nvim*
 ninjection.replace()	ninjection.txt	/*ninjection.replace()*
 ninjection.select()	ninjection.txt	/*ninjection.select()*
 ninjection.treesitter.get_inj_lang()	ninjection.txt	/*ninjection.treesitter.get_inj_lang()*
