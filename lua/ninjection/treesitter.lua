@@ -1,18 +1,22 @@
 ---@module "ninjection.treesitter"
----@tag ninjection.treesitter
 ---@brief
----[[
 --- The treesitter module contains all treesitter related functions for ninjection.
----]]
-
+---
 local M = {}
 local cfg = require("ninjection.config").cfg
 local ts = require("vim.treesitter")
 
+---@tag ninjection.treesitter.qet_query()
+---@brief
 --- Retrieves a parsed query from Treesitter given a language and pattern.
----@param query string Lua-literal string for Treesitter query.
----@param lang? string? Default: "nix", language grammar to parse with.
----@return vim.treesitter.Query? parsed_query, string? err The parsed Treesitter Query object
+---
+--- Parameters ~
+---@param query string - Lua-literal string for Treesitter query.
+---@param lang? string? - Default: `"nix"` - language grammar to parse with.
+---
+---@return vim.treesitter.Query? parsed_query, string? err
+---The parsed Treesitter Query object
+---
 M.get_query = function(query, lang)
 	lang = lang or "nix"
 	---@cast lang string
@@ -41,10 +45,18 @@ M.get_query = function(query, lang)
 	return parsed_query
 end
 
+
+---@tag ninjection.treesitter.get_root()
+---@brief
 --- Parses the root tree for a language in a buffer.
----@param bufnr integer Handle for buffer to parse.
----@param lang? string Default: "nix" language to parse with.
----@return TSNode? root, string? err root node of the TSTree for the language.
+---
+--- Parameters ~
+---@param bufnr integer - Handle for buffer to parse.
+---@param lang? string  - Default: `"nix"` - language to parse with.
+---
+---@return TSNode? root, string? err
+--- Root node of the TSTree for the language.
+---
 M.get_root = function(bufnr, lang)
 	lang = lang or "nix"
 	---@type boolean, unknown, vim.treesitter.LanguageTree?
@@ -95,15 +107,22 @@ M.get_root = function(bufnr, lang)
 	return root
 end
 
+---@tag ninjection.treesitter.get_node_table()
+---@brief
 --- Identifies the injected language node at the current cursor position
 --- with start and ending coordinates.
----@param query string Pattern to identify an injected lang.
----@param lang? string Default: "nix" language grammar to use for parsing.
+---
+--- Parameters ~
+---@param query string - Pattern to identify an injected lang.
+---@param lang? string - Default: `"nix"` language grammar to use for parsing.
+---
 ---@return NJNodeTable? table, string? err
 --- Returns a table containing:
----  - node: TSNode - the Treesitter node element (see :h TSNode).
----  - range: NJRange - row/col ranges for the node.
----  NOTE: Coordinates may not match the actual text locations (see: get_visual_range() for this).
+---  - node: `TSNode` - the Treesitter node element (see :h TSNode).
+---  - range: `NJRange` - row/col ranges for the node.
+---  NOTE: Coordinates may not match the actual text locations
+---  (see: `ninjection.treesitter.get_visual_range()` for this).
+--
 M.get_node_table = function(query, lang)
 	lang = lang or "nix"
 	---@type boolean, unknown, string?, integer?, integer[]?
@@ -212,13 +231,19 @@ M.get_node_table = function(query, lang)
 	return nil
 end
 
---- Function: Parse an injected content node for an associated language comment.
+
+---@tag ninjection.treesitter.get_inj_lang()
+---@brief
+--- Parse an injected content node for an associated language comment.
 ---
----@param query string Query to identify an injected content node.
----@param bufnr integer Handle for the buffer to query in.
----@param file_lang? string Default: "nix". Parent file language to find injections in.
----@return string|nil inj_lang Injected language identified.
----@return nil|string err  Error string, if applicable.
+--- Parameters ~
+---@param query string - Query to identify an injected content node.
+---@param bufnr integer - Handle for the buffer to query in.
+---@param file_lang? string - Default: `"nix"` - Parent file language to find
+--- injections in.
+---
+---@return string? inj_lang , string? err - Injected language identified.
+---
 M.get_inj_lang = function(query, bufnr, file_lang)
 	---@type boolean, any|nil, string|nil, vim.treesitter.Query|nil
 	local ok, raw_output, err, parsed_query
@@ -374,20 +399,26 @@ end
 -- Treesitter's selection for "injected.content" doesn't match the actual text
 -- selected. We need a function that adjusts the selection to match.
 
---- Function: Gets an adjusted "visual" range for a node by approximating the
+---@tag ninjection.treesitter.get_visual_range()
+---@brief
+--- Gets an adjusted "visual" range for a node by approximating the
 --- range of text that is actually seen (as returned by get_node_text).
 --- This makes an opinionated assumption about formatting that expects:
----	assigment = # injected_lang_comment
----	''
----		injected.content
----	'';
+---
+---	`assigment = # injected_lang_comment
+---	`''
+---	`	 injected.content
+---	`'';
+---
 ---	The '' and ''; characters are not important, but the dedicated lines for
 --- comment delimiters and the language comment above that block are important.
 ---
---- @param node TSNode The Treesitter node to select in.
---- @param bufnr integer Handle for the buffer to work in.
---- @return NJRange|nil vs_range Range of text selected.
---- @return nil|string err Error string, if applicable.
+--- Parameters ~
+---@param node TSNode - The Treesitter node to select in.
+---@param bufnr integer - Handle for the buffer to work in.
+---
+---@return NJRange? vs_range, string? err - Range of text selected.
+---
 M.get_visual_range = function(node, bufnr)
 	---@type boolean, any|nil, string|nil, integer[]|nil
 	local ok, raw_output, err, range
