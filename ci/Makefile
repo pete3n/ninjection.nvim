@@ -80,4 +80,8 @@ lua_ls-debug:
 
 .PHONY: gendocs
 	gendocs:
-		sh ./scripts/gendoc.sh
+		@echo "Generating documentation..."
+		nvim --headless -c 'luafile ci/mini-doc.lua' -c 'qa!'
+		cat doc/introduction.txt doc/ninjection.txt > doc/ninjection_final.txt
+		mv doc/ninjection_final.txt doc/ninjection.txt
+		@echo "Documentation generated in doc/ninjection.txt"

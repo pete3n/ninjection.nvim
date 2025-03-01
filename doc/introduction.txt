@@ -1,0 +1,37 @@
+==============================================================================
+*INTRODUCTION*																							 *ninjection.nvim*
+
+Ninjection is a plugin designed to improve editing injected language text.
+Its goal is to provide a seamless, first-class editing experience for injected
+code with full support for LSPs, code-snippets, completions, formatting, etc.
+
+Ninjection utilizes Treesitter's language parsing functionality to identify
+nodes that contain an injected language, and appropriately designate that
+language. It provides functions to create a new buffer for that language,
+and to attach an appropriate LSP to that buffer.
+
+While Ninjection was written primarily to edit injected languages in Nix files,
+it should be easily extensible to other languages. Ninjection provides
+configuration options to modify language parsing queries, LSP mappings,
+window styles, and formatting.
+
+Getting started with ninjection:
+  1. Run `:checkhealth ninjection` to check that all dependencies are present
+	and that your configuration is valid.
+  2. Move the cursor to an injected code block:
+	`:Ninjection select` - should highlight the entire injected code block.
+	`:Ninjection edit` - should open a floating window with the injected text 
+	and attach the appropriate LSP. 
+	`:Ninjection restore` - should apply any changes in the editing buffer to 
+	the original buffer. 
+	You can also test functionality with: 
+	`:lua require("ninjection.ninjection").select()`
+	`:lua require("ninjection.ninjection").edit()`
+	`:lua require("ninjection.ninjection").replace()`
+  3. Ninjection provides keymap plugs for you to map keybindings 
+	of your choosing:
+	`<Plug>(NinjectionEdit)`
+	`<Plug>(NinjectionReplace)`
+	`<Plug>(NinjectionSelect)`
+     
+
