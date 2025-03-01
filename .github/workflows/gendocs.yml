@@ -4,40 +4,51 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-docs:
-    runs-on: ubuntu-latest
+  build-sources:
+    name: Generate docs
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            url: https://github.com/neovim/neovim/releases/download/v0.10.2/nvim-linux64.tar.gz
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - run: date +%F > todays-date
+      - name: Restore cache for today's nightly.
+        uses: actions/cache@v4
+        with:
+          path: _neovim
+          key: ${{ runner.os }}-${{ matrix.url }}-${{ hashFiles('todays-date') }}
 
-      - name: Install Neovim
+      - name: Prepare
         run: |
-          sudo apt-get update
-          sudo apt-get install -y neovim
+          test -d _neovim || {
+            mkdir -p _neovim
+            curl -sL ${{ matrix.url }} | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
+          }
+          mkdir -p ~/.local/share/nvim/site/pack/vendor/start
+          git clone https://github.com/echasnovski/mini.nvim ~/.local/share/nvim/site/pack/vendor/start/mini.nvim
+          ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
 
-      - name: Install Lua and mini.doc Dependencies
+      - name: Generating docs
         run: |
-          sudo apt-get install -y lua5.3
-          mkdir -p ~/.config/nvim/pack/plugins/start
-          git clone https://github.com/echasnovski/mini.nvim.git ~/.config/nvim/pack/plugins/start/mini.nvim
+          export PATH="${PWD}/_neovim/bin:${PATH}"
+          export VIM="${PWD}/_neovim/share/nvim/runtime"
+          nvim --version
+          make -f ci/Makefile gendocs
 
-      - name: Run Documentation Generation
-        working-directory: ${{ github.workspace }}
-        run: make -f ci/Makefile gendocs
-
-      - name: List output
-        run: ls -la . && pwd && ls -la ./doc
-
-      - name: Commit and push documentation
-        run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-          git add doc/
-          if ! git diff --cached --quiet; then
-            git commit -m "Update generated documentation"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+      - name: Update documentation
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MSG: |
+            [docgen] Update doc/ninjection.txt
+            skip-checks: true
+        run: |
+          git config user.email "actions@github"
+          git config user.name "Github Actions"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          git add doc/
+          # Only commit and push if we have changes
+          git diff --quiet && git diff --staged --quiet || (git commit -m "${COMMIT_MSG}"; git push origin HEAD:${GITHUB_REF})

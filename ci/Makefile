@@ -2,6 +2,8 @@ ifndef VERBOSE
 .SILENT:
 endif
 
+.PHONY: gendocs stylua lua_ls-check lua_ls-debug
+
 stylua:
 	stylua --color always --check .
 
@@ -78,10 +80,9 @@ lua_ls-debug:
 		echo "✅ No errors found."; \
 	fi
 
-.PHONY: gendocs
-	gendocs:
-		@echo "Generating documentation..."
-		nvim --headless -c 'luafile ci/mini-doc.lua' -c 'qa!'
-		cat doc/introduction.txt doc/ninjection.txt > doc/ninjection_final.txt
-		mv doc/ninjection_final.txt doc/ninjection.txt
-		@echo "Documentation generated in doc/ninjection.txt"
+gendocs:
+	@echo "Generating documentation..."
+	nvim --headless -c 'luafile ci/mini-doc.lua' -c 'qa!'
+	cat doc/introduction.txt doc/ninjection.txt > doc/ninjection_final.txt
+	mv doc/ninjection_final.txt doc/ninjection.txt
+	@echo "Documentation generated in doc/ninjection.txt"
