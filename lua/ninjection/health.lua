@@ -1,5 +1,8 @@
 ---@module "ninjection.health"
-
+---@brief
+--- The health module contains functions to validate configuration parameters
+--- and check for required dependencies.
+---
 local health = require("vim.health")
 local start = health.start
 local ok = health.ok
@@ -8,8 +11,16 @@ local h_error = health.error
 
 local M = {}
 
+---@tag ninjection.health.validate_config()
+---@brief
+---	Validates either a provided configuration table or the
+---	current configuration.
+---
+--- Parameters ~
 ---@param cfg? Ninjection.Config
----@return boolean, string|nil
+---
+---@return boolean is_valid, string? err
+---
 M.validate_config = function(cfg)
 	cfg = cfg or require("ninjection.config").cfg
 	---@type boolean, string?
@@ -33,7 +44,6 @@ M.validate_config = function(cfg)
 
 	return is_valid, err
 end
-
 local required_plugins = {
 	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
 	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
