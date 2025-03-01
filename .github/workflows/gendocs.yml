@@ -22,4 +22,5 @@ jobs:
           git clone https://github.com/echasnovski/mini.nvim.git ~/.config/nvim/pack/plugins/start/mini.nvim
 
       - name: Run Documentation Generation
+        working-directory: ${{ github.workspace }}
         run: make gendocs
