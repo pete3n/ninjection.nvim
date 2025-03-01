@@ -22,10 +22,11 @@ jobs:
           git clone https://github.com/echasnovski/mini.nvim.git ~/.config/nvim/pack/plugins/start/mini.nvim
 
       - name: Run Documentation Generation
+        working-directory: ${{ github.workspace }}
         run: make -f ci/Makefile gendocs
 
       - name: List output
-        run: ls -la . && pwd && ls -la ./scripts && -la ./scripts/doc
+        run: ls -la . && pwd && ls -la ./scripts
 
       - name: Commit and push documentation
         run: |
