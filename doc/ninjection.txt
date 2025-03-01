@@ -1,0 +1,391 @@
+==============================================================================
+*INTRODUCTION*																							 *ninjection.nvim*
+
+Ninjection is a plugin designed to improve editing injected language text.
+Its goal is to provide a seamless, first-class editing experience for injected
+code with full support for LSPs, code-snippets, completions, formatting, etc.
+
+Ninjection utilizes Treesitter's language parsing functionality to identify
+nodes that contain an injected language, and appropriately designate that
+language. It provides functions to create a new buffer for that language,
+and to attach an appropriate LSP to that buffer.
+
+While Ninjection was written primarily to edit injected languages in Nix files,
+it should be easily extensible to other languages. Ninjection provides
+configuration options to modify language parsing queries, LSP mappings,
+window styles, and formatting.
+
+Getting started with ninjection:
+  1. Run `:checkhealth ninjection` to check that all dependencies are present
+	and that your configuration is valid.
+  2. Move the cursor to an injected code block:
+	`:Ninjection select` - should highlight the entire injected code block.
+	`:Ninjection edit` - should open a floating window with the injected text 
+	and attach the appropriate LSP. 
+	`:Ninjection restore` - should apply any changes in the editing buffer to 
+	the original buffer. 
+	You can also test functionality with: 
+	`:lua require("ninjection.ninjection").select()`
+	`:lua require("ninjection.ninjection").edit()`
+	`:lua require("ninjection.ninjection").replace()`
+  3. Ninjection provides keymap plugs for you to map keybindings 
+	of your choosing:
+	`<Plug>(NinjectionEdit)`
+	`<Plug>(NinjectionReplace)`
+	`<Plug>(NinjectionSelect)`
+     
+
+==============================================================================
+ninjection-command USER COMMAND
+:Ninjection <subcommand?>
+
+	Subcommands:
+		edit  	=> |ninjection.edit|
+		replace => |ninjection.replace|
+		select  => |ninjection.select|
+
+==============================================================================
+"ninjection"
+
+The ninjection module contains the three primary ninjection functions:
+|select()|, |edit()|, and |replace()|.
+                                                           *ninjection.select()*
+
+Identifies and selects injected text in visual mode.
+
+Return ~
+`(string)` `(optional)` err
+
+                                                             *ninjection.edit()*
+
+Detects injected languages at the cursor position and begins editing supported
+languages according to configured preferences. `ninjection.edit()` creates a
+child buffer with an `NJChild` object that stores config information for itself
+and information to replace text in the parent buffer. It also appends the child
+buffer handle to an `NJParent` object in the parent buffer.
+
+Return ~
+`(string)` `(optional)` err
+
+                                                          *ninjection.replace()*
+
+Replaces the original injected language text in the parent buffer
+with the current buffer text. This state is stored by in the `vim.b.ninjection`
+table as an `NJParent` table in the child, and `NJChild` table indexed by the
+child bufnr in the parent. This relationship is validated before replacing.
+
+Return ~
+`(string)` `(optional)` err
+
+
+==============================================================================
+"ninjection.config"
+
+The config module contains the default ninjection configuration table and
+functions to merge user config options and reload config changes.
+
+                                                                *default_config*
+`{
+`  auto_format = true,
+`  editor_style = "floating",
+`  file_lang = "nix",
+`  format_cmd = "_G.format_with_conform()",
+`  inj_lang_queries = {
+`    nix = '            (
+`              (comment) @injection.language
+`              .
+`              [
+`                (indented_string_expression
+`                  (string_fragment) @injection.content)
+`                (string_expression
+`                  (string_fragment) @injection.content)
+`              ]
+`              (#gsub! @injection.language "#%s*([%w%p]+)%s*" "%1")
+`              (#set! injection.combined)
+`            )
+`          '
+`  },
+`  inj_lang_query = "",
+`  injected_comment_lines = 1,
+`  lsp_map = {
+`    bash = "bashls",
+`    c = "clangd",
+`    cpp = "clangd",
+`    javascript = "ts_ls",
+`    json = "jsonls",
+`    lua = "lua_ls",
+`    python = "ruff",
+`    rust = "rust_analyzer",
+`    sh = "bashls",
+`    typescript = "ts_ls",
+`    yaml = "yamlls",
+`    zig = "zls"
+`  },
+`  preserve_indents = true,
+`  register = "z",
+`  suppress_warnings = false
+`}
+
+                                                               *config.reload()*
+
+Reloads all ninjection modules to flush caches and apply a new config.
+
+Return ~
+`(nil)`
+
+
+==============================================================================
+"ninjection.types"
+
+The types module contains all ninjection specific type definitions.
+
+
+                                                                   *EditorStyle*
+
+Supported window styles for buffer editor:
+`"cur_win" | "floating" | "v_split" | "h_split"`
+
+
+Modified from `nvim-lspconfig/lua/lspconfig/configs.lua` because I can't
+find a reference to: `vim.api.keyset.create_user_command.command_args`
+
+                                                         *Ninjection.Subcommand*
+Class ~
+{Ninjection.Subcommand}
+Implemented by `plugin/ninjection.lua` for user commands.
+
+{impl} `(fun())`
+{complete} `(optional)` `(fun(arg_lead: string): string[])`
+
+                                                            *Ninjection.CmdOpts*
+Class ~
+{Ninjection.CmdOpts}
+Implemented by `plugin/ninjection.lua` for user commands.
+
+{args} `(string)` - The entire argument string as typed.
+{fargs} `(string[])` - Command arguments as an array of strings.
+{bang} `(optional)` `(boolean)` - Bang (!) flag.
+{line1} `(optional)` `(number)` - Starting line number for optional range.
+{line2} `(optional)` `(number)` - Ending line number for optional range.
+{count} `(optional)` `(number)` - Optional count.
+
+                                                             *Ninjection.Config*
+Class ~
+{Ninjection.Config}
+Implemented by `ninjection/config.lua` for default and user configs.
+
+{file_lang} `(optional)` `(string)` - File type to search for injected languages in.
+Must have a matching entry in `inj_lang_queries`.
+Currently only supports nix, but could be extended.
+
+{preserve_indents} `(optional)` `(boolean)` - Preserve indents from the parent buffer.
+This option should be used in conjunction with `auto_format` because this
+will re-apply indents that `auto_format` normally removes. If you don't remove
+indents, then enabling this will increas the original indenation.
+
+{auto_format} `(optional)` `(boolean)` - Auto format the new child buffer.
+{format_cmd} `(optional)` `(string)` - Command for `auto_format`.
+{injected_comment_lines} `(optional)` `(integer)` - The offset for comment delimiting
+lines. For example, offsetting 1 line would function with this format:
+
+`# injected_lang
+`''
+`	injected content
+`'';
+
+Offsetting 0 lines would function with this format:
+
+`# injected_lang
+`''injected content
+`more injected content
+`end content'';
+
+{register} `(optional)` `(string)` - Register to use to copy injected content.
+{suppress_warnings} `(boolean)` - Suppress warnings.
+NOTE: If ninjection is not functioning properly, ensure this is false for
+debugging.
+
+{editor_style} "`(cur_win)`" | "floating" | "v_split" | "h_split"
+Window style to use for the injected context editor.
+
+{inj_lang_queries} `(table<string, string>)` - Contains per-language string
+literals for Treesitter queries to Identify injected content nodes.
+
+{inj_lang_query} `(string)` This is configured by referencing `file_lang`
+in the table of `inj_lang_queries`. This cannot be nil.
+
+{lsp_map} `(table<string, string>)` - LSP associated with the injected
+languages These keys must match the language comment used to identify
+injected languages, and the value must match the LSP configured in your
+lspconfig.
+
+                                                                       *NJRange*
+Class ~
+{NJRange}
+Store cursor position coordinates.
+
+{s_row} `(integer)`
+{s_col} `(integer)`
+{e_row} `(integer)`
+{e_col} `(integer)`
+
+                                                                   *NJNodeTable*
+Class ~
+{NJNodeTable}
+Store a Treesitter node and its associated coordinates.
+
+{node} `(TSNode)`
+{range} `(NJRange)`
+
+                                                                     *NJIndents*
+Class ~
+{NJIndents}
+Store indents for a text buffer.
+
+{t_indent} `(number)`
+{b_indent} `(number)`
+{l_indent} `(number)`
+
+                                                                      *NJParent*
+Store associated child bufnrs.
+Class ~
+{NJParent}
+{children} `(integer[])`
+
+                                                                       *NJChild*
+Class ~
+{NJChild}
+Store associated parent buffer information.
+
+{bufnr} `(integer)`
+{root_dir} `(string)`
+{p_bufnr} `(integer)`
+{p_indents} `(NJIndents)`
+{p_range} `(NJRange)`
+
+                                                                   *NJLspStatus*
+Class ~
+{NJLspStatus}
+Store LSP status and associated client ID.
+
+{status} `(string)` - The LSP startup status. Possible values: `"unmapped"`,
+`"unconfigured"`, `"unavailable"`, `"no-exec"`, `"unsupported"`, `"failed_start"`,
+`"started"`
+
+{client_id} `(integer)` - The client ID of the started LSP, -1 on failure
+
+                                                              *lspconfig.Config*
+Class ~
+{lspconfig.Config} : vim.lsp.ClientConfig
+Annotation for lspconfig from `nvim-lspconfig/lua/lspconfig/configs.lua`
+
+{enabled} `(optional)` `(boolean)`
+{single_file_support} `(optional)` `(boolean)`
+{silent} `(optional)` `(boolean)`
+{filetypes} `(optional)` `(string[])`
+{filetype} `(optional)` `(string)`
+{on_new_config} `(optional)` `(fun(new_config: lspconfig.Config?, new_root_dir: string))`
+{autostart} `(optional)` `(boolean)`
+{package} _`(on_attach?)` fun(client: vim.lsp.Client, bufnr: integer)
+{root_dir} `(optional)` `(string|fun(filename: string, bufnr: number))`
+{commands} `(optional)` `(table<string, ({[1]:string|vim.api.keyset.user_command})>)`
+
+==============================================================================
+"ninjection.health"
+
+The health module contains functions to validate configuration parameters
+and check for required dependencies.
+
+                                           *ninjection.health.validate_config()*
+
+	Validates either a provided configuration table or the
+	current configuration.
+
+Parameters ~
+{cfg} `(optional)` `(Ninjection.Config)`
+
+Return ~
+`(boolean)` is_valid, string? err
+
+
+==============================================================================
+"ninjection.treesitter"
+
+The treesitter module contains all treesitter related functions for ninjection.
+
+                                             *ninjection.treesitter.qet_query()*
+
+Retrieves a parsed query from Treesitter given a language and pattern.
+
+Parameters ~
+{query} `(string)` - Lua-literal string for Treesitter query.
+{lang} `(optional)` `(string?)` - Default: `"nix"` - language grammar to parse with.
+
+Return ~
+`(vim.treesitter.Query)` `(optional)` parsed_query, string? err
+parsed Treesitter Query object
+
+                                              *ninjection.treesitter.get_root()*
+
+Parses the root tree for a language in a buffer.
+
+Parameters ~
+{bufnr} `(integer)` - Handle for buffer to parse.
+{lang} `(optional)` `(string)`  - Default: `"nix"` - language to parse with.
+
+Return ~
+`(TSNode)` `(optional)` root, string? err
+Root node of the TSTree for the language.
+
+                                        *ninjection.treesitter.get_node_table()*
+
+Identifies the injected language node at the current cursor position
+with start and ending coordinates.
+
+Parameters ~
+{query} `(string)` - Pattern to identify an injected lang.
+{lang} `(optional)` `(string)` - Default: `"nix"` language grammar to use for parsing.
+
+Return ~
+`(NJNodeTable)` `(optional)` table, string? err
+Returns a table containing:
+ - node: `TSNode` - the Treesitter node element (see :h TSNode).
+ - range: `NJRange` - row/col ranges for the node.
+ NOTE: Coordinates may not match the actual text locations
+ (see: `ninjection.treesitter.get_visual_range()` for this).
+                                          *ninjection.treesitter.get_inj_lang()*
+
+Parse an injected content node for an associated language comment.
+
+Parameters ~
+{query} `(string)` - Query to identify an injected content node.
+{bufnr} `(integer)` - Handle for the buffer to query in.
+{file_lang} `(optional)` `(string)` - Default: `"nix"` - Parent file language to find
+injections in.
+
+Return ~
+`(string)` `(optional)` inj_lang , string? err - Injected language identified.
+
+                                      *ninjection.treesitter.get_visual_range()*
+
+Gets an adjusted "visual" range for a node by approximating the
+range of text that is actually seen (as returned by get_node_text).
+This makes an opinionated assumption about formatting that expects:
+
+	`assigment = # injected_lang_comment
+	`''
+	`	 injected.content
+	`'';
+
+	The '' and ''; characters are not important, but the dedicated lines for
+comment delimiters and the language comment above that block are important.
+
+Parameters ~
+{node} `(TSNode)` - The Treesitter node to select in.
+{bufnr} `(integer)` - Handle for the buffer to work in.
+
+Return ~
+`(NJRange)` `(optional)` vs_range, string? err - Range of text selected.
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
