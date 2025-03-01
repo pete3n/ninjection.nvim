@@ -1,7 +1,5 @@
----@class NinjectionSubcommand
----@field impl fun()
----@field complete? fun(arg_lead: string): string[]
-
+---@nodoc
+---@type table<string, Ninjection.Subcommand>
 local subcommand_tbl = {
 	edit = {
 		impl = function()
@@ -20,11 +18,17 @@ local subcommand_tbl = {
 	},
 }
 
+---@nodoc
+---@param opts Ninjection.CmdOpts
+---@return nil
 local function ninjection_cmd(opts)
+	---@type string[]
 	local fargs = opts.fargs
+	---@type string
 	local subcommand_key = fargs[1]
 
 	if not subcommand_key or not subcommand_tbl[subcommand_key] then
+		---@type string
 		local available = table.concat(vim.tbl_keys(subcommand_tbl), ", ")
 		vim.notify(
 			"Ninjection: Unknown subcommand: " .. tostring(subcommand_key) .. ". Available subcommands: " .. available,
@@ -40,6 +44,8 @@ vim.api.nvim_create_user_command("Ninjection", ninjection_cmd, {
 	nargs = 1, -- exactly one argument: the subcommand
 	desc = "Ninjection plugin command with subcommand support",
 	bang = false,
+	---@param arg_lead string
+	---@return string[]
 	complete = function(arg_lead)
 		local keys = vim.tbl_keys(subcommand_tbl)
 		return vim.tbl_filter(function(key)
@@ -57,3 +63,11 @@ end, { noremap = true, silent = true })
 vim.keymap.set("n", "<Plug>(NinjectionSelect)", function()
 	require("ninjection").select()
 end, { noremap = true, silent = true })
+
+---@mod ninjection-command USER COMMAND
+---@brief :Ninjection <subcommand?>
+---
+---	Subcommands:
+---		edit  	=> |ninjection.edit|
+---		replace => |ninjection.replace|
+---		select  => |ninjection.select|

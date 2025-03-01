@@ -1,9 +1,16 @@
 ---@module "ninjection.config"
+---@brief
+--- The config module contains the default ninjection configuration table and
+--- functions to merge user config options and reload config changes.
+---
 local M = {}
 
 local vc = require("ninjection.health").validate_config
 
+---@nodoc
 ---@type Ninjection.Config
+
+---@tag default_config
 local default_config = {
 	---@type string
 	file_lang = "nix",
@@ -57,7 +64,31 @@ local default_config = {
 	},
 }
 
--- Force reload all ninjection modules to flush caches and apply a new config.
+---@nodoc
+--- Provide default_config for inspection, primarily for documentation.
+---@return Ninjection.Config
+M.get_default = function()
+	return default_config
+end
+
+---@eval return (function()
+---  local s = vim.inspect(require("ninjection.config").get_default())
+---  s = s:gsub("\\t", "  ")
+---  s = s:gsub("\\n", "\n")
+---  local lines = vim.split(s, "\n")
+---  for i, line in ipairs(lines) do
+---    lines[i] = "`" .. line   -- Prefix each line with a backtick.
+---  end
+---  return lines
+--- end)()
+---@minidoc_afterlines_end
+
+---@tag config.reload()
+---@brief
+--- Reloads all ninjection modules to flush caches and apply a new config.
+---
+---@return nil
+---
 M.reload = function()
 	for key in pairs(package.loaded) do
 		if key:match("^ninjection") then
@@ -66,6 +97,10 @@ M.reload = function()
 	end
 end
 
+---@nodoc
+--- Merges user provided configuration overrides with the default configuration.
+---@return nil
+---
 local function merge_config()
 	---@type Ninjection.Config
 	local user_config = (type(vim.g.ninjection) == "function" and vim.g.ninjection() or vim.g.ninjection) or {}

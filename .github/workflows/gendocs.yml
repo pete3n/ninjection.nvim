@@ -1,0 +1,25 @@
+name: Generate Documentation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Neovim
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y neovim
+
+      - name: Install Lua and mini.doc Dependencies
+        run: |
+          sudo apt-get install -y lua5.3
+          mkdir -p ~/.config/nvim/pack/plugins/start
+          git clone https://github.com/echasnovski/mini.nvim.git ~/.config/nvim/pack/plugins/start/mini.nvim
+
+      - name: Run Documentation Generation
+        run: make gendocs
