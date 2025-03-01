@@ -22,12 +22,12 @@ Getting started with ninjection:
 	`:Ninjection select` - should highlight the entire injected code block.
 	`:Ninjection edit` - should open a floating window with the injected text 
 	and attach the appropriate LSP. 
-	`:Ninjection restore` - should apply any changes in the editing buffer to 
+	`:Ninjection replace` - should apply any changes in the editing buffer to 
 	the original buffer. 
 	You can also test functionality with: 
-	`:lua require("ninjection.ninjection").select()`
-	`:lua require("ninjection.ninjection").edit()`
-	`:lua require("ninjection.ninjection").replace()`
+	`:lua require("ninjection").select()`
+	`:lua require("ninjection").edit()`
+	`:lua require("ninjection").replace()`
   3. Ninjection provides keymap plugs for you to map keybindings 
 	of your choosing:
 	`<Plug>(NinjectionEdit)`
