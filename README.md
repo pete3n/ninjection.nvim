@@ -10,7 +10,8 @@ _This is what happens to Pete_:
 - _Pete edits Nix files that contain injected languages._
 - _Pete uses Treesitter which has Nix grammar for parsing. This make Pete happy_ 😊.
 - _Neovim doesn't support attaching LSPs for different languages in the same buffer. This makes Pete sad_ 😢.
-- _conform.nvim also doesn't recognize how to format injected languages. This makes Pete sad_ 😢_, and sometimes angry_ 😠. 
+- _conform.nvim also doesn't recognize how to format injected languages. This makes Pete sad_ 😢,
+_and sometimes angry_ 😠. 
 
 _Don't be like Pete, use nininjection.nvim!_
 
