@@ -1,25 +1,7 @@
----@toc_entry
----================================================================================
----INTRODUCTION                                                   *ninjection.nvim*
----
---- Ninjection is a plugin designed to improve editing injected language text.
---- Its goal is to provide a seamless, first-class editing experience for injected
---- code with full support for LSPs, code-snippets, completions, formatting, etc.
----
---- Ninjection utilizes Treesitter's language parsing functionality to identify
---- nodes that contain an injected language, and appropriately designate that
---- language. It provides functions to create a new buffer for that language,
---- and to attach an appropriate LSP to that buffer.
----
---- While Ninjection was written primarily to edit injected languages in Nix files,
---- it should be easily extensible to other languages. Ninjection provides
---- configuration options to modify language parsing queries, LSP mappings,
---- window styles, and formatting.
----
-
----@tag ninjection
----@brief The ninjection module contains the three primary ninjection functions:
---- select(), edit(), and replace().
+---@module "ninjection"
+---@brief
+--- The ninjection module contains the three primary ninjection functions:
+--- |select()|, |edit()|, and |replace()|.
 
 local ninjection = {}
 
@@ -36,7 +18,8 @@ if vim.fn.exists(":checkhealth") == 2 then
 end
 
 ---@tag ninjection.select()
----@brief Identifies and selects injected text in visual mode.
+---@brief
+--- Identifies and selects injected text in visual mode.
 ---
 ---@return string? err
 ---
@@ -112,7 +95,8 @@ ninjection.select = function()
 end
 
 ---@tag ninjection.edit()
----@brief Detects injected languages at the cursor position and begins editing supported
+---@brief
+--- Detects injected languages at the cursor position and begins editing supported
 --- languages according to configured preferences. `ninjection.edit()` creates a
 --- child buffer with an `NJChild` object that stores config information for itself
 --- and information to replace text in the parent buffer. It also appends the child
@@ -317,7 +301,8 @@ ninjection.edit = function()
 end
 
 ---@tag ninjection.replace()
----@brief Replaces the original injected language text in the parent buffer
+---@brief
+--- Replaces the original injected language text in the parent buffer
 --- with the current buffer text. This state is stored by in the `vim.b.ninjection`
 --- table as an `NJParent` table in the child, and `NJChild` table indexed by the
 --- child bufnr in the parent. This relationship is validated before replacing.
