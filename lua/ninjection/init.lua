@@ -10,8 +10,8 @@ local ninjection = {}
 local cfg = require("ninjection.config").cfg
 
 local ts = require("vim.treesitter")
-local util = require("ninjection.util")
-local nts = require("ninjection.treesitter")
+local buffer = require("ninjection.buffer")
+local parse = require("ninjection.parse")
 
 if vim.fn.exists(":checkhealth") == 2 then
 	require("ninjection.health").check()
@@ -45,7 +45,7 @@ ninjection.select = function()
 	bufnr = raw_output
 	---@cast bufnr integer
 
-	node_info, err = nts.get_node_table(cfg.inj_lang_query, cfg.file_lang)
+	node_info, err = parse.get_node_table(cfg.inj_lang_query, cfg.file_lang)
 	if not node_info then
 		if not cfg.suppress_warnings then
 			vim.notify("ninjection.select() warning: could not retrieve TSNode: " .. tostring(err), vim.log.levels.WARN)
@@ -61,7 +61,7 @@ ninjection.select = function()
 
 	---@type NJRange?
 	local v_range
-	v_range, err = nts.get_visual_range(node_info.node, bufnr)
+	v_range, err = parse.get_visual_range(node_info.node, bufnr)
 	if not v_range then
 		if not cfg.suppress_warnings then
 			vim.notify("ninjection.select() warning: no visual range returned: " .. tostring(err), vim.log.levels.WARN)
@@ -122,7 +122,7 @@ ninjection.edit = function()
 
 	---@type NJNodeTable?
 	local inj_node_info
-	inj_node_info, err = nts.get_node_table(cfg.inj_lang_query, cfg.file_lang)
+	inj_node_info, err = parse.get_node_table(cfg.inj_lang_query, cfg.file_lang)
 	if not inj_node_info then
 		if not cfg.suppress_warnings then
 			vim.notify(
@@ -162,7 +162,7 @@ ninjection.edit = function()
 		return nil
 	end
 
-	inj_node_lang, err = nts.get_inj_lang(cfg.inj_lang_query, p_bufnr, cfg.file_lang)
+	inj_node_lang, err = parse.get_inj_lang(cfg.inj_lang_query, p_bufnr, cfg.file_lang)
 	if not inj_node_lang or inj_node_lang == "" then
 		error(
 			"ninjection.edit() error: Failed to get injected node language "
@@ -245,20 +245,20 @@ ninjection.edit = function()
 
 	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
 	local c_table
-	c_table, err = util.create_child_buf(p_bufnr, p_name, inj_node_info.range, root_dir, inj_node_text, inj_node_lang)
+	c_table, err = buffer.create_child(p_bufnr, p_name, inj_node_info.range, root_dir, inj_node_text, inj_node_lang)
 	if not c_table.bufnr or not c_table.win then
 		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end
 
 	if cfg.preserve_indents then
-		util.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row, c_table.indents)
+		buffer.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row, c_table.indents)
 	else
 		ninjection.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row)
 	end
 
 	---@type NJLspStatus?
 	local lsp_status
-	lsp_status, err = util.start_lsp(inj_node_lang, root_dir)
+	lsp_status, err = buffer.start_lsp(inj_node_lang, root_dir)
 	if not lsp_status then
 		if not cfg.suppress_warnings then
 			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
@@ -415,11 +415,11 @@ ninjection.replace = function()
 	end
 
 	if cfg.preserve_indents then
-		raw_output, err = util.restore_indents(rep_text, nj_child_b.p_indents)
+		raw_output, err = buffer.restore_indents(rep_text, nj_child_b.p_indents)
 		if not raw_output or type(raw_output) ~= "table" then
 			if not cfg.suppress_warnings then
 				vim.notify(
-					"ninjection.replace() warning: util.restore_indents() could not restore indents: " .. err,
+					"ninjection.replace() warning: buffer.restore_indents() could not restore indents: " .. err,
 					vim.log.levels.WARN
 				)
 			end
