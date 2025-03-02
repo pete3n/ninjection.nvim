@@ -13,7 +13,7 @@ _This is what happens to Pete_:
 - _conform.nvim also doesn't recognize how to format injected languages. This makes Pete sad_ 😢,
 _and sometimes angry_ 😠. 
 
-_Don't be like Pete, use nininjection.nvim!_
+_Don't be like Pete, use ninjection.nvim!_
 
 ## About Ninjection
 Ninjection is a plugin designed to improve editing injected language text.
