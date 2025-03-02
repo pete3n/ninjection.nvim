@@ -15,7 +15,7 @@ _and sometimes angry_ 😠.
 
 _Don't be like Pete, use nininjection.nvim!_
 
-## About ninjection.nvim
+## About Ninjection
 Ninjection is a plugin designed to improve editing injected language text.
 Its goal is to provide a seamless, first-class editing experience for injected
 code with full support for LSPs, code-snippets, completions, formatting, etc.
@@ -30,6 +30,7 @@ it should be easily extensible to other languages. Ninjection provides
 configuration options to modify language parsing queries, LSP mappings,
 window styles, and formatting.
 
+[![See it in action](thumbnail.png)](https://github.com/user-attachments/assets/91386063-7040-44f2-b7a3-1cb8bede4fd3)
 ## Current Support
 ninjection.nvim currently is limited to detecting injected languages in Nix 
 files. However, it should be easily extensible for other languages. It expects 
