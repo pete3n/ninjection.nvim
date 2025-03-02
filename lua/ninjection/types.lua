@@ -64,20 +64,20 @@
 --- `end content'';
 ---
 ---@field register? string - Register to use to copy injected content.
----@field suppress_warnings boolean - Suppress warnings.
+---@field suppress_warnings? boolean - Suppress warnings.
 --- NOTE: If ninjection is not functioning properly, ensure this is false for
 --- debugging.
 ---
----@field editor_style EditorStyle
+---@field editor_style? EditorStyle
 --- Window style to use for the injected context editor.
 ---
----@field inj_lang_queries table<string, string> - Contains per-language string
+---@field inj_lang_queries? table<string,string> - Contains per-language string
 --- literals for Treesitter queries to Identify injected content nodes.
 ---
----@field inj_lang_query string This is configured by referencing `file_lang`
+---@field inj_lang_query? string This is configured by referencing `file_lang`
 --- in the table of `inj_lang_queries`. This cannot be nil.
 ---
----@field lsp_map table<string, string> - LSP associated with the injected
+---@field lsp_map? table<string,string> - LSP associated with the injected
 --- languages These keys must match the language comment used to identify
 --- injected languages, and the value must match the LSP configured in your
 --- lspconfig.

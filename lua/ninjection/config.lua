@@ -99,11 +99,11 @@ end
 
 ---@nodoc
 --- Merges user provided configuration overrides with the default configuration.
+---@param cfg_overrides? Ninjection.Config
 ---@return nil
----
-local function merge_config()
+M._merge_config = function(cfg_overrides)
 	---@type Ninjection.Config
-	local user_config = (type(vim.g.ninjection) == "function" and vim.g.ninjection() or vim.g.ninjection) or {}
+	local user_config = vim.g.ninjection or cfg_overrides or {}
 	---@type Ninjection.Config
 	local config = vim.tbl_deep_extend("force", default_config, user_config)
 
@@ -116,7 +116,5 @@ local function merge_config()
 	M.values = config
 	return M.values
 end
-
-merge_config()
 
 return M

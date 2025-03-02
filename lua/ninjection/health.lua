@@ -11,6 +11,7 @@ local h_error = health.error
 
 local M = {}
 
+
 ---@tag ninjection.health.validate_config()
 ---@brief
 ---	Validates either a provided configuration table or the
@@ -44,6 +45,8 @@ M.validate_config = function(cfg)
 
 	return is_valid, err
 end
+
+
 local required_plugins = {
 	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
 	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
