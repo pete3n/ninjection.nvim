@@ -113,8 +113,8 @@ local function merge_config()
 		error(err, 2)
 	end
 
-	M.cfg = config
-	return M.cfg
+	M.values = config
+	return M.values
 end
 
 merge_config()

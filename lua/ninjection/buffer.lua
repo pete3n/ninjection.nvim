@@ -6,7 +6,7 @@
 local M = {}
 ---@nodoc
 ---@type Ninjection.Config
-local cfg = require("ninjection.config").cfg
+local cfg = require("ninjection.config").values
 local lspconfig = require("lspconfig")
 
 -- We need to provide a way of recording and restoring whitespace from the parent
@@ -262,7 +262,7 @@ local function create_child_win(bufnr, style)
 	return 0
 end
 
----@tag ninjection.buffer.create_child_buf()
+---@tag ninjection.buffer.create_child()
 ---@brief
 --- Creates a child buffer to edit injected language text.
 ---

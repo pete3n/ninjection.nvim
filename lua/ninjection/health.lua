@@ -22,7 +22,7 @@ local M = {}
 ---@return boolean is_valid, string? err
 ---
 M.validate_config = function(cfg)
-	cfg = cfg or require("ninjection.config").cfg
+	cfg = cfg or require("ninjection.config").values
 	---@type boolean, string?
 	local is_valid, err
 	is_valid = true

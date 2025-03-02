@@ -7,7 +7,7 @@ local ninjection = {}
 
 ---@nodoc
 ---@type Ninjection.Config
-local cfg = require("ninjection.config").cfg
+local cfg = require("ninjection.config").values
 
 local ts = require("vim.treesitter")
 local buffer = require("ninjection.buffer")
