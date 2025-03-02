@@ -18,10 +18,10 @@ ninjection.buffer.set_child_cur()	ninjection.txt	/*ninjection.buffer.set_child_c
 ninjection.buffer.start_lsp()	ninjection.txt	/*ninjection.buffer.start_lsp()*
 ninjection.edit()	ninjection.txt	/*ninjection.edit()*
 ninjection.health.validate_config()	ninjection.txt	/*ninjection.health.validate_config()*
+ninjection.parse.get_inj_lang()	ninjection.txt	/*ninjection.parse.get_inj_lang()*
+ninjection.parse.get_node_table()	ninjection.txt	/*ninjection.parse.get_node_table()*
+ninjection.parse.get_root()	ninjection.txt	/*ninjection.parse.get_root()*
+ninjection.parse.get_visual_range()	ninjection.txt	/*ninjection.parse.get_visual_range()*
+ninjection.parse.qet_query()	ninjection.txt	/*ninjection.parse.qet_query()*
 ninjection.replace()	ninjection.txt	/*ninjection.replace()*
 ninjection.select()	ninjection.txt	/*ninjection.select()*
-ninjection.treesitter.get_inj_lang()	ninjection.txt	/*ninjection.treesitter.get_inj_lang()*
-ninjection.treesitter.get_node_table()	ninjection.txt	/*ninjection.treesitter.get_node_table()*
-ninjection.treesitter.get_root()	ninjection.txt	/*ninjection.treesitter.get_root()*
-ninjection.treesitter.get_visual_range()	ninjection.txt	/*ninjection.treesitter.get_visual_range()*
-ninjection.treesitter.qet_query()	ninjection.txt	/*ninjection.treesitter.qet_query()*

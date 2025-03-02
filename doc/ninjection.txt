@@ -313,7 +313,7 @@ Return ~
 
 The parse module contains all treesitter related functions for ninjection.
 
-                                             *ninjection.treesitter.qet_query()*
+                                                  *ninjection.parse.qet_query()*
 
 Retrieves a parsed query from Treesitter given a language and pattern.
 
@@ -325,7 +325,7 @@ Return ~
 `(vim.treesitter.Query)` `(optional)` parsed_query, string? err
 parsed Treesitter Query object
 
-                                              *ninjection.treesitter.get_root()*
+                                                   *ninjection.parse.get_root()*
 
 Parses the root tree for a language in a buffer.
 
@@ -337,7 +337,7 @@ Return ~
 `(TSNode)` `(optional)` root, string? err
 Root node of the TSTree for the language.
 
-                                        *ninjection.treesitter.get_node_table()*
+                                             *ninjection.parse.get_node_table()*
 
 Identifies the injected language node at the current cursor position
 with start and ending coordinates.
@@ -352,8 +352,8 @@ Returns a table containing:
  - node: `TSNode` - the Treesitter node element (see :h TSNode).
  - range: `NJRange` - row/col ranges for the node.
  NOTE: Coordinates may not match the actual text locations
- (see: `ninjection.treesitter.get_visual_range()` for this).
-                                          *ninjection.treesitter.get_inj_lang()*
+ (see: `ninjection.parse.get_visual_range()` for this).
+                                               *ninjection.parse.get_inj_lang()*
 
 Parse an injected content node for an associated language comment.
 
@@ -366,7 +366,7 @@ injections in.
 Return ~
 `(string)` `(optional)` inj_lang , string? err - Injected language identified.
 
-                                      *ninjection.treesitter.get_visual_range()*
+                                           *ninjection.parse.get_visual_range()*
 
 Gets an adjusted "visual" range for a node by approximating the
 range of text that is actually seen (as returned by get_node_text).
