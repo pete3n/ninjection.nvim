@@ -30,7 +30,8 @@ it should be easily extensible to other languages. Ninjection provides
 configuration options to modify language parsing queries, LSP mappings,
 window styles, and formatting.
 
-[![See it in action](thumbnail.png)](https://github.com/user-attachments/assets/91386063-7040-44f2-b7a3-1cb8bede4fd3)
+### See it in action
+[![Demo video](thumbnail.png)](https://github.com/user-attachments/assets/91386063-7040-44f2-b7a3-1cb8bede4fd3)
 ## Current Support
 ninjection.nvim currently is limited to detecting injected languages in Nix 
 files. However, it should be easily extensible for other languages. It expects 
