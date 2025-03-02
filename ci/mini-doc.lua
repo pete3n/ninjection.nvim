@@ -25,6 +25,6 @@ local input_files = {
 	"lua/ninjection/types.lua",
 	"lua/ninjection/health.lua",
 	"lua/ninjection/parse.lua",
-	"lua/ninjection/buffer.lua"
+	"lua/ninjection/buffer.lua",
 }
 require("mini.doc").generate(input_files, "doc/ninjection.txt")
