@@ -1,9 +1,7 @@
----@module "ninjection.util"
+---@module "ninjection.buffer"
 ---@brief
---- The util module contains helper functions utilized by the main ninjection
---- module for getting and recording indentation, creating new child buffers,
---- creating new windows, setting cursor position, and starting and attaching
---- the appropriate LSP to the child buffer.
+--- The buffer module contains helper functions utilized by the main ninjection
+--- module for creating and editing injected text in buffers.
 ---
 local M = {}
 ---@nodoc
@@ -15,7 +13,7 @@ local lspconfig = require("lspconfig")
 -- buffer to allow easily formatting the buffer without worrying about its
 -- relative placement in the parent buffer.
 
----@tag ninjection.util.get_indents()
+---@tag ninjection.buffer.get_indents()
 ---@brief
 --- Finds whitespace indents (top, bottom, left) in the provided buffer.
 ---
@@ -47,7 +45,7 @@ M.get_indents = function(bufnr)
 	if #lines == 0 then
 		if cfg.suppress_warnings == false then
 			vim.notify(
-				"ninjection.util.get_indents() warning: No lines returned "
+				"ninjection.buffer.get_indents() warning: No lines returned "
 					.. "from calling vim.api.nvim_buf_get_lines()",
 				vim.log.levels.WARN
 			)
@@ -100,7 +98,7 @@ M.get_indents = function(bufnr)
 	return indents, nil
 end
 
----@tag ninjection.util.restore_indents()
+---@tag ninjection.buffer.restore_indents()
 ---@brief
 --- Restores the recorded whitespace indents (top, bottom, and left indent)
 --- for the provided text.
@@ -132,7 +130,7 @@ M.restore_indents = function(text, indents)
 		if #lines == 0 then
 			if cfg.suppress_warnings == false then
 				vim.notify(
-					"ninjection.util.restore_indents() warning: No lines " .. "returned from calling vim.split()",
+					"ninjection.buffer.restore_indents() warning: No lines " .. "returned from calling vim.split()",
 					vim.log.levels.WARN
 				)
 			end
@@ -141,7 +139,7 @@ M.restore_indents = function(text, indents)
 	elseif type(text) == "table" then
 		lines = text
 	else
-		error("ninjection.util.restore_indents() error: Text must be a string or " .. "a table of lines", 2)
+		error("ninjection.buffer.restore_indents() error: Text must be a string or " .. "a table of lines", 2)
 	end
 	---@cast lines string[]
 
@@ -264,7 +262,7 @@ local function create_child_win(bufnr, style)
 	return 0
 end
 
----@tag ninjection.util.create_child_buf()
+---@tag ninjection.buffer.create_child_buf()
 ---@brief
 --- Creates a child buffer to edit injected language text.
 ---
@@ -280,7 +278,7 @@ end
 -- Returns table containing handles for the child buffer and window, if
 -- available, and parent indents.
 --
-M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
+M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	---@type boolean, unknown, string?, integer?
 	local ok, raw_output, err, c_bufnr
 
@@ -397,7 +395,7 @@ M.create_child_buf = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
 end
 
----@tag ninjection.util.set_child_cur()
+---@tag ninjection.buffer.set_child_cur()
 ---@brief
 --- Sets the child cursor to the same relative position as in the parent window.
 ---
@@ -457,7 +455,7 @@ end
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
 -- filetypes to buffers, so we need a function to start the appropriate LSP.
 
----@tag ninjection.util.start_lsp()
+---@tag ninjection.buffer.start_lsp()
 ---@brief
 --- Starts an appropriate LSP for the provided language.
 ---
@@ -475,7 +473,7 @@ M.start_lsp = function(lang, root_dir)
 	lang_lsp = cfg.lsp_map[lang]
 	if not lang_lsp then
 		vim.notify(
-			"ninjection.util.start_lsp() warning: No LSP mapped to "
+			"ninjection.buffer.start_lsp() warning: No LSP mapped to "
 				.. "language: "
 				.. lang
 				.. " check your configuration.",
@@ -496,7 +494,7 @@ M.start_lsp = function(lang, root_dir)
 	local lsp_def = raw_output
 	if not lsp_def then
 		vim.notify(
-			"ninjection.util.start_lsp() warning: Could not find "
+			"ninjection.buffer.start_lsp() warning: Could not find "
 				.. "default_config for "
 				.. lang_lsp
 				.. ". Ensure it is installed and "
@@ -513,7 +511,7 @@ M.start_lsp = function(lang, root_dir)
 	local lsp_cmd = lsp_def.cmd
 	if not lsp_cmd or #lsp_cmd == 0 then
 		vim.notify(
-			"ninjection.util.start_lsp() warning: Command to execute "
+			"ninjection.buffer.start_lsp() warning: Command to execute "
 				.. lang_lsp
 				.. " does not exist. Ensure it is installed and configured.",
 			vim.log.levels.WARN
@@ -532,7 +530,7 @@ M.start_lsp = function(lang, root_dir)
 	end
 	if raw_output ~= 1 then
 		vim.notify(
-			"ninjection.util.start_lsp() warning: The LSP command: " .. lsp_cmd[1] .. " is not executable.",
+			"ninjection.buffer.start_lsp() warning: The LSP command: " .. lsp_cmd[1] .. " is not executable.",
 			vim.log.levels.WARN
 		)
 		return { "no-exec", -1 }
@@ -541,7 +539,7 @@ M.start_lsp = function(lang, root_dir)
 	-- The LSP must support our injected language
 	if not vim.tbl_contains(lsp_def.filetypes, lang) then
 		vim.notify(
-			"ninjection.util.start_lsp() warning: The configured LSP: "
+			"ninjection.buffer.start_lsp() warning: The configured LSP: "
 				.. lang_lsp
 				.. " does not support "
 				.. lang
@@ -566,7 +564,7 @@ M.start_lsp = function(lang, root_dir)
 	local client_id = raw_output
 	if client_id == nil then
 		vim.notify(
-			"ninjection.util.start_lsp() warning: The LSP: "
+			"ninjection.buffer.start_lsp() warning: The LSP: "
 				.. lang_lsp
 				.. " did not return a client_id, check your language client logs "
 				.. "(default ~/.local/state/nvim/lsp.log) for more information.",

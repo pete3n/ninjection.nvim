@@ -1,6 +1,6 @@
----@module "ninjection.treesitter"
+---@module "ninjection.parse"
 ---@brief
---- The treesitter module contains all treesitter related functions for ninjection.
+--- The parse module contains all treesitter related functions for ninjection.
 ---
 local M = {}
 local cfg = require("ninjection.config").cfg
