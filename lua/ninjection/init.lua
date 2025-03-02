@@ -6,7 +6,20 @@
 local ninjection = {}
 
 ---@nodoc
----@type Ninjection.Config
+---@param user_cfg Ninjection.Config
+---@return nil
+function ninjection.setup(user_cfg)
+	---@type boolean, string?
+	local is_valid, err
+	is_valid, err = require("ninjection.health").validate_config(user_cfg)
+	if is_valid == true then
+		require("ninjection.config")._merge_config(user_cfg)
+	else
+		vim.notify("ninjection warning: User configuration is invalid: " .. err ..
+			" \nReverting to default configuration settings.", vim.log.levels.WARN)
+	end
+end
+
 local cfg = require("ninjection.config").values
 
 local ts = require("vim.treesitter")
@@ -23,7 +36,7 @@ end
 ---
 ---@return string? err
 ---
-ninjection.select = function()
+function ninjection.select()
 	---@type boolean, unknown, string?, integer?, NJNodeTable?
 	local ok, raw_output, err, bufnr, node_info
 
@@ -104,7 +117,7 @@ end
 ---
 ---@return string? err
 ---
-ninjection.edit = function()
+function ninjection.edit()
 	---@type boolean, unknown, string?, integer?, string?, string?
 	local ok, raw_output, err, p_bufnr, inj_node_text, inj_node_lang
 
@@ -309,7 +322,7 @@ end
 ---
 ---@return string? err
 ---
-ninjection.replace = function()
+function ninjection.replace()
 	---@type boolean, unknown, string?, integer?
 	local ok, raw_output, err, this_bufnr
 
