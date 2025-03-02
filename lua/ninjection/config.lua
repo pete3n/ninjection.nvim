@@ -117,4 +117,6 @@ M._merge_config = function(cfg_overrides)
 	return M.values
 end
 
+-- Provide default config in the event no user overrides are provided.
+M.values = M._merge_config()
 return M
