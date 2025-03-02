@@ -20,7 +20,7 @@ require("mini.doc").setup({
 
 local input_files = {
 	"plugin/ninjection.lua",
-	"lua/ninjection.init.lua",
+	"lua/ninjection/init.lua",
 	"lua/ninjection/config.lua",
 	"lua/ninjection/types.lua",
 	"lua/ninjection/health.lua",
