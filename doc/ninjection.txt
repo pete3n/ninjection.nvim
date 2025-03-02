@@ -36,43 +36,6 @@ Getting started with ninjection:
      
 
 ==============================================================================
-*INTRODUCTION*																							 *ninjection.nvim*
-
-Ninjection is a plugin designed to improve editing injected language text.
-Its goal is to provide a seamless, first-class editing experience for injected
-code with full support for LSPs, code-snippets, completions, formatting, etc.
-
-Ninjection utilizes Treesitter's language parsing functionality to identify
-nodes that contain an injected language, and appropriately designate that
-language. It provides functions to create a new buffer for that language,
-and to attach an appropriate LSP to that buffer.
-
-While Ninjection was written primarily to edit injected languages in Nix files,
-it should be easily extensible to other languages. Ninjection provides
-configuration options to modify language parsing queries, LSP mappings,
-window styles, and formatting.
-
-Getting started with ninjection:
-  1. Run `:checkhealth ninjection` to check that all dependencies are present
-	and that your configuration is valid.
-  2. Move the cursor to an injected code block:
-	`:Ninjection select` - should highlight the entire injected code block.
-	`:Ninjection edit` - should open a floating window with the injected text 
-	and attach the appropriate LSP. 
-	`:Ninjection restore` - should apply any changes in the editing buffer to 
-	the original buffer. 
-	You can also test functionality with: 
-	`:lua require("ninjection.ninjection").select()`
-	`:lua require("ninjection.ninjection").edit()`
-	`:lua require("ninjection.ninjection").replace()`
-  3. Ninjection provides keymap plugs for you to map keybindings 
-	of your choosing:
-	`<Plug>(NinjectionEdit)`
-	`<Plug>(NinjectionReplace)`
-	`<Plug>(NinjectionSelect)`
-     
-
-==============================================================================
 ninjection-command USER COMMAND
 :Ninjection <subcommand?>
 
@@ -346,9 +309,9 @@ Return ~
 
 
 ==============================================================================
-"ninjection.treesitter"
+"ninjection.parse"
 
-The treesitter module contains all treesitter related functions for ninjection.
+The parse module contains all treesitter related functions for ninjection.
 
                                              *ninjection.treesitter.qet_query()*
 
@@ -423,6 +386,79 @@ Parameters ~
 
 Return ~
 `(NJRange)` `(optional)` vs_range, string? err - Range of text selected.
+
+
+==============================================================================
+"ninjection.buffer"
+
+The buffer module contains helper functions utilized by the main ninjection
+module for creating and editing injected text in buffers.
+
+                                               *ninjection.buffer.get_indents()*
+
+Finds whitespace indents (top, bottom, left) in the provided buffer.
+
+Parameters ~
+{bufnr} `(integer)` - Buffer handle.
+
+Return ~
+`(NJIndents)` `(optional)` indents, string? err
+Returns, on success, a table containing:
+ - `t_indent`: number of blank lines at the top.
+ - `b_indent`: number of blank lines at the bottom.
+ - `l_indent`: minimum number of leading spaces on nonempty lines.
+
+                                           *ninjection.buffer.restore_indents()*
+
+Restores the recorded whitespace indents (top, bottom, and left indent)
+for the provided text.
+
+Parameters ~
+{text} `(string|table<integer,string>)` The text to restore indents to.
+Can be either a string (with newline separators) or a table of lines.
+{indents} `(NJIndents)` Table with indent values for t, b, l
+
+Return ~
+`(string[])` `(optional)` restored_lines, string? err
+Lines with the indents restored.
+
+                                          *ninjection.buffer.create_child_buf()*
+
+Creates a child buffer to edit injected language text.
+
+Parameters ~
+{p_bufnr} `(integer)` - Buffer handle for parent buffer.
+{p_name} `(string)` - Name for parent buffer.
+{p_range} `(NJRange)` - Text range for the injected text.
+{root_dir} `(string)` - Root directory for project, or cwd.
+{text} `(string)` - Text to populate the child buffer with.
+{lang} `(string)` - Language to configure buffer for.
+
+Return ~
+`({ bufnr: integer?, win: integer?, indents: NJIndents })` c_table, string? err
+                                             *ninjection.buffer.set_child_cur()*
+
+Sets the child cursor to the same relative position as in the parent window.
+
+Parameters ~
+{c_win} `(integer)` Handle for child window to set the cursor in.
+{p_cursor} `(integer[])` Parent cursor pos.
+{s_row} `(integer)` Starting row from the parent to offset the child cursor by.
+{indents} `(NJIndents?)` Indents to calculate additional offsets with.
+
+Return ~
+`(string)` `(optional)` err
+
+                                                 *ninjection.buffer.start_lsp()*
+
+Starts an appropriate LSP for the provided language.
+
+Parameters ~
+{lang} `(string)` - The filetype of the injected language (e.g., "lua", "python").
+{root_dir} `(string)` - The root directory for the buffer.
+
+Return ~
+`(NJLspStatus)` `(optional)` result, string? err - The LSP status.
 
 
  vim:tw=78:ts=8:noet:ft=help:norl:
