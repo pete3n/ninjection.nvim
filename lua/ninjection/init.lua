@@ -314,6 +314,9 @@ function ninjection.edit()
 	return nil
 end
 
+
+-- NOTE: Child buffer should not close on error
+
 ---@tag ninjection.replace()
 ---@brief
 --- Replaces the original injected language text in the parent buffer
