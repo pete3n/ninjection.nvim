@@ -22,7 +22,7 @@ local M = {}
 ---@return boolean is_valid, string? err
 ---
 M.validate_config = function(cfg)
-	cfg = cfg or require("ninjection.config").cfg
+	cfg = cfg or require("ninjection.config").values or {}
 	---@type boolean, string?
 	local is_valid, err
 	is_valid = true
@@ -35,15 +35,9 @@ M.validate_config = function(cfg)
 		is_valid = false
 	end
 
-	-- Ensure there is a Treesitter query available for the parent file language.
-	if cfg.inj_lang_queries[cfg.file_lang] then
-		cfg.inj_lang_query = cfg.inj_lang_queries[cfg.file_lang]
-	else
-		err = "Ninjection: No injection query found for file_lang " .. cfg.file_lang
-	end
-
 	return is_valid, err
 end
+
 local required_plugins = {
 	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
 	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },

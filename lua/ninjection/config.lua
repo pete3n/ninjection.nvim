@@ -12,8 +12,6 @@ local vc = require("ninjection.health").validate_config
 
 ---@tag default_config
 local default_config = {
-	---@type string
-	file_lang = "nix",
 	---@type boolean
 	preserve_indents = true,
 	---@type  boolean
@@ -25,7 +23,7 @@ local default_config = {
 	---@type string
 	register = "z",
 	---@type boolean
-	suppress_warnings = false,
+	debug = true,
 	---@type EditorStyle
 	editor_style = "floating",
 	---@type table<string, string>
@@ -45,8 +43,6 @@ local default_config = {
 						)
 					]],
 	},
-	---@type string
-	inj_lang_query = "",
 	---@type table<string,string>
 	lsp_map = {
 		bash = "bashls",
@@ -99,11 +95,11 @@ end
 
 ---@nodoc
 --- Merges user provided configuration overrides with the default configuration.
+---@param cfg_overrides? Ninjection.Config
 ---@return nil
----
-local function merge_config()
+M._merge_config = function(cfg_overrides)
 	---@type Ninjection.Config
-	local user_config = (type(vim.g.ninjection) == "function" and vim.g.ninjection() or vim.g.ninjection) or {}
+	local user_config = vim.g.ninjection or cfg_overrides or {}
 	---@type Ninjection.Config
 	local config = vim.tbl_deep_extend("force", default_config, user_config)
 
@@ -113,10 +109,10 @@ local function merge_config()
 		error(err, 2)
 	end
 
-	M.cfg = config
-	return M.cfg
+	M.values = config
+	return M.values
 end
 
-merge_config()
-
+-- Provide default config in the event no user overrides are provided.
+M.values = M._merge_config()
 return M
