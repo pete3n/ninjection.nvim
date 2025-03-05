@@ -15,8 +15,12 @@ function ninjection.setup(user_cfg)
 	if is_valid == true then
 		require("ninjection.config")._merge_config(user_cfg)
 	else
-		vim.notify("ninjection warning: User configuration is invalid: " .. err ..
-			" \nReverting to default configuration settings.", vim.log.levels.WARN)
+		vim.notify(
+			"ninjection warning: User configuration is invalid: "
+				.. err
+				.. " \nReverting to default configuration settings.",
+			vim.log.levels.WARN
+		)
 	end
 end
 
@@ -313,7 +317,6 @@ function ninjection.edit()
 
 	return nil
 end
-
 
 -- NOTE: Child buffer should not close on error
 
