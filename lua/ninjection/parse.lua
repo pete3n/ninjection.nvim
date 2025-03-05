@@ -12,16 +12,15 @@ local ts = require("vim.treesitter")
 ---@return string? ft Filetype language, if supported
 local function check_lang(bufnr)
 	---@type boolean, unknown?
-	local ok, raw_output = pcall(function ()
-		return vim.api.nvim_get_option_value("filetype", {buf = bufnr})
+	local ok, raw_output = pcall(function()
+		return vim.api.nvim_get_option_value("filetype", { buf = bufnr })
 	end)
 	if not ok then
 		error("ninjeciton.parse.get_node_table() error: " .. tostring(raw_output), 2)
 	end
 	if type(raw_output) ~= "string" then
 		if cfg.debug then
-			vim.notify("ninjeciton.parse.get_node_table() warning: no filetype detected",
-				vim.log.levels.WARN )
+			vim.notify("ninjeciton.parse.get_node_table() warning: no filetype detected", vim.log.levels.WARN)
 		end
 	end
 	local ft = raw_output
@@ -30,8 +29,12 @@ local function check_lang(bufnr)
 	local query = cfg.inj_lang_queries[ft]
 	if not query or type(query) ~= "string" or query == "" then
 		if cfg.debug then
-			vim.notify("ninjeciton.parse.get_node_table() warning: injected language " ..
-			"query available for filetype: " .. ft, vim.log.levels.WARN )
+			vim.notify(
+				"ninjeciton.parse.get_node_table() warning: injected language "
+					.. "query available for filetype: "
+					.. ft,
+				vim.log.levels.WARN
+			)
 		end
 		return nil
 	end
