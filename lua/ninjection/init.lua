@@ -20,6 +20,7 @@ function ninjection.setup(user_cfg)
 	end
 end
 
+---@type Ninjection.Config
 local cfg = require("ninjection.config").values
 
 local ts = require("vim.treesitter")
@@ -34,7 +35,7 @@ end
 ---@brief
 --- Identifies and selects injected text in visual mode.
 ---
----@return string? err
+---@return nil
 ---
 function ninjection.select()
 	---@type boolean, unknown, string?, integer?, NJNodeTable?
@@ -47,7 +48,7 @@ function ninjection.select()
 		error(tostring(raw_output), 2)
 	end
 	if type(raw_output) ~= "number" then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.select() warning: Could not get current buffer " .. "calling vim.api.nvim_get_current_buf()",
 				vim.log.levels.WARN
@@ -58,15 +59,15 @@ function ninjection.select()
 	bufnr = raw_output
 	---@cast bufnr integer
 
-	node_info, err = parse.get_node_table(cfg.inj_lang_query, cfg.file_lang)
+	node_info, err = parse.get_node_table(bufnr)
 	if not node_info then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify("ninjection.select() warning: could not retrieve TSNode: " .. tostring(err), vim.log.levels.WARN)
 		end
 		return nil
 	end
 	if not node_info.node then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify("ninjection.select() warning: No valid TSNode returned.", vim.log.levels.WARN)
 		end
 		return nil
@@ -76,7 +77,7 @@ function ninjection.select()
 	local v_range
 	v_range, err = parse.get_visual_range(node_info.node, bufnr)
 	if not v_range then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify("ninjection.select() warning: no visual range returned: " .. tostring(err), vim.log.levels.WARN)
 		end
 		return nil
@@ -115,7 +116,7 @@ end
 --- and information to replace text in the parent buffer. It also appends the child
 --- buffer handle to an `NJParent` object in the parent buffer.
 ---
----@return string? err
+---@return nil
 ---
 function ninjection.edit()
 	---@type boolean, unknown, string?, integer?, string?, string?
@@ -135,9 +136,9 @@ function ninjection.edit()
 
 	---@type NJNodeTable?
 	local inj_node_info
-	inj_node_info, err = parse.get_node_table(cfg.inj_lang_query, cfg.file_lang)
+	inj_node_info, err = parse.get_node_table(p_bufnr)
 	if not inj_node_info then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.edit() waring: Failed to get injected node " .. "information: " .. tostring(err),
 				vim.log.levels.WARN
@@ -175,7 +176,7 @@ function ninjection.edit()
 		return nil
 	end
 
-	inj_node_lang, err = parse.get_inj_lang(cfg.inj_lang_query, p_bufnr, cfg.file_lang)
+	inj_node_lang, err = parse.get_inj_lang(p_bufnr)
 	if not inj_node_lang or inj_node_lang == "" then
 		error(
 			"ninjection.edit() error: Failed to get injected node language "
@@ -198,7 +199,7 @@ function ninjection.edit()
 	if type(raw_output) == "table" then
 		p_cursor = raw_output
 		---@cast p_cursor integer[]
-	elseif not cfg.suppress_warnings then
+	elseif cfg.debug then
 		vim.notify(
 			"ninjection.edit() warning: No cursor position returned from " .. "vim.api.nvim_win_get_cursor(0)",
 			vim.log.levels.WARN
@@ -215,7 +216,7 @@ function ninjection.edit()
 		error(tostring(raw_output), 2)
 	end
 	if type(raw_output) ~= "string" then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.edit() warning: No name returned from " .. "vim.api.nvim_buf_get_name(0)",
 				vim.log.levels.WARN
@@ -273,7 +274,7 @@ function ninjection.edit()
 	local lsp_status
 	lsp_status, err = buffer.start_lsp(inj_node_lang, root_dir)
 	if not lsp_status then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
 			-- Don't return early on LSP failure
 		end
@@ -320,7 +321,7 @@ end
 --- table as an `NJParent` table in the child, and `NJChild` table indexed by the
 --- child bufnr in the parent. This relationship is validated before replacing.
 ---
----@return string? err
+---@return nil
 ---
 function ninjection.replace()
 	---@type boolean, unknown, string?, integer?
@@ -350,7 +351,7 @@ function ninjection.replace()
 	if not ok or type(raw_output) ~= "table" then
 		err = tostring(raw_output)
 		if err:find("Key not found: ninjection") then
-			if not cfg.suppress_warnings then
+			if cfg.debug then
 				vim.notify(
 					"ninjection.replace() warning: This buffer is not a valid " .. "ninjection buffer.",
 					vim.log.levels.WARN
@@ -397,7 +398,7 @@ function ninjection.replace()
 	---@type integer[]
 	local this_cursor = raw_output
 	if not this_cursor[2] then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.replace() warning: No child cursor values returned by vim.api.nvim_win_get_cursor(0)",
 				vim.log.levels.WARN
@@ -418,7 +419,7 @@ function ninjection.replace()
 	---@type string[]
 	local rep_text = raw_output
 	if not rep_text or rep_text == "" then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.replace() warning: No replacement text returned " .. "by vim.api.nvim_buf_get_lines()",
 				vim.log.levels.WARN
@@ -430,7 +431,7 @@ function ninjection.replace()
 	if cfg.preserve_indents then
 		raw_output, err = buffer.restore_indents(rep_text, nj_child_b.p_indents)
 		if not raw_output or type(raw_output) ~= "table" then
-			if not cfg.suppress_warnings then
+			if cfg.debug then
 				vim.notify(
 					"ninjection.replace() warning: buffer.restore_indents() could not restore indents: " .. err,
 					vim.log.levels.WARN
@@ -469,7 +470,7 @@ function ninjection.replace()
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.replace() warning: could not remove child buffer "
 					.. "entry from parent buffer after deleting buffer."
@@ -503,7 +504,7 @@ function ninjection.replace()
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.replace() warning: could not restore cursor position in the parent buffer." .. err,
 				vim.log.levels.WARN

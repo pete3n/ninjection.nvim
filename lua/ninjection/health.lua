@@ -23,7 +23,7 @@ local M = {}
 ---@return boolean is_valid, string? err
 ---
 M.validate_config = function(cfg)
-	cfg = cfg or require("ninjection.config").values
+	cfg = cfg or require("ninjection.config").values or {}
 	---@type boolean, string?
 	local is_valid, err
 	is_valid = true
@@ -34,13 +34,6 @@ M.validate_config = function(cfg)
 	if not valid_editor_styles[cfg.editor_style] then
 		err = "Ninjection configuration error: Invalid editor_style: " .. tostring(cfg.editor_style)
 		is_valid = false
-	end
-
-	-- Ensure there is a Treesitter query available for the parent file language.
-	if cfg.inj_lang_queries[cfg.file_lang] then
-		cfg.inj_lang_query = cfg.inj_lang_queries[cfg.file_lang]
-	else
-		err = "Ninjection: No injection query found for file_lang " .. cfg.file_lang
 	end
 
 	return is_valid, err

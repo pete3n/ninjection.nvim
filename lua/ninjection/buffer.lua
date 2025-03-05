@@ -43,7 +43,7 @@ M.get_indents = function(bufnr)
 	lines = raw_output
 
 	if #lines == 0 then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.buffer.get_indents() warning: No lines returned "
 					.. "from calling vim.api.nvim_buf_get_lines()",
@@ -128,7 +128,7 @@ M.restore_indents = function(text, indents)
 		---@cast raw_output string[]
 		lines = raw_output
 		if #lines == 0 then
-			if cfg.suppress_warnings == false then
+			if cfg.debug then
 				vim.notify(
 					"ninjection.buffer.restore_indents() warning: No lines " .. "returned from calling vim.split()",
 					vim.log.levels.WARN
@@ -335,7 +335,7 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	if cfg.preserve_indents then
 		p_indents, err = M.get_indents(0)
 		if not p_indents then
-			if not cfg.suppress_warnings then
+			if cfg.debug then
 				vim.notify(
 					"ninjection.edit() warning: Unable to preserve indentation "
 						.. "with get_indents(): "
@@ -365,7 +365,7 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 			return vim.cmd("lua " .. cfg.format_cmd)
 		end)
 		if not ok then
-			if not cfg.suppress_warnings then
+			if cfg.debug then
 				err = tostring(raw_output)
 				vim.notify(
 					'ninjection.edit() warning: Calling vim.cmd("lua "' .. cfg.format_cmd .. ")\n" .. err,
@@ -436,7 +436,7 @@ M.set_child_cur = function(c_win, p_cursor, s_row, indents)
 		return vim.api.nvim_win_set_cursor(c_win, offset_cur)
 	end)
 	if not ok then
-		if not cfg.suppress_warnings then
+		if cfg.debug then
 			err = tostring(raw_output)
 			vim.notify(
 				"ninjection.edit() warning: Calling vim.api.nvim_win_set_cursor"

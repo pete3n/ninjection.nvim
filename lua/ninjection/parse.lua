@@ -3,34 +3,65 @@
 --- The parse module contains all treesitter related functions for ninjection.
 ---
 local M = {}
+---@type Ninjection.Config
 local cfg = require("ninjection.config").values
 local ts = require("vim.treesitter")
+
+---@nodoc
+---@param bufnr integer Buffer handle to check filetype support.
+---@return string? ft Filetype language, if supported
+local function check_lang(bufnr)
+	---@type boolean, unknown?
+	local ok, raw_output = pcall(function ()
+		return vim.api.nvim_get_option_value("filetype", {buf = bufnr})
+	end)
+	if not ok then
+		error("ninjeciton.parse.get_node_table() error: " .. tostring(raw_output), 2)
+	end
+	if type(raw_output) ~= "string" then
+		if cfg.debug then
+			vim.notify("ninjeciton.parse.get_node_table() warning: no filetype detected",
+				vim.log.levels.WARN )
+		end
+	end
+	local ft = raw_output
+	---@cast ft string
+
+	local query = cfg.inj_lang_queries[ft]
+	if not query or type(query) ~= "string" or query == "" then
+		if cfg.debug then
+			vim.notify("ninjeciton.parse.get_node_table() warning: injected language " ..
+			"query available for filetype: " .. ft, vim.log.levels.WARN )
+		end
+		return nil
+	end
+	return ft
+end
 
 ---@tag ninjection.parse.qet_query()
 ---@brief
 --- Retrieves a parsed query from Treesitter given a language and pattern.
 ---
 --- Parameters ~
----@param query string - Lua-literal string for Treesitter query.
 ---@param lang? string? - Default: `"nix"` - language grammar to parse with.
 ---
----@return vim.treesitter.Query? parsed_query, string? err
+---@return vim.treesitter.Query? parsed_query
 ---The parsed Treesitter Query object
 ---
-M.get_query = function(query, lang)
+M.get_query = function(lang)
 	lang = lang or "nix"
 	---@cast lang string
 	---@type boolean, unknown, vim.treesitter.Query?
 	local ok, raw_output, parsed_query
 
 	ok, raw_output = pcall(function()
-		return ts.query.parse(lang, query)
+		return ts.query.parse(lang, cfg.inj_lang_queries[lang])
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
 	if not raw_output.query then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_query() warning: No Query result "
 					.. "returned from calling vim.treesitter.query.parse()",
@@ -53,7 +84,7 @@ end
 ---@param bufnr integer - Handle for buffer to parse.
 ---@param lang? string  - Default: `"nix"` - language to parse with.
 ---
----@return TSNode? root, string? err
+---@return TSNode? root
 --- Root node of the TSTree for the language.
 ---
 M.get_root = function(bufnr, lang)
@@ -67,7 +98,7 @@ M.get_root = function(bufnr, lang)
 		error("ninjection.parse.get_root() error: " .. tostring(raw_output), 2)
 	end
 	if not raw_output then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_root() warning: No parser available " .. "for: " .. lang,
 				vim.log.levels.WARN
@@ -81,7 +112,7 @@ M.get_root = function(bufnr, lang)
 	---@type TSTree?
 	local tree = parser:parse()[1]
 	if not tree then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get.root() warning: No syntax tree found " .. "for " .. lang,
 				vim.log.levels.WARN
@@ -94,7 +125,7 @@ M.get_root = function(bufnr, lang)
 	---@type TSNode?
 	local root = tree:root()
 	if not root then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get.root() warning: No syntax tree root " .. "found for " .. lang,
 				vim.log.levels.WARN
@@ -112,8 +143,7 @@ end
 --- with start and ending coordinates.
 ---
 --- Parameters ~
----@param query string - Pattern to identify an injected lang.
----@param lang? string - Default: `"nix"` language grammar to use for parsing.
+---@param bufnr integer - The buffer handle to query in.
 ---
 ---@return NJNodeTable? table, string? err
 --- Returns a table containing:
@@ -122,22 +152,15 @@ end
 ---  NOTE: Coordinates may not match the actual text locations
 ---  (see: `ninjection.parse.get_visual_range()` for this).
 --
-M.get_node_table = function(query, lang)
-	lang = lang or "nix"
-	---@type boolean, unknown, string?, integer?, integer[]?
-	local ok, raw_output, err, bufnr, cursor
+M.get_node_table = function(bufnr)
+	---@type boolean, unknown, string?, integer[]?
+	local ok, raw_output, err, cursor
 
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_get_current_buf()
-	end)
-	if not ok then
-		error("ninjection.parse.get_node_table() error: " .. tostring(raw_output), 2)
+	local ft = check_lang(bufnr)
+	if not ft then
+		return nil
 	end
-	if type(raw_output) ~= "number" then
-		error("ninjection.parse.get_node_table() error: No buffer handle returned: " .. tostring(raw_output), 2)
-	end
-	bufnr = raw_output
-	---@cast bufnr integer
+	---@cast ft string
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_win_get_cursor(0) -- current window cursor position
@@ -146,7 +169,7 @@ M.get_node_table = function(query, lang)
 		error("ninjection.parse.get_node_table() error: " .. tostring(raw_output), 2)
 	end
 	if type(raw_output) ~= "table" then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_node_table() warning: Could not "
 					.. "determine cursor location in current window from "
@@ -166,9 +189,9 @@ M.get_node_table = function(query, lang)
 
 	--- @type vim.treesitter.Query?
 	local parsed_query
-	parsed_query, err = M.get_query(query, lang)
+	parsed_query, err = M.get_query(ft)
 	if not parsed_query then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_node_info() warning: get_query() " .. " returned nil: " .. tostring(err),
 				vim.log.levels.WARN
@@ -182,7 +205,7 @@ M.get_node_table = function(query, lang)
 	local root
 	root, err = M.get_root(bufnr)
 	if not root then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_node_table() warning: No root " .. "returned: " .. tostring(err),
 				vim.log.levels.WARN
@@ -220,7 +243,7 @@ M.get_node_table = function(query, lang)
 		end
 	end
 
-	if cfg.suppress_warnings == false then
+	if cfg.debug then
 		vim.notify(
 			"ninjection.parse.get_node_table(): No injection.content " .. "id found in node.",
 			vim.log.levels.WARN
@@ -235,21 +258,24 @@ end
 --- Parse an injected content node for an associated language comment.
 ---
 --- Parameters ~
----@param query string - Query to identify an injected content node.
 ---@param bufnr integer - Handle for the buffer to query in.
----@param file_lang? string - Default: `"nix"` - Parent file language to find
 --- injections in.
 ---
 ---@return string? inj_lang , string? err - Injected language identified.
 ---
-M.get_inj_lang = function(query, bufnr, file_lang)
-	---@type boolean, any|nil, string|nil, vim.treesitter.Query|nil
-	local ok, raw_output, err, parsed_query
-	file_lang = file_lang or "nix"
+M.get_inj_lang = function(bufnr)
+	---@type boolean, unknown, string?, vim.treesitter.Query?, string?
+	local ok, raw_output, err, parsed_query, ft
 
-	parsed_query, err = M.get_query(query, file_lang)
+	ft = check_lang(bufnr)
+	if not ft then
+		return nil
+	end
+	---@cast ft string
+
+	parsed_query, err = M.get_query(ft)
 	if not parsed_query then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_inj_lang() warning: Could not parse "
 					.. "the Treesitter query with get_query(): "
@@ -263,9 +289,9 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 
 	---@type TSNode|nil
 	local root
-	root, err = M.get_root(bufnr, file_lang)
+	root, err = M.get_root(bufnr, ft)
 	if not root then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_inj_lang() warning: Could not "
 					.. "determine the syntax tree root from get_root(): "
@@ -279,9 +305,9 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 
 	---@type NJNodeTable|nil
 	local node_info
-	node_info, err = M.get_node_table(cfg.inj_lang_query, file_lang)
+	node_info, err = M.get_node_table(bufnr)
 	if not node_info then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_inj_lang() warning: Could not "
 					.. "determine injected content calling get_node_table(): "
@@ -296,7 +322,7 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 	---@type integer|nil
 	local node_s_row = node_info.range.s_row
 	if not node_s_row then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_inj_lang() warning: Could not "
 					.. "determine injected language starting row calling get_node_table(): ",
@@ -341,7 +367,7 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 		end
 		candidate_text = raw_output
 		if not candidate_text then
-			if cfg.suppress_warnings == false then
+			if cfg.debug then
 				vim.notify(
 					"ninjection.get_inj_lang warning: Could not retrieve "
 						.. "injected language text calling vim.treesitter.get_node_text()"
@@ -359,7 +385,7 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 		---@type string|nil
 		local inj_lang = candidate_text:gsub("^#%s*", "")
 		if not inj_lang then
-			if cfg.suppress_warnings == false then
+			if cfg.debug then
 				vim.notify(
 					"ninjection.parse.get_inj.lang() warning: No language " .. "comment could be parsed.",
 					vim.log.levels.WARN
@@ -374,7 +400,7 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 			return inj_lang
 		end
 
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_inj.lang() warning: No supported "
 					.. "injected languages were found. Check your configuration.",
@@ -384,7 +410,7 @@ M.get_inj_lang = function(query, bufnr, file_lang)
 		return nil
 	end
 
-	if cfg.suppress_warnings == false then
+	if cfg.debug then
 		vim.notify(
 			"ninjection.parse.get_inj.lang() warning: No injected languages " .. "were found.",
 			vim.log.levels.WARN
@@ -418,12 +444,12 @@ end
 ---@return NJRange? vs_range, string? err - Range of text selected.
 ---
 M.get_visual_range = function(node, bufnr)
-	---@type boolean, any|nil, string|nil, integer[]|nil
+	---@type boolean, unknown, string?, integer[]?
 	local ok, raw_output, err, range
 
 	range = { node:range() }
 	if not range or #range < 4 then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_visual_range() warning: No valid " .. " selection range found in range()",
 				vim.log.levels.WARN
@@ -442,7 +468,7 @@ M.get_visual_range = function(node, bufnr)
 	---@type string[]|nil
 	local raw_lines = raw_output
 	if not raw_lines or #raw_lines == 0 then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_visual_range() warning: Nothing "
 					.. "returned from calling vim.api.nvim_buf_get_lines()",
@@ -462,7 +488,7 @@ M.get_visual_range = function(node, bufnr)
 	---@type string|nil
 	local visual_text = raw_output
 	if not visual_text then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_visual_range() warning: No text "
 					.. "returned from vim.treesitter.get_node_text()",
@@ -487,7 +513,7 @@ M.get_visual_range = function(node, bufnr)
 	---@type string[]|nil
 	local visual_lines = raw_output
 	if not visual_lines or #visual_lines == 0 then
-		if cfg.suppress_warnings == false then
+		if cfg.debug then
 			vim.notify(
 				"ninjection.parse.get_visual_range(): No strings returned" .. "from vim.split()",
 				vim.log.levels.WARN

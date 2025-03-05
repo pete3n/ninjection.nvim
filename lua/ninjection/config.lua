@@ -12,8 +12,6 @@ local vc = require("ninjection.health").validate_config
 
 ---@tag default_config
 local default_config = {
-	---@type string
-	file_lang = "nix",
 	---@type boolean
 	preserve_indents = true,
 	---@type  boolean
@@ -25,7 +23,7 @@ local default_config = {
 	---@type string
 	register = "z",
 	---@type boolean
-	suppress_warnings = false,
+	debug = true,
 	---@type EditorStyle
 	editor_style = "floating",
 	---@type table<string, string>
@@ -45,8 +43,6 @@ local default_config = {
 						)
 					]],
 	},
-	---@type string
-	inj_lang_query = "",
 	---@type table<string,string>
 	lsp_map = {
 		bash = "bashls",
