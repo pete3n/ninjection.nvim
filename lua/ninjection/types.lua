@@ -65,6 +65,9 @@
 ---@field editor_style? EditorStyle
 --- Window style to use for the injected context editor.
 ---
+---@field win_config? vim.api.keyset.win_config
+--- Window configuration parameters.
+---
 ---@field inj_lang_queries? table<string,string> - Contains per-language string
 --- literals for Treesitter queries to Identify injected content nodes.
 ---

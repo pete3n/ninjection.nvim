@@ -26,6 +26,16 @@ local default_config = {
 	debug = true,
 	---@type EditorStyle
 	editor_style = "floating",
+	---@type vim.api.keyset.win_config
+	win_config = {
+		style = "minimal",
+		relative = "editor",
+		width = math.floor(vim.o.columns * 0.8),
+		height = math.floor(vim.o.lines * 0.8),
+		row = math.floor(vim.o.lines * 0.8),
+		col = math.floor(vim.o.columns * 0.8),
+		border = "single",
+	},
 	---@type table<string, string>
 	inj_lang_queries = {
 		nix = [[

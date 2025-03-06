@@ -219,25 +219,8 @@ local function create_child_win(bufnr, style)
 	local ok, raw_output, winid
 
 	if style == "floating" then
-		---@type number, number, number, number
-		local width = math.floor(vim.o.columns * 0.8)
-		local height = math.floor(vim.o.lines * 0.8)
-		local row = math.floor((vim.o.lines - height) / 2)
-		local col = math.floor((vim.o.columns - width) / 2)
-
-		---@type vim.api.keyset.win_config
-		local opts = {
-			style = "minimal",
-			relative = "editor", -- relative to the whole editor
-			width = width,
-			height = height,
-			row = row,
-			col = col,
-			border = "single",
-		}
-
 		ok, raw_output = pcall(function()
-			return vim.api.nvim_open_win(bufnr, true, opts)
+			return vim.api.nvim_open_win(bufnr, true, cfg.win_config)
 		end)
 		if not ok then
 			error(tostring(raw_output), 2)
