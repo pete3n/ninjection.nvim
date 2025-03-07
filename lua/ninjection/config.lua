@@ -33,6 +33,8 @@ local default_config = {
 		relative = "editor",
 		width = math.floor(vim.o.columns * 0.8),
 		height = math.floor(vim.o.lines * 0.8),
+		row = math.floor((vim.o.lines - math.floor(vim.o.lines * 0.8)) / 2),
+		col = math.floor((vim.o.columns - math.floor(vim.o.columns * 0.8)) / 2),
 		border = "single",
 	},
 	---@type table<string, string>
