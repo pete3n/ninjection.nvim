@@ -77,6 +77,8 @@ M.get_default = function()
 	return default_config
 end
 
+--- NOTE: width/height col/row default values are dynamically set to:
+--- 80% of vim.o.columns/vim.o.rows and offset for a centered window.
 ---@eval return (function()
 ---  local s = vim.inspect(require("ninjection.config").get_default())
 ---  s = s:gsub("\\t", "  ")
