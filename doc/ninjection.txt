@@ -49,12 +49,14 @@ ninjection-command USER COMMAND
 
 The ninjection module contains the three primary ninjection functions:
 |select()|, |edit()|, and |replace()|.
+Type ~
+`(Ninjection.Config)`
                                                            *ninjection.select()*
 
 Identifies and selects injected text in visual mode.
 
 Return ~
-`(string)` `(optional)` err
+`(nil)`
 
                                                              *ninjection.edit()*
 
@@ -65,7 +67,7 @@ and information to replace text in the parent buffer. It also appends the child
 buffer handle to an `NJParent` object in the parent buffer.
 
 Return ~
-`(string)` `(optional)` err
+`(nil)`
 
                                                           *ninjection.replace()*
 
@@ -75,7 +77,7 @@ table as an `NJParent` table in the child, and `NJChild` table indexed by the
 child bufnr in the parent. This relationship is validated before replacing.
 
 Return ~
-`(string)` `(optional)` err
+`(nil)`
 
 
 ==============================================================================
@@ -87,8 +89,8 @@ functions to merge user config options and reload config changes.
                                                                 *default_config*
 `{
 `  auto_format = true,
+`  debug = true,
 `  editor_style = "floating",
-`  file_lang = "nix",
 `  format_cmd = "_G.format_with_conform()",
 `  inj_lang_queries = {
 `    nix = '            (
@@ -105,7 +107,6 @@ functions to merge user config options and reload config changes.
 `            )
 `          '
 `  },
-`  inj_lang_query = "",
 `  injected_comment_lines = 1,
 `  lsp_map = {
 `    bash = "bashls",
@@ -123,7 +124,16 @@ functions to merge user config options and reload config changes.
 `  },
 `  preserve_indents = true,
 `  register = "z",
-`  suppress_warnings = false
+`  win_config = {
+`    border = "single",
+`    col = 8,
+`    height = 19,
+`    relative = "editor",
+`    row = 2,
+`    style = "minimal",
+`    width = 64,
+`    zindex = 49
+`  }
 `}
 
                                                                *config.reload()*
@@ -174,10 +184,6 @@ Class ~
 {Ninjection.Config}
 Implemented by `ninjection/config.lua` for default and user configs.
 
-{file_lang} `(optional)` `(string)` - File type to search for injected languages in.
-Must have a matching entry in `inj_lang_queries`.
-Currently only supports nix, but could be extended.
-
 {preserve_indents} `(optional)` `(boolean)` - Preserve indents from the parent buffer.
 This option should be used in conjunction with `auto_format` because this
 will re-apply indents that `auto_format` normally removes. If you don't remove
@@ -201,20 +207,18 @@ Offsetting 0 lines would function with this format:
 `end content'';
 
 {register} `(optional)` `(string)` - Register to use to copy injected content.
-{suppress_warnings} `(boolean)` - Suppress warnings.
-NOTE: If ninjection is not functioning properly, ensure this is false for
-debugging.
+{debug} `(optional)` `(boolean)` - Output debug messages.
 
-{editor_style} "`(cur_win)`" | "floating" | "v_split" | "h_split"
+{editor_style} `(optional)` "`(cur_win)`" | "floating" | "v_split" | "h_split"
 Window style to use for the injected context editor.
 
-{inj_lang_queries} `(table<string, string>)` - Contains per-language string
+{win_config} `(optional)` `(vim.api.keyset.win_config)`
+Window configuration parameters.
+
+{inj_lang_queries} `(optional)` `(table<string,string>)` - Contains per-language string
 literals for Treesitter queries to Identify injected content nodes.
 
-{inj_lang_query} `(string)` This is configured by referencing `file_lang`
-in the table of `inj_lang_queries`. This cannot be nil.
-
-{lsp_map} `(table<string, string>)` - LSP associated with the injected
+{lsp_map} `(optional)` `(table<string,string>)` - LSP associated with the injected
 languages These keys must match the language comment used to identify
 injected languages, and the value must match the LSP configured in your
 lspconfig.
@@ -313,16 +317,17 @@ Return ~
 
 The parse module contains all treesitter related functions for ninjection.
 
+Type ~
+`(Ninjection.Config)`
                                                   *ninjection.parse.qet_query()*
 
 Retrieves a parsed query from Treesitter given a language and pattern.
 
 Parameters ~
-{query} `(string)` - Lua-literal string for Treesitter query.
 {lang} `(optional)` `(string?)` - Default: `"nix"` - language grammar to parse with.
 
 Return ~
-`(vim.treesitter.Query)` `(optional)` parsed_query, string? err
+`(vim.treesitter.Query)` `(optional)` parsed_query
 parsed Treesitter Query object
 
                                                    *ninjection.parse.get_root()*
@@ -334,7 +339,7 @@ Parameters ~
 {lang} `(optional)` `(string)`  - Default: `"nix"` - language to parse with.
 
 Return ~
-`(TSNode)` `(optional)` root, string? err
+`(TSNode)` `(optional)` root
 Root node of the TSTree for the language.
 
                                              *ninjection.parse.get_node_table()*
@@ -343,8 +348,7 @@ Identifies the injected language node at the current cursor position
 with start and ending coordinates.
 
 Parameters ~
-{query} `(string)` - Pattern to identify an injected lang.
-{lang} `(optional)` `(string)` - Default: `"nix"` language grammar to use for parsing.
+{bufnr} `(integer)` - The buffer handle to query in.
 
 Return ~
 `(NJNodeTable)` `(optional)` table, string? err
@@ -358,9 +362,7 @@ Returns a table containing:
 Parse an injected content node for an associated language comment.
 
 Parameters ~
-{query} `(string)` - Query to identify an injected content node.
 {bufnr} `(integer)` - Handle for the buffer to query in.
-{file_lang} `(optional)` `(string)` - Default: `"nix"` - Parent file language to find
 injections in.
 
 Return ~
@@ -422,7 +424,7 @@ Return ~
 `(string[])` `(optional)` restored_lines, string? err
 Lines with the indents restored.
 
-                                          *ninjection.buffer.create_child_buf()*
+                                              *ninjection.buffer.create_child()*
 
 Creates a child buffer to edit injected language text.
 
