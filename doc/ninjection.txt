@@ -86,6 +86,8 @@ Return ~
 The config module contains the default ninjection configuration table and
 functions to merge user config options and reload config changes.
 
+NOTE: width/height col/row default values are dynamically set to:
+80% of vim.o.columns/vim.o.rows and offset for a centered window.
 `{
 `  auto_format = true,
 `  debug = true,
@@ -131,7 +133,7 @@ functions to merge user config options and reload config changes.
 `    row = 2,
 `    style = "minimal",
 `    width = 64,
-`    zindex = 49
+`    zindex = 25
 `  }
 `}
 
