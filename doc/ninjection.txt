@@ -86,7 +86,6 @@ Return ~
 The config module contains the default ninjection configuration table and
 functions to merge user config options and reload config changes.
 
-                                                                *default_config*
 `{
 `  auto_format = true,
 `  debug = true,
