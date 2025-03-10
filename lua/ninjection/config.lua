@@ -27,7 +27,7 @@ local default_config = {
 	editor_style = "floating",
 	---@type vim.api.keyset.win_config
 	win_config = {
-		zindex = 49,
+		zindex = 25,
 		style = "minimal",
 		relative = "editor",
 		width = math.floor(vim.o.columns * 0.8),
