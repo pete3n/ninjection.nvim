@@ -7,9 +7,6 @@ local M = {}
 
 local vc = require("ninjection.health").validate_config
 
-local columns = vim.o.columns > 0 and vim.o.columns or 80
-local lines = vim.o.lines > 0 and vim.o.lines or 24
-
 ---@nodoc
 ---@type Ninjection.Config
 ---@tag default_config
@@ -33,10 +30,10 @@ local default_config = {
 		zindex = 49,
 		style = "minimal",
 		relative = "editor",
-		width = math.floor(columns * 0.8),
-		height = math.floor(lines * 0.8),
-		row = math.floor((lines - math.floor(lines * 0.8)) / 2),
-		col = math.floor((columns - math.floor(columns * 0.8)) / 2),
+		width = math.floor(vim.o.columns * 0.8),
+		height = math.floor(vim.o.lines * 0.8),
+		row = math.floor((vim.o.lines - math.floor(vim.o.lines * 0.8)) / 2),
+		col = math.floor((vim.o.columns - math.floor(vim.o.columns * 0.8)) / 2),
 		border = "single",
 	},
 	---@type table<string, string>
