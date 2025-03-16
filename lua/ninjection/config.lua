@@ -10,13 +10,13 @@ local vc = require("ninjection.health").validate_config
 ---@nodoc
 ---@type Ninjection.Config
 ---@tag default_config
-local default_config = {
+local default_config =   {
 	---@type boolean
 	preserve_indents = true,
 	---@type  boolean
 	auto_format = true,
 	---@type string
-	format_cmd = "_G.format_with_conform()",
+	format_cmd = 'require("conform").format { async = true, lsp_format = "fallback" }',
 	---@type integer
 	injected_comment_lines = 1,
 	---@type string
