@@ -32,6 +32,15 @@ window styles, and formatting.
 
 ### See it in action
 [![Demo video](thumbnail.png)](https://github.com/user-attachments/assets/91386063-7040-44f2-b7a3-1cb8bede4fd3)
+
+## Setup
+### lazy.nvim
+Simply add 'pete3n/ninjection.nvim' to your lazy.nvim setup function, such as:
+```
+require('lazy').setup({
+    'pete3n/ninjection.nvim',
+```
+
 ## Current Support
 ninjection.nvim currently is limited to detecting injected languages in Nix 
 files. However, it should be easily extensible for other languages. It expects 
