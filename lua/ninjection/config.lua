@@ -10,7 +10,7 @@ local vc = require("ninjection.health").validate_config
 ---@nodoc
 ---@type Ninjection.Config
 ---@tag default_config
-local default_config =   {
+local default_config = {
 	---@type boolean
 	preserve_indents = true,
 	---@type  boolean
