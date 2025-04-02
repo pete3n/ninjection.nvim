@@ -54,7 +54,7 @@ jobs:
           test -d .ci/neovim || {
             mkdir -p .ci/neovim
             for i in {1..3}; do
-              if curl -fL "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux64.tar.gz" | shasum
+              if curl -fL "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux64.tar.gz" | shasum; then
           # tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"; then
                 break
               fi
