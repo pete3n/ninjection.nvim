@@ -1,3 +1,0 @@
-[submodule "ci/nix/kickstart-nix.nvim"]
-  path = ci/nix/kickstart-nix.nvim
-  url = https://github.com/pete3n/kickstart-nix.nvim.git
