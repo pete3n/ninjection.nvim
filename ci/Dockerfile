@@ -2,7 +2,9 @@ FROM nixos/nix:latest AS builder
 
 WORKDIR /tmp/build
 
-COPY ./ci/nix/kickstart-nix.nvim ./
+COPY ./ci/nix/kickstart-nix.nvim ./kickstart-nix.nvim
+
+WORKDIR /tmp/build/kickstart-nix.nvim
 
 RUN nix --extra-experimental-features "nix-command flakes" \
     --option filter-syscalls false build .#devShells.x86_64-linux.default
@@ -16,7 +18,7 @@ FROM nixos/nix:latest
 WORKDIR /ninjection
 
 COPY --from=builder /tmp/nix-store-closure /nix/store
-COPY --from=builder /tmp/build/result /ninjection
+COPY --from=builder /tmp/build/kickstart-nix.nvim/result /ninjection
 
 COPY ../ci/nix /ninjection/ci/nix
 COPY ../lua /ninjection/lua
