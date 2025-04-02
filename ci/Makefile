@@ -5,7 +5,7 @@ endif
 .PHONY: gendocs stylua lua_ls-check lua_ls-debug
 
 stylua:
-	stylua --color always --check .
+	stylua --color always --check ./lua ./plugin
 
 lua_ls-check:
 	@echo "Running lua-language-server check for version: $(version)"
