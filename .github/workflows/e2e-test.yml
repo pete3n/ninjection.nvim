@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       # Restore the cached Nix store closure tarball if available.
       - name: Restore Nix Store Closure Cache
