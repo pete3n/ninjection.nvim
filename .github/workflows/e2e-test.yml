@@ -11,27 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Restore the cached Nix store closure tarball if available.
-      - name: List ci/nix/kickstart-nix.nvim directory
-        run: ls -la ci/nix/kickstart-nix.nvim
-
-      - name: Restore Nix Store Closure Cache
-        id: restore-cache
-        uses: actions/cache@v3
-        with:
-          path: .ci/nix-store-closure.tar.gz
-          key: ${{ runner.os }}-nix-store-closure-${{ hashFiles('ci/nix/kickstart-nix.nvim/**') }}
-
       - name: Build Docker Image
         run: |
           docker build -f ci/Dockerfile -t ninjection-test .
-
-      - name: Save Nix Store Closure Cache
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v3
-        with:
-          path: .ci/nix-store-closure.tar.gz
-          key: ${{ runner.os }}-nix-store-closure-${{ hashFiles('ci/nix/kickstart-nix.nvim/**') }}
 
       - name: Run End-to-End Tests in Container
         run: docker run --rm ninjection-test
