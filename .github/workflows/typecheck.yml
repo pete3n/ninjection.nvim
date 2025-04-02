@@ -54,8 +54,7 @@ jobs:
           test -d .ci/neovim || {
             mkdir -p .ci/neovim
             for i in {1..3}; do
-              if curl -fL "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux64.tar.gz" | shasum; then
-          # tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"; then
+              if curl -fL "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"; then
                 break
               fi
               echo "Download attempt $i failed, retrying..."
@@ -64,10 +63,13 @@ jobs:
           }
           test -d .ci/lua-ls || {
             mkdir -p .ci/lua-ls
-            curl -sL \
-              "https://github.com/LuaLS/lua-language-server/releases/download/${{ inputs.lua_ls_version || '3.13.0' }}/\
-              lua-language-server-${{ inputs.lua_ls_version || '3.13.0' }}-linux-x64.tar.gz" \
-              | tar xzf - -C "${PWD}/.ci/lua-ls"
+            for in in {1..3}; do
+              if curl -sL "https://github.com/LuaLS/lua-language-server/releases/download/${{ inputs.lua_ls_version || '3.13.0' }}/lua-language-server-${{ inputs.lua_ls_version || '3.13.0' }}-linux-x64.tar.gz" | tar xzf - -C "${PWD}/.ci/lua-ls"; then
+                break
+              fi
+              echo "Download attempt $i failed, retrying..."
+              sleep 5
+            done
           }
       - name: Run check
         run: |
