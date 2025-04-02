@@ -3,8 +3,7 @@
 --- The ninjection module contains the three primary ninjection functions:
 --- |select()|, |edit()|, and |replace()|.
 
-		local ninjection = {}
-local ninjection
+local ninjection = {}
 
 ---@nodoc
 ---@param user_cfg Ninjection.Config
