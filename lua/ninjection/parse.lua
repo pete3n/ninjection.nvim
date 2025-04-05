@@ -20,7 +20,7 @@ local function check_lang(bufnr)
 	end
 	if type(raw_output) ~= "string" then
 		if cfg.debug then
-			vim.notify("ninjeciton.parse.get_node_table() warning: no filetype detected", vim.log.levels.WARN)
+			vim.notify("ninjection.parse.get_node_table() warning: no filetype detected", vim.log.levels.WARN)
 		end
 	end
 	local ft = raw_output
@@ -28,6 +28,8 @@ local function check_lang(bufnr)
 
 	local query = cfg.inj_lang_queries[ft]
 	if not query or type(query) ~= "string" or query == "" then
+		-- Fallback to built in queries
+		-- TODO: Implement fallback option from vim.treesitter.get_query(lang, "injections")
 		if cfg.debug then
 			vim.notify(
 				"ninjeciton.parse.get_node_table() warning: injected language "

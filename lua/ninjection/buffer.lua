@@ -468,12 +468,12 @@ M.start_lsp = function(lang, root_dir)
 
 	-- The LSP must have an available configuration
 	ok, raw_output = pcall(function()
-		return lspconfig[lang_lsp]
+		return lspconfig[lang_lsp].config_def.default_config
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
-	---@type lspconfig.Config?
+	---@type table?
 	local lsp_def = raw_output
 	if not lsp_def then
 		vim.notify(
@@ -486,7 +486,7 @@ M.start_lsp = function(lang, root_dir)
 		)
 		return { "unconfigured", -1 }
 	end
-	---@cast lsp_def lspconfig.Config
+	---@cast lsp_def table
 
 	-- The LSP binary path must exist
 	-- RPC function support is not implemented
@@ -496,8 +496,8 @@ M.start_lsp = function(lang, root_dir)
 		vim.notify(
 			"ninjection.buffer.start_lsp() warning: Command to execute "
 				.. lang_lsp
-				.. " does not exist. Ensure it is installed and configured.",
-			vim.log.levels.WARN
+				.. " does not exist. Ensure it is installed and configured."
+				.. vim.log.levels.WARN
 		)
 		return { "unavailable", -1 }
 	end
