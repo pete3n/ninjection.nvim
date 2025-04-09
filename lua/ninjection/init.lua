@@ -3,7 +3,8 @@
 --- The ninjection module contains the three primary ninjection functions:
 --- |select()|, |edit()|, and |replace()|.
 
-local ninjection = {}
+		local ninjection = {}
+local ninjection
 
 ---@nodoc
 ---@param user_cfg Ninjection.Config
@@ -261,21 +262,9 @@ function ninjection.edit()
 		error("ninjection.edit() error: Unknown error setting root_dir", 2)
 	end
 
-	--TODO: Conditional text transform based on languages
-	---@type string[]
-	local lines = vim.split(inj_node_text, "\n")
-	if lines[1]:match("^%s*''%s*$") then
-		table.remove(lines, 1)
-	end
-	if lines[#lines]:match("^%s*''%s*$") then
-		table.remove(lines, #lines)
-	end
-	---@type string
-	local trimmed_text = table.concat(lines, "\n")
-
 	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
 	local c_table
-	c_table, err = buffer.create_child(p_bufnr, p_name, inj_node_info.range, root_dir, trimmed_text, inj_node_lang)
+	c_table, err = buffer.create_child(p_bufnr, p_name, inj_node_info.range, root_dir, inj_node_text, inj_node_lang)
 	if not c_table.bufnr or not c_table.win then
 		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end

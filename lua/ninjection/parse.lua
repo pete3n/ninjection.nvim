@@ -20,7 +20,7 @@ local function check_lang(bufnr)
 	end
 	if type(raw_output) ~= "string" then
 		if cfg.debug then
-			vim.notify("ninjection.parse.get_node_table() warning: no filetype detected", vim.log.levels.WARN)
+			vim.notify("ninjeciton.parse.get_node_table() warning: no filetype detected", vim.log.levels.WARN)
 		end
 	end
 	local ft = raw_output
@@ -28,8 +28,6 @@ local function check_lang(bufnr)
 
 	local query = cfg.inj_lang_queries[ft]
 	if not query or type(query) ~= "string" or query == "" then
-		-- Fallback to built in queries
-		-- TODO: Implement fallback option from vim.treesitter.get_query(lang, "injections")
 		if cfg.debug then
 			vim.notify(
 				"ninjeciton.parse.get_node_table() warning: injected language "
@@ -232,9 +230,6 @@ M.get_node_table = function(bufnr)
 			---@type NJRange
 			local inj_range
 			inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
-			-- Trim leading and training lines to remove ''
-			inj_range.s_row = inj_range.s_row + 1
-			inj_range.e_row = inj_range.e_row - 1
 
 			local cur_point = { cur_row, cur_col, cur_row, cur_col }
 			ok, raw_output = pcall(function()
