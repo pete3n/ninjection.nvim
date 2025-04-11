@@ -71,6 +71,10 @@
 ---@field inj_lang_queries? table<string,string> - Contains per-language string
 --- literals for Treesitter queries to Identify injected content nodes.
 ---
+---@field inj_lang_tweaks? table<string, table<string, fun(...): any>> - Contains
+--- language functions to workaround limitations in Treesitter queries and post-process
+--- injected content selections.
+---
 ---@field lsp_map? table<string,string> - LSP associated with the injected
 --- languages These keys must match the language comment used to identify
 --- injected languages, and the value must match the LSP configured in your

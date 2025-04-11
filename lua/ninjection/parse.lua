@@ -232,9 +232,10 @@ M.get_node_table = function(bufnr)
 			---@type NJRange
 			local inj_range
 			inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
-			-- Trim leading and training lines to remove ''
-			inj_range.s_row = inj_range.s_row + 1
-			inj_range.e_row = inj_range.e_row - 1
+
+			if cfg.inj_lang_tweaks[ft] and cfg.inj_lang_tweaks[ft].parse_adjust_table then
+					inj_range = cfg.inj_lang_tweaks[ft].parse_adjust_table(inj_range)
+			end
 
 			local cur_point = { cur_row, cur_col, cur_row, cur_col }
 			ok, raw_output = pcall(function()
