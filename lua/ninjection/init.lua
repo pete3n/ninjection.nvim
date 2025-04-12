@@ -283,7 +283,7 @@ function ninjection.edit()
 	if cfg.preserve_indents then
 		buffer.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row, c_table.indents)
 	else
-		ninjection.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row)
+		buffer.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row)
 	end
 
 	---@type NJLspStatus?
