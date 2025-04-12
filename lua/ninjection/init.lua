@@ -460,7 +460,7 @@ function ninjection.replace()
 		end
 	end
 
-	print("DEBUG: ", vim.inspect(nj_child_b))
+	vim.notify(vim.inspect(nj_child_b))
 
 	ok, raw_output = pcall(function()
 		return vim.api.nvim_buf_set_text(
