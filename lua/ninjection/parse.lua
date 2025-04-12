@@ -233,10 +233,6 @@ M.get_node_table = function(bufnr)
 			local inj_range
 			inj_range = { s_row = s_row, s_col = s_col, e_row = e_row, e_col = e_col }
 
-			if cfg.inj_lang_tweaks[ft] and cfg.inj_lang_tweaks[ft].parse_adjust_table then
-					inj_range = cfg.inj_lang_tweaks[ft].parse_adjust_table(inj_range)
-			end
-
 			local cur_point = { cur_row, cur_col, cur_row, cur_col }
 			ok, raw_output = pcall(function()
 				return ts.node_contains(node, cur_point)
@@ -245,6 +241,15 @@ M.get_node_table = function(bufnr)
 				error("ninjection.parse.get_node_table() error: " .. tostring(raw_output), 2)
 			end
 			if raw_output == true then
+
+				-- Apply language specific adjustments
+				if cfg.inj_lang_tweaks[ft] and cfg.inj_lang_tweaks[ft].parse_range_offset then
+						inj_range.s_row = inj_range.s_row + cfg.inj_lang_tweaks[ft].parse_range_offset.s_row
+						inj_range.e_row = inj_range.e_row + cfg.inj_lang_tweaks[ft].parse_range_offset.e_row
+						inj_range.s_col = inj_range.s_col + cfg.inj_lang_tweaks[ft].parse_range_offset.s_col
+						inj_range.e_col = inj_range.e_col + cfg.inj_lang_tweaks[ft].parse_range_offset.e_col
+				end
+
 				---@type NJNodeTable
 				local ret_table = { node = node, range = inj_range }
 				return ret_table

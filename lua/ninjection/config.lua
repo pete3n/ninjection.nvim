@@ -19,8 +19,6 @@ local default_config = {
 	preserve_indents = true,
 	---@type boolean
 	auto_format = true,
-	---@type integer
-	injected_comment_lines = 1,
 	---@type string
 	format_cmd = 'require("conform").format { async = true, lsp_format = "fallback" }',
 	---@type string
@@ -50,21 +48,14 @@ local default_config = {
 			)
 		]]
 	},
-	---@type table<string, table<string, fun(...): any>>
+	---@type table<string, table<NJLangTweak>>
 	inj_lang_tweaks = {
+		---@type NJLangTweak
 		nix = {
-			---@nodoc
-			--- Adjust table range to offset removing the leading and trailing comment ''
-			---@param range NJRange
-			---@return NJRange adj_range
-			parse_adjust_table = function(range)
-				---@type NJRange
-				local adj_range
-				adj_range = { s_row = range.s_row, s_col = range.s_col , e_row = range.e_row, e_col = range.e_col }
-				adj_range.s_row = range.s_row + 1
-				adj_range.e_row = range.e_row - 1
-				return adj_range
-			end
+			---@type NJRange
+			parse_range_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0},
+			---@type NJRange
+			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0},
 		}
 	},
 	---@type table<string,string>

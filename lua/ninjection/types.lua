@@ -44,21 +44,6 @@
 ---
 ---@field auto_format? boolean - Auto format the new child buffer.
 ---@field format_cmd? string - Command for `auto_format`.
----@field injected_comment_lines? integer - The offset for comment delimiting
---- lines. For example, offsetting 1 line would function with this format:
----
---- `# injected_lang
---- `''
---- `	injected content
---- `'';
----
---- Offsetting 0 lines would function with this format:
----
---- `# injected_lang
---- `''injected content
---- `more injected content
---- `end content'';
----
 ---@field register? string - Register to use to copy injected content.
 ---@field debug? boolean - Output debug messages.
 ---
@@ -71,7 +56,7 @@
 ---@field inj_lang_queries? table<string,string> - Contains per-language string
 --- literals for Treesitter queries to Identify injected content nodes.
 ---
----@field inj_lang_tweaks? table<string, table<string, fun(...): any>> - Contains
+---@field inj_lang_tweaks? table<string, table<NJLangTweak>> - Contains
 --- language functions to workaround limitations in Treesitter queries and post-process
 --- injected content selections.
 ---
@@ -88,6 +73,13 @@
 ---@field s_col integer
 ---@field e_row integer
 ---@field e_col integer
+---
+---@tag NJLangTweak
+---@class NJLangTweak
+---@brief Language specific adjustments for tweaking parsing and buffers.
+---
+---@field parse_range_offset NJRange
+---@field buffer_cursor_offset NJRange
 ---
 ---@tag NJNodeTable
 ---@class NJNodeTable

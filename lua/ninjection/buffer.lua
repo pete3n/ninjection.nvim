@@ -385,12 +385,13 @@ end
 --- Parameters ~
 ---@param c_win integer Handle for child window to set the cursor in.
 ---@param p_cursor integer[] Parent cursor pos.
+---@param p_lang string Parent buffer language.
 ---@param s_row integer Starting row from the parent to offset the child cursor by.
 ---@param indents NJIndents? Indents to calculate additional offsets with.
 ---
 ---@return string? err
 ---
-M.set_child_cur = function(c_win, p_cursor, s_row, indents)
+M.set_child_cur = function(c_win, p_cursor, p_lang, s_row, indents)
 	---@type boolean, unknown, string?
 	local ok, raw_output, err
 	---@type integer[]?
@@ -399,9 +400,7 @@ M.set_child_cur = function(c_win, p_cursor, s_row, indents)
 	-- the cursor for the removed indents.
 	if cfg.preserve_indents and cfg.auto_format then
 		---@type integer
-		local relative_row = p_cursor[1] - (s_row + cfg.injected_comment_lines)
-		relative_row = math.max(1, relative_row)
-		---@type integer
+		local relative_row = p_cursor[1] - s_row
 		if indents then
 			local relative_col = p_cursor[2] - indents.l_indent
 			relative_col = math.max(0, relative_col)
