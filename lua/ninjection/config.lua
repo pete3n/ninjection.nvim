@@ -45,7 +45,7 @@ local default_config = {
 				(comment) @injection.language .
 				(indented_string_expression) @injection.content
 				(#gsub! @injection.language "#%s*([%w%p]+)%s*" "%1")
-				(#offset! @injection.content 1 0 -1 0)
+				(#offset! @injection.content 2 2 -1 0)
 				(#set! injection.combined)
 			)
 		]]
