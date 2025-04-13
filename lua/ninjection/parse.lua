@@ -249,9 +249,9 @@ M.get_node_table = function(bufnr)
 						inj_range.s_row = inj_range.s_row + cfg.inj_lang_tweaks[ft].parse_range_offset.s_row
 						inj_range.e_row = inj_range.e_row + cfg.inj_lang_tweaks[ft].parse_range_offset.e_row
 						--inj_range.s_col = inj_range.s_col + cfg.inj_lang_tweaks[ft].parse_range_offset.s_col
-						inj_range.s_col = 7
+						inj_range.s_col = 6
 						--inj_range.e_col = inj_range.e_col + cfg.inj_lang_tweaks[ft].parse_range_offset.e_col
-						inj_range.e_col = 9
+						inj_range.e_col = 8
 				end
 
 				vim.notify("Post adjustment parent range: " .. vim.inspect(inj_range))
