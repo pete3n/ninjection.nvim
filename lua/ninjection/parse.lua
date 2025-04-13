@@ -242,19 +242,17 @@ M.get_node_table = function(bufnr)
 			end
 			if raw_output == true then
 
-				vim.notify("Pre adjustment parent range: " .. vim.inspect(inj_range))
+				--vim.notify("Pre adjustment parent range: " .. vim.inspect(inj_range))
 
-				-- Apply language specific adjustments
-				if cfg.inj_lang_tweaks[ft] and cfg.inj_lang_tweaks[ft].parse_range_offset then
-						inj_range.s_row = inj_range.s_row + cfg.inj_lang_tweaks[ft].parse_range_offset.s_row
-						inj_range.e_row = inj_range.e_row + cfg.inj_lang_tweaks[ft].parse_range_offset.e_row
-						--inj_range.s_col = inj_range.s_col + cfg.inj_lang_tweaks[ft].parse_range_offset.s_col
-						inj_range.s_col = 6
-						--inj_range.e_col = inj_range.e_col + cfg.inj_lang_tweaks[ft].parse_range_offset.e_col
-						inj_range.e_col = 8
-				end
+				---- Apply language specific adjustments
+				--if cfg.inj_lang_tweaks[ft] and cfg.inj_lang_tweaks[ft].parse_range_offset then
+				--		inj_range.s_row = math.max((inj_range.s_row + cfg.inj_lang_tweaks[ft].parse_range_offset.s_row), 0)
+				--		inj_range.e_row = math.max((inj_range.e_row + cfg.inj_lang_tweaks[ft].parse_range_offset.e_row), 0)
+				--		inj_range.s_col = math.max((inj_range.s_col + cfg.inj_lang_tweaks[ft].parse_range_offset.s_col), 0)
+				--		inj_range.e_col = math.max((inj_range.e_col + cfg.inj_lang_tweaks[ft].parse_range_offset.e_col), 0)
+				--end
 
-				vim.notify("Post adjustment parent range: " .. vim.inspect(inj_range))
+				--vim.notify("Post adjustment parent range: " .. vim.inspect(inj_range))
 
 				---@type NJNodeTable
 				local ret_table = { node = node, range = inj_range }

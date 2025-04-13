@@ -44,7 +44,7 @@ local default_config = {
 			(
 				(comment) @injection.language . (indented_string_expression)
 				@injection.content (#gsub! @injection.language "#%s*([%w%p]+)%s*" "%1")
-				(#set! injection.combined)
+				(#offset! @injection.language 0 +1 0 -1 +1)(#set! injection.combined)
 			)
 		]]
 	},
@@ -53,7 +53,7 @@ local default_config = {
 		---@type NJLangTweak
 		nix = {
 			---@type NJRange
-			parse_range_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0},
+			parse_range_offset = { s_row = 1, e_row = -1, s_col = -120, e_col = 120},
 			---@type NJRange
 			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0},
 		}
