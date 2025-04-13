@@ -252,7 +252,7 @@ end
 --- Parameters ~
 ---@param p_bufnr integer - Buffer handle for parent buffer.
 ---@param p_name string - Name for parent buffer.
----@param p_range NJRange - Text range for the injected text.
+---@param p_range NJRange - Range of the injected text in the parent buffer.
 ---@param root_dir string - Root directory for project, or cwd.
 ---@param text string - Text to populate the child buffer with.
 ---@param lang string - Language to configure buffer for.

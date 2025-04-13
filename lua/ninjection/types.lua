@@ -56,7 +56,7 @@
 ---@field inj_lang_queries? table<string,string> - Contains per-language string
 --- literals for Treesitter queries to Identify injected content nodes.
 ---
----@field inj_lang_tweaks? table<string, table<NJLangTweak>> - Contains
+---@field inj_lang_tweaks? table<string, NJLangTweak> - Contains
 --- language functions to workaround limitations in Treesitter queries and post-process
 --- injected content selections.
 ---

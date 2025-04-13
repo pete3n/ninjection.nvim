@@ -242,6 +242,8 @@ M.get_node_table = function(bufnr)
 			end
 			if raw_output == true then
 
+				vim.notify("Pre adjustment parent range: " .. vim.inspect(inj_range))
+
 				-- Apply language specific adjustments
 				if cfg.inj_lang_tweaks[ft] and cfg.inj_lang_tweaks[ft].parse_range_offset then
 						inj_range.s_row = inj_range.s_row + cfg.inj_lang_tweaks[ft].parse_range_offset.s_row
@@ -249,6 +251,8 @@ M.get_node_table = function(bufnr)
 						inj_range.s_col = inj_range.s_col + cfg.inj_lang_tweaks[ft].parse_range_offset.s_col
 						inj_range.e_col = inj_range.e_col + cfg.inj_lang_tweaks[ft].parse_range_offset.e_col
 				end
+
+				vim.notify("Post adjustment parent range: " .. vim.inspect(inj_range))
 
 				---@type NJNodeTable
 				local ret_table = { node = node, range = inj_range }

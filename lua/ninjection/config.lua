@@ -48,7 +48,7 @@ local default_config = {
 			)
 		]]
 	},
-	---@type table<string, table<NJLangTweak>>
+	---@type table<string, NJLangTweak>
 	inj_lang_tweaks = {
 		---@type NJLangTweak
 		nix = {
