@@ -8,9 +8,6 @@ local cfg = require("ninjection.config").values
 local ts = require("vim.treesitter")
 
 ---@nodoc
----@generic T
-
----@nodoc
 ---@param bufnr integer Buffer number to check filetype for
 ---@return string? ft, string? err Detected filetype or error
 local function get_ft(bufnr)
@@ -36,14 +33,10 @@ local function get_ft(bufnr)
 end
 
 ---@nodoc
----@param bufnr? integer? Optional buffer number: default 0 (current)
----
 ---@return integer[]? cursor_pos, string? err cursor position (1:0) - indexed
---- or err
-local function get_cursor(bufnr)
-	bufnr = bufnr or 0
+local function get_cursor()
 	---@type boolean, unknown?
-	local ok, result = pcall(vim.api.nvim_win_get_cursor, bufnr)
+	local ok, result = pcall(vim.api.nvim_win_get_cursor, 0)
 
 	if not ok then
 		return nil, tostring(result)
@@ -228,7 +221,7 @@ M.get_injection = function(bufnr)
 
 	---@type integer[]?
 	local cursor_pos
-	cursor_pos, err = get_cursor(bufnr)
+	cursor_pos, err = get_cursor()
 	if not cursor_pos then
 		error("Error, failed to get cursor position: " .. err, 2)
 	end
