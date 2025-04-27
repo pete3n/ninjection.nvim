@@ -282,7 +282,7 @@ M.get_injection = function(bufnr)
 			s_row = (s_row - 1),
 			s_col = s_col,
 			e_col = e_col,
-			e_row = (e_row + 1),
+			e_row = (e_row - 1),
 		},
 		text = injection_text,
 		cursor_pos = cursor_pos,
