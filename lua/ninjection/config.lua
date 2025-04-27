@@ -56,7 +56,7 @@ local default_config = {
 
 	---@type table<string, fun(text: string): string>
 	inj_text_modifiers = {
-		none = function(text)
+		nix = function(text)
 			local lines = vim.split(text, "\n", { plain = true })
 
 			if lines[1] then
