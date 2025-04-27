@@ -16,7 +16,7 @@ local vc = require("ninjection.health").validate_config
 ---@tag default_config
 local default_config = {
 	---@type boolean
-	preserve_indents = false,
+	preserve_indents = true,
 	---@type boolean
 	auto_format = true,
 	---@type string
