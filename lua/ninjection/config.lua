@@ -16,7 +16,7 @@ local vc = require("ninjection.health").validate_config
 ---@tag default_config
 local default_config = {
 	---@type boolean
-	preserve_indents = true,
+	preserve_indents = false,
 	---@type boolean
 	auto_format = true,
 	---@type string
@@ -56,7 +56,7 @@ local default_config = {
 
 	---@type table<string, fun(text: string): string>
 	inj_text_modifiers = {
-		nix = function(text)
+		none = function(text)
 			local lines = vim.split(text, "\n", { plain = true })
 
 			if lines[1] then
