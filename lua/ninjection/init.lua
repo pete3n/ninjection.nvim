@@ -112,40 +112,24 @@ function ninjection.select()
 end
 
 ---@nodoc
----@return string? root_dir, string? err
+---@return string root_dir Root directory for new buffer
 local function get_root_dir()
+	-- Try getting the workspace folders list first
 	---@type boolean, unknown?
-	-- Try getting the first workspace folder.
-	local ok, result = pcall(vim.lsp.buf.list_workspace_folders()[1])
-	if not ok then
-		return nil, tostring(result)
+	local ok, folders = pcall(vim.lsp.buf.list_workspace_folders)
+	if ok and type(folders) == "table" and type(folders[1]) == "string" and
+		folders[1] ~= "" then return folders[1]
 	end
 
-	---@type string
-	local root_dir
-	if type(result) == "string" and result ~= "" then
-		root_dir = result
-	else
-		-- Fall back to the current working directory.
-		local nested_ok, nested_result = pcall(vim.fn.getcwd)
-		if nested_ok and type(nested_result) == "string" and nested_result ~= "" then
-			root_dir = nested_result
-		else
-			error(
-				"ninjection.edit() error: Could not retrieve workspace directory "
-					.. "or current directory.\nvim.lsp.buf.list_workspace_folders()[1] error: "
-					.. tostring(result)
-					.. "\nvim.fn.getcwd() error: "
-					.. tostring(nested_result),
-				2
-			)
-		end
-	end
-	if not root_dir or root_dir == "" then
-		error("ninjection.edit() error: Unknown error setting root_dir", 2)
+	-- Fallback to the current working directory
+	---@type string?
+	local cwd
+	ok, cwd = pcall(vim.fn.getcwd)
+	if ok and type(cwd) == "string" and cwd ~= "" then
+		return cwd
 	end
 
-	return root_dir, nil
+	error("ninjection.init.get_root_dir() error: Could not determine root dir.", 2)
 end
 
 ---@tag ninjection.edit()
@@ -182,12 +166,8 @@ function ninjection.edit()
 	end
 	---@cast injection NJNodeTable
 
-	---@type string?
-	local root_dir
-	root_dir, err = get_root_dir()
-	if not root_dir then
-		error("Error, failed to determine root directory: " .. err, 2)
-	end
+	---@type string
+	local root_dir = get_root_dir()
 
 	ok, result = pcall(vim.api.nvim_buf_get_name, 0)
 	if not ok then
