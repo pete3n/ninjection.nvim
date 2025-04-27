@@ -27,7 +27,6 @@ end
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
 
-local ts = require("vim.treesitter")
 local buffer = require("ninjection.buffer")
 local parse = require("ninjection.parse")
 
@@ -112,6 +111,43 @@ function ninjection.select()
 	return nil
 end
 
+---@nodoc
+---@return string? root_dir, string? err
+local function get_root_dir()
+	---@type boolean, unknown?
+	-- Try getting the first workspace folder.
+	local ok, result = pcall(vim.lsp.buf.list_workspace_folders()[1])
+	if not ok then
+		return nil, tostring(result)
+	end
+
+	---@type string
+	local root_dir
+	if type(result) == "string" and result ~= "" then
+		root_dir = result
+	else
+		-- Fall back to the current working directory.
+		local nested_ok, nested_result = pcall(vim.fn.getcwd)
+		if nested_ok and type(nested_result) == "string" and nested_result ~= "" then
+			root_dir = nested_result
+		else
+			error(
+				"ninjection.edit() error: Could not retrieve workspace directory "
+					.. "or current directory.\nvim.lsp.buf.list_workspace_folders()[1] error: "
+					.. tostring(result)
+					.. "\nvim.fn.getcwd() error: "
+					.. tostring(nested_result),
+				2
+			)
+		end
+	end
+	if not root_dir or root_dir == "" then
+		error("ninjection.edit() error: Unknown error setting root_dir", 2)
+	end
+
+	return root_dir, nil
+end
+
 ---@tag ninjection.edit()
 ---@brief
 --- Detects injected languages at the cursor position and begins editing supported
@@ -123,103 +159,41 @@ end
 ---@return nil
 ---
 function ninjection.edit()
-	---@type boolean, unknown, string?, integer?, string?, string?
-	local ok, raw_output, err, p_bufnr, inj_node_text, inj_node_lang
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_get_current_buf()
-	end)
+	---@type boolean, unknown?
+	local ok, result
+	ok, result = pcall(vim.api.nvim_get_current_buf)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result))
 	end
-	if type(raw_output) ~= "number" then
-		error("ninjection.edit() error: Could not retrieve current buffer handle.", 2)
+	if type(result) ~= "number" then
+		error("ninjection.edit() error: Could not retrieve current buffer handle.")
 	end
-	p_bufnr = raw_output
-	---@cast p_bufnr integer
+	---@type integer
+	local p_bufnr = result
 
-	---@type NJNodeTable?
-	local inj_node_info
-	inj_node_info, err = parse.get_node_table(p_bufnr)
-	if not inj_node_info then
+	---@type NJNodeTable?, string?
+	local injection, err
+	injection, err = parse.get_injection(p_bufnr)
+	if not injection then
 		if cfg.debug then
-			vim.notify(
-				"ninjection.edit() waring: Failed to get injected node " .. "information: " .. tostring(err),
-				vim.log.levels.WARN
-			)
+			vim.notify("ninjection.edit() warning: Failed to get injected node " .. tostring(err), vim.log.levels.WARN)
 		end
 		return nil
 	end
-	---@cast inj_node_info NJNodeTable
+	---@cast injection NJNodeTable
 
-	if inj_node_info.node then
-		ok, raw_output = pcall(function()
-			return ts.get_node_text(inj_node_info.node, p_bufnr)
-		end)
-		if not ok then
-			error(tostring(raw_output), 2)
-		end
-		inj_node_text = raw_output
-		if not inj_node_text or inj_node_text == "" then
-			vim.notify(
-				"ninjection.edit() warning: Failed to get injected node text "
-					.. "calling vim.treesitter.get_node_text()",
-				vim.log.levels.WARN
-			)
-			return nil
-		end
-	end
-	---@cast inj_node_text string
-
-	if not inj_node_info.range then
-		vim.notify(
-			"ninjection.edit() warning: Failed to retrieve valid range "
-				.. "for injected content calling get_node_table().",
-			vim.log.levels.WARN
-		)
-		return nil
+	---@type string?
+	local root_dir
+	root_dir, err = get_root_dir()
+	if not root_dir then
+		error("Error, failed to determine root directory: " .. err, 2)
 	end
 
-	inj_node_lang, err = parse.get_inj_lang(p_bufnr)
-	if not inj_node_lang or inj_node_lang == "" then
-		error(
-			"ninjection.edit() error: Failed to get injected node language "
-				.. "calling get_inj_lang(): "
-				.. tostring(err),
-			2
-		)
-	end
-	---@cast inj_node_lang string
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_get_cursor(0)
-	end)
+	ok, result = pcall(vim.api.nvim_buf_get_name, 0)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
-
-	---@type integer[]?
-	local p_cursor
-	if type(raw_output) == "table" then
-		p_cursor = raw_output
-		---@cast p_cursor integer[]
-	elseif cfg.debug then
-		vim.notify(
-			"ninjection.edit() warning: No cursor position returned from " .. "vim.api.nvim_win_get_cursor(0)",
-			vim.log.levels.WARN
-		)
-		p_cursor = {}
-		-- Don't return on failed cursor
-	end
-	---@cast p_cursor integer[]
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_get_name(0)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	if type(raw_output) ~= "string" then
+	if type(result) ~= "string" then
 		if cfg.debug then
 			vim.notify(
 				"ninjection.edit() warning: No name returned from " .. "vim.api.nvim_buf_get_name(0)",
@@ -229,66 +203,25 @@ function ninjection.edit()
 		return nil
 	end
 	---@type string
-	local p_name = raw_output
-
-	---@type string
-	local root_dir
-	-- Try getting the first workspace folder.
-	ok, raw_output = pcall(function()
-		return vim.lsp.buf.list_workspace_folders()[1]
-	end)
-	if ok and type(raw_output) == "string" and raw_output ~= "" then
-		root_dir = raw_output
-	else
-		-- Fall back to the current working directory.
-		local nested_ok, nested_raw_output = pcall(function()
-			return vim.fn.getcwd()
-		end)
-		if nested_ok and type(nested_raw_output) == "string" and nested_raw_output ~= "" then
-			root_dir = nested_raw_output
-		else
-			error(
-				"ninjection.edit() error: Could not retrieve workspace directory "
-					.. "or current directory.\nvim.lsp.buf.list_workspace_folders()[1] error: "
-					.. tostring(raw_output)
-					.. "\nvim.fn.getcwd() error: "
-					.. tostring(nested_raw_output),
-				2
-			)
-		end
-	end
-	if not root_dir or root_dir == "" then
-		error("ninjection.edit() error: Unknown error setting root_dir", 2)
-	end
-
-	--TODO: Conditional text transform based on languages
-	---@type string[]
-	local lines = vim.split(inj_node_text, "\n")
-	if lines[1]:match("^%s*''%s*$") then
-		table.remove(lines, 1)
-	end
-	if lines[#lines]:match("^%s*''%s*$") then
-		table.remove(lines, #lines)
-	end
-	---@type string
-	local trimmed_text = table.concat(lines, "\n")
+	local p_name = result
 
 	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
 	local c_table
-	c_table, err = buffer.create_child(p_bufnr, p_name, inj_node_info.range, root_dir, trimmed_text, inj_node_lang)
+	c_table, err =
+		buffer.create_child(p_bufnr, p_name, injection.range, root_dir, injection.text, injection.pair.inj_lang)
 	if not c_table.bufnr or not c_table.win then
 		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end
 
 	if cfg.preserve_indents then
-		buffer.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row, c_table.indents)
+		buffer.set_child_cur(c_table.win, injection.cursor_pos, injection.range.s_row, c_table.indents)
 	else
-		buffer.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row)
+		buffer.set_child_cur(c_table.win, injection.cursor_pos, injection.range.s_row)
 	end
 
 	---@type NJLspStatus?
 	local lsp_status
-	lsp_status, err = buffer.start_lsp(inj_node_lang, root_dir)
+	lsp_status, err = buffer.start_lsp(injection.pair.inj_lang, root_dir)
 	if not lsp_status then
 		if cfg.debug then
 			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
@@ -301,13 +234,13 @@ function ninjection.edit()
 	-- Retrieve the existing ninjection table or initialize a new one
 	---@type NJParent
 	local p_ninjection
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_buf_get_var(p_bufnr, "ninjection")
 	end)
-	if ok and type(raw_output) == "table" then
-		p_ninjection = raw_output
+	if ok and type(result) == "table" then
+		p_ninjection = result
 	else
-		err = tostring(raw_output)
+		err = tostring(result)
 		if err:find("Key not found: ninjection") then
 			p_ninjection = { children = {} }
 		else
@@ -320,11 +253,11 @@ function ninjection.edit()
 	table.insert(p_ninjection.children, c_table.bufnr)
 
 	-- Write it back to the buffer variable.
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_buf_set_var(p_bufnr, "ninjection", p_ninjection)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
 	return nil

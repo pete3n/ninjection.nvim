@@ -42,14 +42,49 @@ local default_config = {
 	inj_lang_queries = {
 		nix = [[
 			(
-				(comment) @injection.language .
-				(indented_string_expression) @injection.content
-				(#gsub! @injection.language "#%s*([%w%p]+)%s*" "%1")
-				(#offset! @injection.content 2 2 -1 0)
-				(#set! injection.combined)
+				(comment) @inj_lang
+				.
+				(indented_string_expression) @inj_text
 			)
 		]]
 	},
+
+	---@type table<string, string>
+	inj_lang_comment_pattern = {
+		nix = [[#%s*([%w%p]+)%s*]],  -- Parses "# lang" to "lang"
+	},
+
+	---@type table<string, fun(text: string): string>
+	inj_text_modifiers = {
+		nix = function(text)
+			local lines = vim.split(text, "\n", { plain = true })
+
+			if lines[1] then
+				local trimmed = vim.trim(lines[1])
+				if trimmed == "''" then
+					table.remove(lines, 1)
+				else
+					lines[1] = lines[1]:gsub("^%s*''%s*", "")
+				end
+			end
+
+			if lines[#lines] then
+				local line = lines[#lines]
+				local without_trailing = line:gsub("%s+$", "")
+				if without_trailing:sub(-2) == "''" then
+					local without_spaces = without_trailing:gsub("%s+", "")
+					if without_spaces == "''" then
+						table.remove(lines, #lines)
+					else
+						lines[#lines] = lines[#lines]:gsub("%s*''%s*$", "")
+					end
+				end
+			end
+
+			return table.concat(lines, "\n")
+		end,
+	},
+
 	---@type table<string, NJLangTweak>
 	inj_lang_tweaks = {
 		---@type NJLangTweak

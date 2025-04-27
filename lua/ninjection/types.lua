@@ -56,6 +56,13 @@
 ---@field inj_lang_queries? table<string,string> - Contains per-language string
 --- literals for Treesitter queries to Identify injected content nodes.
 ---
+---@field inj_lang_comment_pattern? table<string,string> - Contains pattern to strip
+--- injected language comment to derive the language. Defaults to # lang style
+--- comments for Nix.
+---
+---@field inj_text_modifiers? table<string, fun(capture: string): string> - Contains
+--- per-language functions to modify text returned by the lang query
+---
 ---@field inj_lang_tweaks? table<string, NJLangTweak> - Contains
 --- language functions to workaround limitations in Treesitter queries and post-process
 --- injected content selections.
@@ -74,6 +81,13 @@
 ---@field e_row integer
 ---@field e_col integer
 ---
+---@tag NJCapturePair
+---@class NJCapturePair
+---@brief Store a language string and its associated node.
+---
+---@field inj_lang string Language tag extracted from inj_lang capture
+---@field node TSNode Node associated with the injected code
+---
 ---@tag NJLangTweak
 ---@class NJLangTweak
 ---@brief Language specific adjustments for tweaking parsing and buffers.
@@ -83,10 +97,13 @@
 ---
 ---@tag NJNodeTable
 ---@class NJNodeTable
----@brief Store a Treesitter node and its associated coordinates.
+---@brief Store an injected language capture pair, its range, its text, and the
+--- cursor position.
 ---
----@field node TSNode
+---@field pair NJCapturePair
 ---@field range NJRange
+---@field text string
+---@field cursor_pos integer[]
 ---
 ---@tag NJIndents
 ---@class NJIndents
