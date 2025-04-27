@@ -425,7 +425,7 @@ function ninjection.replace()
 	local pos
 	if cfg.preserve_indents then
 		pos = {
-			this_cursor[1] + nj_child_b.p_range.s_row + 1,
+			this_cursor[1] + nj_child_b.p_range.s_row,
 			this_cursor[2] + nj_child_b.p_indents.l_indent,
 		}
 	else
