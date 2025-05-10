@@ -54,34 +54,68 @@ local default_config = {
 		nix = [[#%s*([%w%p]+)%s*]],  -- Parses "# lang" to "lang"
 	},
 
-	---@type table<string, fun(text: string): string>
+	---@type table<string, fun(text: string): string, table>
 	inj_text_modifiers = {
 		nix = function(text)
+			---@type string[]
 			local lines = vim.split(text, "\n", { plain = true })
 
+			---@type table<string, boolean>
+			local metadata = {
+				removed_leading = false,
+				removed_trailing = false,
+			}
+
 			if lines[1] then
+				---@type string
 				local trimmed = vim.trim(lines[1])
 				if trimmed == "''" then
 					table.remove(lines, 1)
+					metadata.removed_leading = true
 				else
 					lines[1] = lines[1]:gsub("^%s*''%s*", "")
 				end
 			end
 
 			if lines[#lines] then
+				---@type string
 				local line = lines[#lines]
+				---@type string
 				local without_trailing = line:gsub("%s+$", "")
 				if without_trailing:sub(-2) == "''" then
 					local without_spaces = without_trailing:gsub("%s+", "")
 					if without_spaces == "''" then
 						table.remove(lines, #lines)
+						metadata.removed_trailing = true
 					else
 						lines[#lines] = lines[#lines]:gsub("%s*''%s*$", "")
 					end
 				end
 			end
 
-			return table.concat(lines, "\n")
+			return table.concat(lines, "\n"), metadata
+		end,
+	},
+
+	---@type table<string, fun(text: string, metadata: table): string[]>
+	inj_text_restorers = {
+		nix = function(text, metadata)
+			---@type string[]
+			local lines = vim.split(text, "\n", { plain = true  })
+
+			if metadata.removed_leading then
+				table.insert(lines, 1, "''")
+			else
+				lines[1] = "'' " .. (lines[1] or "")
+			end
+
+			if metadata.removed_trailing then
+				table.insert(lines, "''")
+			else
+				lines[#lines] = (lines[#lines] or "") .. " ''"
+			end
+
+			return lines
 		end,
 	},
 

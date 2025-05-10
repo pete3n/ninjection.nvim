@@ -250,20 +250,16 @@ end
 --- Creates a child buffer to edit injected language text.
 ---
 --- Parameters ~
----@param p_bufnr integer - Buffer handle for parent buffer.
----@param p_name string - Name for parent buffer.
----@param p_range NJRange - Range of the injected text in the parent buffer.
----@param root_dir string - Root directory for project, or cwd.
+---@param child NJChild - Buffer child object.
 ---@param text string - Text to populate the child buffer with.
----@param lang string - Language to configure buffer for.
 ---
 ---@return { bufnr: integer?, win: integer?, indents: NJIndents } c_table, string? err
 -- Returns table containing handles for the child buffer and window, if
 -- available, and parent indents.
 --
-M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
-	---@type boolean, unknown, string?, integer?
-	local ok, raw_output, err, c_bufnr
+M.create_child = function(child, text)
+	---@type boolean, unknown, string?
+	local ok, raw_output, err
 
 	ok, raw_output = pcall(function()
 		return vim.fn.setreg(cfg.register, text)
@@ -273,12 +269,11 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	end
 	vim.notify("ninjection.edit(): Copied injected content text to register: " .. cfg.register, vim.log.levels.INFO)
 
-	---@type integer?
-	c_bufnr = vim.api.nvim_create_buf(true, true)
+	---@type integer
+	local c_bufnr = vim.api.nvim_create_buf(true, true)
 	if not c_bufnr then
 		error("ninjection.edit() error: Failed to create a child buffer.", 2)
 	end
-	---@cast c_bufnr integer
 
 	---@type integer
 	local c_win = create_child_win(c_bufnr, cfg.editor_style)
@@ -298,14 +293,14 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	end
 
 	ok, raw_output = pcall(function()
-		return vim.cmd("file " .. p_name .. ":" .. lang .. ":" .. c_bufnr)
+		return vim.cmd("file " .. child.p_name .. ":" .. child.ft .. ":" .. c_bufnr)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
 
 	ok, raw_output = pcall(function()
-		return vim.cmd("set filetype=" .. lang)
+		return vim.cmd("set filetype=" .. child.ft)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
@@ -331,13 +326,13 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 		---@cast p_indents NJIndents
 	end
 	-- Initialized to 0 if unset
-	if not p_indents then
-		p_indents = { t_indent = 0, b_indent = 0, l_indent = 0 }
+	if not p_indents then p_indents = { t_indent = 0, b_indent = 0, l_indent = 0 }
 		---@cast p_indents NJIndents
 	end
+	child.p_indents = p_indents
 
 	ok, raw_output = pcall(function()
-		return vim.cmd("doautocmd FileType " .. lang)
+		return vim.cmd("doautocmd FileType " .. child.ft)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
@@ -359,17 +354,9 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 		end
 	end
 
-	---@type NJChild
-	local child_ninjection = {
-		bufnr = c_bufnr,
-		root_dir = root_dir,
-		p_bufnr = p_bufnr,
-		p_indents = p_indents,
-		p_range = p_range,
-	}
-
+	-- Save the child information to the buffer's ninjection table
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child_ninjection)
+		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)

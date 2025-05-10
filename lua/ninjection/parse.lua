@@ -268,8 +268,10 @@ M.get_injection = function(bufnr)
 	---@cast injection_text string
 
 	-- Apply filetype specific text modification functions
+	---@type table<string, boolean>
+	local metadata
 	if cfg.inj_text_modifiers and cfg.inj_text_modifiers[ft] then
-		injection_text = cfg.inj_text_modifiers[ft](injection_text)
+		injection_text, metadata = cfg.inj_text_modifiers[ft](injection_text)
 	end
 
 	---@type integer
@@ -285,6 +287,7 @@ M.get_injection = function(bufnr)
 			e_row = e_row,
 		},
 		text = injection_text,
+		text_meta = metadata,
 		cursor_pos = cursor_pos,
 	}
 

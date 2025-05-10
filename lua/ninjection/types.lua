@@ -60,8 +60,11 @@
 --- injected language comment to derive the language. Defaults to # lang style
 --- comments for Nix.
 ---
----@field inj_text_modifiers? table<string, fun(capture: string): string> - Contains
+---@field inj_text_modifiers? table<string, fun(text: string): string, table> - Contains
 --- per-language functions to modify text returned by the lang query
+---
+---@field inj_text_restorers? table<string, fun(text: string, meta: table): string[]> - Contains
+--- per-language functions to restore modified text
 ---
 ---@field inj_lang_tweaks? table<string, NJLangTweak> - Contains
 --- language functions to workaround limitations in Treesitter queries and post-process
@@ -100,10 +103,11 @@
 ---@brief Store an injected language capture pair, its range, its text, and the
 --- cursor position.
 ---
----@field pair NJCapturePair
----@field range NJRange
----@field text string
----@field cursor_pos integer[]
+---@field pair NJCapturePair Injected code node and its language tag
+---@field range NJRange Range of the injected code node
+---@field text string Injected text
+---@field text_meta? table Language specific text modififications
+---@field cursor_pos integer[] Cursor position during table creation
 ---
 ---@tag NJIndents
 ---@class NJIndents
@@ -120,13 +124,15 @@
 ---
 ---@tag NJChild
 ---@class NJChild
----@brief Store associated parent buffer information.
+---@brief Store associated parent buffer information
 ---
----@field bufnr integer
----@field root_dir string
----@field p_bufnr integer
----@field p_indents NJIndents
----@field p_range NJRange
+---@field ft string File type in use for the child
+---@field root_dir string Root directory associated with the child
+---@field text_meta? table Metadata for language specific text modifications
+---@field p_bufnr integer Parent bufnr the child belongs to
+---@field p_name string Parent buffer name
+---@field p_range NJRange Parent text range the child is created from
+---@field p_indents? NJIndents Parent indents if preserved
 ---
 ---@tag NJLspStatus
 ---@class NJLspStatus
