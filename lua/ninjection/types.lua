@@ -128,11 +128,11 @@
 ---
 ---@field ft string Filetype in use for the child
 ---@field root_dir string Root directory associated with the child
----@field text_meta? table Metadata for language specific text modifications
 ---@field p_bufnr integer Parent bufnr the child belongs to
 ---@field p_ft string Parent filetype
 ---@field p_name string Parent buffer name
 ---@field p_range NJRange Parent text range the child is created from
+---@field p_text_meta? table Metadata for language specific text modifications
 ---@field p_indents? NJIndents Parent indents if preserved
 ---
 ---@tag NJLspStatus
