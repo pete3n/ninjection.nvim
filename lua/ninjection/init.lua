@@ -384,6 +384,7 @@ function ninjection.replace()
 
 	-- Apply language specific restoration functions
 	if cfg.inj_text_restorers and cfg.inj_text_restorers[nj_child_b.ft] and nj_child_b.text_meta then
+		vim.notify("Running language restore function.")
 		rep_text = cfg.inj_text_restorers[nj_child_b.ft](table.concat(rep_text, "\n"), nj_child_b.text_meta)
 	end
 
