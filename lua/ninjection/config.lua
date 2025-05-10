@@ -100,23 +100,32 @@ local default_config = {
 	---@type table<string, fun(text: string, metadata: table): string[]>
 	inj_text_restorers = {
 		nix = function(text, metadata)
-			---@type string[]
-			local lines = vim.split(text, "\n", { plain = true  })
+			vim.notify("Restorer called for Nix", vim.log.levels.INFO)
+
+			for k, v in pairs(metadata or {}) do
+				vim.notify("metadata[" .. k .. "] = " .. tostring(v), vim.log.levels.INFO)
+			end
+
+			local lines = vim.split(text, "\n", { plain = true })
 
 			if metadata.removed_leading then
+				vim.notify("Restoring leading '' line", vim.log.levels.INFO)
 				table.insert(lines, 1, "''")
 			else
+				vim.notify("Prefixing first line with ''", vim.log.levels.INFO)
 				lines[1] = "'' " .. (lines[1] or "")
 			end
 
 			if metadata.removed_trailing then
+				vim.notify("Restoring trailing '' line", vim.log.levels.INFO)
 				table.insert(lines, "''")
 			else
+				vim.notify("Suffixing last line with ''", vim.log.levels.INFO)
 				lines[#lines] = (lines[#lines] or "") .. " ''"
 			end
 
 			return lines
-		end,
+		end
 	},
 
 	---@type table<string, NJLangTweak>
