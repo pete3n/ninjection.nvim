@@ -396,12 +396,12 @@ function ninjection.replace()
 
 		if not cfg.inj_text_restorers then
 			vim.notify("cfg.inj_text_restorers is nil", vim.log.levels.WARN)
-		elseif not cfg.inj_text_restorers[nj_child_b.ft] then
-			vim.notify("No restorer defined for filetype: " .. tostring(nj_child_b.ft), vim.log.levels.WARN)
+		elseif not cfg.inj_text_restorers[nj_child_b.p_ft] then
+			vim.notify("No restorer defined for filetype: " .. tostring(nj_child_b.p_ft), vim.log.levels.WARN)
 		elseif not nj_child_b.text_meta then
 			vim.notify("text_meta is nil for current injection", vim.log.levels.WARN)
 		else
-			vim.notify("Calling inj_text_restorers[" .. nj_child_b.ft .. "]...", vim.log.levels.INFO)
+			vim.notify("Calling inj_text_restorers[" .. nj_child_b.p_ft .. "]...", vim.log.levels.INFO)
 		end
 	end
 
