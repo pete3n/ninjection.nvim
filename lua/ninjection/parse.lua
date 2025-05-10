@@ -7,30 +7,6 @@ local M = {}
 local cfg = require("ninjection.config").values
 local ts = require("vim.treesitter")
 
----@nodoc
----@param bufnr integer Buffer number to check filetype for
----@return string? ft, string? err Detected filetype or error
-local function get_ft(bufnr)
-	---@type boolean, unknown?
-	local ok, result = pcall(function()
-		return vim.api.nvim_get_option_value("filetype", { buf = bufnr })
-	end)
-
-	if not ok then
-		return nil, tostring(result)
-	end
-
-	if type(result) ~= "string" then
-		---@type string
-		if cfg.debug then
-			vim.notify("ninjection.parse.get_ft() warning: no filetype detected", vim.log.levels.WARN)
-		end
-		return nil, nil
-	end
-
-	---@cast result string
-	return result, nil
-end
 
 ---@nodoc
 ---@return integer[]? cursor_pos, string? err cursor position (1:0) - indexed
@@ -194,6 +170,32 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 	return nil, nil
 end
 
+---@nodoc
+---@param bufnr integer Buffer number to check filetype for
+---@return string? ft, string? err Detected filetype or error
+M.get_ft = function(bufnr)
+	---@type boolean, unknown?
+	local ok, result = pcall(function()
+		return vim.api.nvim_get_option_value("filetype", { buf = bufnr })
+	end)
+
+	if not ok then
+		return nil, tostring(result)
+	end
+
+	if type(result) ~= "string" then
+		---@type string
+		if cfg.debug then
+			vim.notify("ninjection.parse.get_ft() warning: no filetype detected", vim.log.levels.WARN)
+		end
+		return nil, nil
+	end
+
+	---@cast result string
+	return result, nil
+end
+
+
 ---@tag ninjection.parse.get_node_info()
 ---@brief
 --- Identifies the injected language node at the current cursor position
@@ -213,7 +215,7 @@ end
 M.get_injection = function(bufnr)
 	---@type string?, string?
 	local ft, err
-	ft, err = get_ft(bufnr)
+	ft, err = M.get_ft(bufnr)
 	if not ft then
 		error("Error, failed to get filetype: " .. err, 2)
 	end

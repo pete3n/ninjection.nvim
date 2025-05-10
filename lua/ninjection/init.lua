@@ -153,11 +153,19 @@ function ninjection.edit()
 		error("ninjection.edit() error: Could not retrieve current buffer handle.")
 	end
 	---@type integer
-	local c_bufnr = result
+	local cur_bufnr = result
 
-	---@type NJNodeTable?, string?
-	local injection, err
-	injection, err = parse.get_injection(c_bufnr)
+	---@type string?, string?
+	local ft, err
+	ft, err = parse.get_ft(cur_bufnr)
+	if not ft then
+		error("Error, failed to get filetype: " .. err, 2)
+	end
+	---@cast ft string
+
+	---@type NJNodeTable?
+	local injection
+	injection = parse.get_injection(cur_bufnr)
 	if not injection then
 		if cfg.debug then
 			vim.notify("ninjection.edit() warning: Failed to get injected node " .. tostring(err), vim.log.levels.WARN)
@@ -189,8 +197,9 @@ function ninjection.edit()
 	local new_child = {
 		ft = injection.pair.inj_lang,
 		root_dir = root_dir,
-		p_bufnr = c_bufnr,
+		p_bufnr = cur_bufnr,
 		p_name = p_name,
+		p_ft = ft,
 		p_range = injection.range,
 		p_text_meta = injection.text_meta
 	}
@@ -225,7 +234,7 @@ function ninjection.edit()
 	---@type NJParent
 	local p_ninjection
 	ok, result = pcall(function()
-		return vim.api.nvim_buf_get_var(c_bufnr, "ninjection")
+		return vim.api.nvim_buf_get_var(cur_bufnr, "ninjection")
 	end)
 	if ok and type(result) == "table" then
 		p_ninjection = result
@@ -244,7 +253,7 @@ function ninjection.edit()
 
 	-- Write it back to the buffer variable.
 	ok, result = pcall(function()
-		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", p_ninjection)
+		return vim.api.nvim_buf_set_var(cur_bufnr, "ninjection", p_ninjection)
 	end)
 	if not ok then
 		error(tostring(result), 2)
