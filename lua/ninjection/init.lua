@@ -382,10 +382,18 @@ function ninjection.replace()
 		end
 	end
 
-	-- Apply language specific restoration functions
-	if cfg.inj_text_restorers and cfg.inj_text_restorers[nj_child_b.ft] and nj_child_b.text_meta then
-		vim.notify("Running language restore function.")
-		rep_text = cfg.inj_text_restorers[nj_child_b.ft](table.concat(rep_text, "\n"), nj_child_b.text_meta)
+	if cfg.debug then
+		vim.notify("Debug: Checking conditions for inj_text_restorers...", vim.log.levels.INFO)
+
+		if not cfg.inj_text_restorers then
+			vim.notify("cfg.inj_text_restorers is nil", vim.log.levels.WARN)
+		elseif not cfg.inj_text_restorers[nj_child_b.ft] then
+			vim.notify("No restorer defined for filetype: " .. tostring(nj_child_b.ft), vim.log.levels.WARN)
+		elseif not nj_child_b.text_meta then
+			vim.notify("text_meta is nil for current injection", vim.log.levels.WARN)
+		else
+			vim.notify("Calling inj_text_restorers[" .. nj_child_b.ft .. "]...", vim.log.levels.INFO)
+		end
 	end
 
 	ok, result = pcall(function()
