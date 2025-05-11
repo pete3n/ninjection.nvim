@@ -191,17 +191,23 @@ function ninjection.edit()
 		return nil
 	end
 	---@type string
-	local p_name = result
+	local buf_name = result
+
+	-- Apply filetype specific text modification functions
+	if cfg.inj_text_modifiers and cfg.inj_text_modifiers[ft] then
+		vim.notify("Calling injection_text modifier for " .. ft)
+		injection.text, injection.text_meta = cfg.inj_text_modifiers[ft](injection.text)
+	end
 
 	---@type NJChild
 	local new_child = {
-		ft = injection.pair.inj_lang,
-		root_dir = root_dir,
-		p_bufnr = cur_bufnr,
-		p_name = p_name,
-		p_ft = ft,
-		p_range = injection.range,
-		p_text_meta = injection.text_meta
+		ft = injection.pair.inj_lang, -- The injected language becomes the child ft
+		root_dir = root_dir, -- Child inherits the root directory of the parent
+		p_bufnr = cur_bufnr, -- The parent buffer will be the current buffer
+		p_name = buf_name, -- The parent buffer name will be the current buffer name
+		p_ft = ft, -- The parent filetype is the current filetype
+		p_range = injection.range, -- The parent range is the current injection range
+		p_text_meta = injection.text_meta, -- Metadata of modifications made to original text
 	}
 
 	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
@@ -401,7 +407,15 @@ function ninjection.replace()
 		elseif not nj_child_b.p_text_meta then
 			vim.notify("text_meta is nil for current injection", vim.log.levels.WARN)
 		else
-			vim.notify("Calling inj_text_restorers[" .. nj_child_b.p_ft .. "]...", vim.log.levels.INFO)
+			local success, result_or_err =
+				pcall(cfg.inj_text_restorers[nj_child_b.ft], table.concat(rep_text, "\n"), nj_child_b.p_text_meta)
+
+			if not success then
+				vim.notify("Error calling restorer: " .. tostring(result_or_err), vim.log.levels.ERROR)
+			else
+				vim.notify("Restorer executed successfully", vim.log.levels.INFO)
+				rep_text = result_or_err
+			end
 		end
 	end
 

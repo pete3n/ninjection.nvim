@@ -54,10 +54,12 @@ local default_config = {
 		nix = [[#%s*([%w%p]+)%s*]],  -- Parses "# lang" to "lang"
 	},
 
-	---@type table<string, fun(text: string): string, table>
+	---@type table<string,fun(text: string): string, table<string, boolean>>
 	inj_text_modifiers = {
 		nix = function(text)
-			vim.notify("In inj_text_modifiers for Nix")
+			print("nix restorer entered") -- appears in :messages or logs
+			error("test error") -- to force a visible failure
+
 			---@type string[]
 			local lines = vim.split(text, "\n", { plain = true })
 
@@ -98,7 +100,7 @@ local default_config = {
 		end,
 	},
 
-	---@type table<string, fun(text: string, metadata: table): string[]>
+	---@type table<string, fun(text: string, metadata: table<string, boolean>): string[]>
 	inj_text_restorers = {
 		nix = function(text, metadata)
 			vim.notify("Restorer called for Nix", vim.log.levels.INFO)

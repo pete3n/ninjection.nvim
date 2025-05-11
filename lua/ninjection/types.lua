@@ -106,7 +106,7 @@
 ---@field pair NJCapturePair Injected code node and its language tag
 ---@field range NJRange Range of the injected code node
 ---@field text string Injected text
----@field text_meta? table Language specific text modififications
+---@field text_meta? table<string, boolean> Language specific text modififications
 ---@field cursor_pos integer[] Cursor position during table creation
 ---
 ---@tag NJIndents
@@ -132,7 +132,8 @@
 ---@field p_ft string Parent filetype
 ---@field p_name string Parent buffer name
 ---@field p_range NJRange Parent text range the child is created from
----@field p_text_meta? table Metadata for language specific text modifications
+---@field p_text_meta? table<string, boolean> Metadata for language specific
+--- text modifications
 ---@field p_indents? NJIndents Parent indents if preserved
 ---
 ---@tag NJLspStatus
