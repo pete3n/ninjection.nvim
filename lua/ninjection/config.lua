@@ -100,9 +100,6 @@ local default_config = {
 	---@type table<string, fun(text: string, metadata: table<string, boolean>): string[]>
 	inj_text_restorers = {
 		nix = function(text, metadata)
-			print("nix restorer entered") -- appears in :messages or logs
-			error("test error") -- to force a visible failure
-
 			for k, v in pairs(metadata or {}) do
 				vim.notify("metadata[" .. k .. "] = " .. tostring(v), vim.log.levels.INFO)
 			end
