@@ -57,6 +57,7 @@ local default_config = {
 	---@type table<string, fun(text: string): string, table>
 	inj_text_modifiers = {
 		nix = function(text)
+			vim.notify("In inj_text_modifiers for Nix")
 			---@type string[]
 			local lines = vim.split(text, "\n", { plain = true })
 

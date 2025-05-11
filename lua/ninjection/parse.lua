@@ -273,6 +273,7 @@ M.get_injection = function(bufnr)
 	---@type table<string, boolean>
 	local metadata
 	if cfg.inj_text_modifiers and cfg.inj_text_modifiers[ft] then
+		vim.notify("Calling injection_text modifier for " .. ft)
 		injection_text, metadata = cfg.inj_text_modifiers[ft](injection_text)
 	end
 
