@@ -57,9 +57,6 @@ local default_config = {
 	---@type table<string,fun(text: string): string, table<string, boolean>>
 	inj_text_modifiers = {
 		nix = function(text)
-			print("nix restorer entered") -- appears in :messages or logs
-			error("test error") -- to force a visible failure
-
 			---@type string[]
 			local lines = vim.split(text, "\n", { plain = true })
 
@@ -103,7 +100,8 @@ local default_config = {
 	---@type table<string, fun(text: string, metadata: table<string, boolean>): string[]>
 	inj_text_restorers = {
 		nix = function(text, metadata)
-			vim.notify("Restorer called for Nix", vim.log.levels.INFO)
+			print("nix restorer entered") -- appears in :messages or logs
+			error("test error") -- to force a visible failure
 
 			for k, v in pairs(metadata or {}) do
 				vim.notify("metadata[" .. k .. "] = " .. tostring(v), vim.log.levels.INFO)
