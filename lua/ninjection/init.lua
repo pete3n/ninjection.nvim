@@ -407,8 +407,9 @@ function ninjection.replace()
 		elseif not nj_child_b.p_text_meta then
 			vim.notify("text_meta is nil for current injection", vim.log.levels.WARN)
 		else
+			vim.notify("Calling restorer for: " .. nj_child_b.p_ft, vim.log.levels.WARN)
 			local success, result_or_err =
-				pcall(cfg.inj_text_restorers[nj_child_b.ft], table.concat(rep_text, "\n"), nj_child_b.p_text_meta)
+				pcall(cfg.inj_text_restorers[nj_child_b.p_ft], table.concat(rep_text, "\n"), nj_child_b.p_text_meta)
 
 			if not success then
 				vim.notify("Error calling restorer: " .. tostring(result_or_err), vim.log.levels.ERROR)

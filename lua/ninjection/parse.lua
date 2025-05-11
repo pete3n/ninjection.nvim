@@ -269,14 +269,6 @@ M.get_injection = function(bufnr)
 	end
 	---@cast injection_text string
 
-	-- Apply filetype specific text modification functions
-	---@type table<string, boolean>
-	local metadata
-	if cfg.inj_text_modifiers and cfg.inj_text_modifiers[ft] then
-		vim.notify("Calling injection_text modifier for " .. ft)
-		injection_text, metadata = cfg.inj_text_modifiers[ft](injection_text)
-	end
-
 	---@type integer
 	local s_row, s_col, e_row, e_col = capture.node:range()
 
@@ -290,7 +282,6 @@ M.get_injection = function(bufnr)
 			e_row = e_row,
 		},
 		text = injection_text,
-		text_meta = metadata,
 		cursor_pos = cursor_pos,
 	}
 
