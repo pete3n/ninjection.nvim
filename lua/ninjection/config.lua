@@ -112,7 +112,7 @@ local default_config = {
 			if metadata.removed_leading then
 				table.insert(lines, 1, indent_str .. "''")
 			else
-				lines[1] = indent_str .. "'' " .. (lines[1] or "")
+				lines[1] = "'' " .. (lines[1] or "")
 			end
 
 			-- Restore the closing ''
