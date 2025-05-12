@@ -54,7 +54,7 @@ M.get_indents = function(bufnr)
 	---@cast lines string[]
 
 	---@type NJIndents
-	local indents = { t_indent = 0, b_indent = 0, l_indent = math.huge }
+	local indents = { t_indent = 0, b_indent = 0, l_indent = math.huge, tab_indent = 0 }
 
 	for _, line in ipairs(lines) do
 		---@cast line string
@@ -94,6 +94,12 @@ M.get_indents = function(bufnr)
 	if indents.l_indent == math.huge then
 		indents.l_indent = 0
 	end
+
+	-- Calculate the tab indentation
+	---@type integer, integer
+  local tabstop = vim.o.tabstop or 8
+  local adjusted_indent = math.max(0, (indents and indents.l_indent or 0) - tabstop)
+	indents.tab_indent = adjusted_indent
 
 	return indents, nil
 end

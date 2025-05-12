@@ -116,6 +116,7 @@
 ---@field t_indent number
 ---@field b_indent number
 ---@field l_indent number
+---@field tab_indent number
 ---
 ---@tag NJParent
 ---@brief Store associated child bufnrs.

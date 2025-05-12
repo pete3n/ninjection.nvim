@@ -105,7 +105,7 @@ local default_config = {
 
 			local indent_str = ""
 			if indents and indents.l_indent then
-				indent_str = string.rep(" ", indents.l_indent)
+				indent_str = string.rep(" ", indents.tab_indent)
 			end
 
 			-- Restore the opening ''
