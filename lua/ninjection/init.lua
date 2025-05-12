@@ -218,11 +218,19 @@ function ninjection.edit()
 		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end
 
-	if cfg.preserve_indents then
-		buffer.set_child_cur(c_table.win, injection.cursor_pos, injection.range.s_row, c_table.indents)
-	else
-		buffer.set_child_cur(c_table.win, injection.cursor_pos, injection.range.s_row)
+	---@type integer
+	local row_offset = 0
+	if injection.text_meta.removed_leading == true then
+		row_offset = 1
 	end
+
+	buffer.set_child_cur({
+		win = c_table.win,
+		parent_cursor = injection.cursor_pos,
+		start_row = (injection.range.s_row - row_offset),
+		indents = cfg.preserve_indents and c_table.indents or nil,
+		text_meta = injection.text_meta,
+	})
 
 	---@type NJLspStatus?
 	local lsp_status
