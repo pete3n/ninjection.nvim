@@ -46,12 +46,12 @@ local default_config = {
 				.
 				(indented_string_expression) @inj_text
 			)
-		]]
+		]],
 	},
 
 	---@type table<string, string>
 	inj_lang_comment_pattern = {
-		nix = [[#%s*([%w%p]+)%s*]],  -- Parses "# lang" to "lang"
+		nix = [[#%s*([%w%p]+)%s*]], -- Parses "# lang" to "lang"
 	},
 
 	---@type table<string,fun(text: string): string, table<string, boolean>>
@@ -97,28 +97,28 @@ local default_config = {
 		end,
 	},
 
-	---@type table<string, fun(text: string, metadata: table<string, boolean>): string[]>
+	---@type table<string, fun(text: string, metadata: table<string, boolean>, indents?: NJIndents): string[]>
 	inj_text_restorers = {
-		nix = function(text, metadata)
-			for k, v in pairs(metadata or {}) do
-				vim.notify("metadata[" .. k .. "] = " .. tostring(v), vim.log.levels.INFO)
-			end
-
+		nix = function(text, metadata, indents)
+			---@type string[]
 			local lines = vim.split(text, "\n", { plain = true })
 
-			if metadata.removed_leading then
-				vim.notify("Restoring leading '' line", vim.log.levels.INFO)
-				table.insert(lines, 1, "''")
-			else
-				vim.notify("Prefixing first line with ''", vim.log.levels.INFO)
-				lines[1] = "'' " .. (lines[1] or "")
+			local indent_str = ""
+			if indents and indents.l_indent then
+				indent_str = string.rep(" ", indents.l_indent)
 			end
 
-			if metadata.removed_trailing then
-				vim.notify("Restoring trailing '' line", vim.log.levels.INFO)
-				table.insert(lines, "''")
+			-- Restore the opening ''
+			if metadata.removed_leading then
+				table.insert(lines, 1, indent_str .. "''")
 			else
-				vim.notify("Suffixing last line with ''", vim.log.levels.INFO)
+				lines[1] = indent_str .. "'' " .. (lines[1] or "")
+			end
+
+			-- Restore the closing ''
+			if metadata.removed_trailing then
+				table.insert(lines, indent_str .. "''")
+			else
 				lines[#lines] = (lines[#lines] or "") .. " ''"
 			end
 
@@ -131,10 +131,10 @@ local default_config = {
 		---@type NJLangTweak
 		nix = {
 			---@type NJRange
-			parse_range_offset = { s_row = 1, e_row = -1, s_col = -120, e_col = 120},
+			parse_range_offset = { s_row = 1, e_row = -1, s_col = -120, e_col = 120 },
 			---@type NJRange
-			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0},
-		}
+			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0 },
+		},
 	},
 	---@type table<string,string>
 	lsp_map = {

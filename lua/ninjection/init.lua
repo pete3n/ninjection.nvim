@@ -408,14 +408,16 @@ function ninjection.replace()
 			vim.notify("text_meta is nil for current injection", vim.log.levels.WARN)
 		else
 			vim.notify("Calling restorer for: " .. nj_child_b.p_ft, vim.log.levels.WARN)
-			local success, result_or_err =
-				pcall(cfg.inj_text_restorers[nj_child_b.p_ft], table.concat(rep_text, "\n"), nj_child_b.p_text_meta)
+			---@type string
+			local rep_lines = table.concat(rep_text, "\n")
+			ok, result =
+				pcall(cfg.inj_text_restorers[nj_child_b.p_ft], rep_lines, nj_child_b.p_text_meta, nj_child_b.p_indents)
 
-			if not success then
-				vim.notify("Error calling restorer: " .. tostring(result_or_err), vim.log.levels.ERROR)
+			if not ok then
+				vim.notify("Error calling restorer: " .. tostring(result), vim.log.levels.ERROR)
 			else
 				vim.notify("Restorer executed successfully", vim.log.levels.INFO)
-				rep_text = result_or_err
+				rep_text = result
 			end
 		end
 	end
