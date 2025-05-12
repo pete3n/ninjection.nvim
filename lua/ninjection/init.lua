@@ -227,7 +227,7 @@ function ninjection.edit()
 	buffer.set_child_cur({
 		win = c_table.win,
 		p_cursor = injection.cursor_pos,
-		s_row = (injection.range.s_row - row_offset),
+		s_row = (injection.range.s_row + row_offset),
 		indents = cfg.preserve_indents and c_table.indents or nil,
 		text_meta = injection.text_meta,
 	})
