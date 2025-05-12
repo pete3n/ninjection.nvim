@@ -110,7 +110,7 @@ local default_config = {
 
 			-- Restore the opening ''
 			if metadata.removed_leading then
-				table.insert(lines, 1, indent_str .. "''")
+				table.insert(lines, 1, "''")
 			else
 				lines[1] = "'' " .. (lines[1] or "")
 			end
