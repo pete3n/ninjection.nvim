@@ -17,8 +17,6 @@ local default_config = {
 	auto_format = true,
 	---@type string
 	format_cmd = 'require("conform").format { async = true, lsp_format = "fallback" }',
-	---@type integer
-	injected_comment_lines = 1,
 	---@type string
 	register = "z",
 	---@type boolean
@@ -39,19 +37,100 @@ local default_config = {
 	---@type table<string, string>
 	inj_lang_queries = {
 		nix = [[
-						(
-							(comment) @injection.language
-							.
-							[
-								(indented_string_expression
-									(string_fragment) @injection.content)
-								(string_expression
-									(string_fragment) @injection.content)
-							]
-							(#gsub! @injection.language "#%s*([%w%p]+)%s*" "%1")
-							(#set! injection.combined)
-						)
-					]],
+			(
+				(comment) @inj_lang
+				.
+				(indented_string_expression) @inj_text
+			)
+		]],
+	},
+
+	---@type table<string, string>
+	inj_lang_comment_pattern = {
+		nix = [[#%s*([%w%p]+)%s*]], -- Parses "# lang" to "lang"
+	},
+
+	---@type table<string,fun(text: string): string, table<string, boolean>>
+	inj_text_modifiers = {
+		nix = function(text)
+			---@type string[]
+			local lines = vim.split(text, "\n", { plain = true })
+
+			---@type table<string, boolean>
+			local metadata = {
+				removed_leading = false,
+				removed_trailing = false,
+			}
+
+			if lines[1] then
+				---@type string
+				local trimmed = vim.trim(lines[1])
+				if trimmed == "''" then
+					table.remove(lines, 1)
+					metadata.removed_leading = true
+				else
+					lines[1] = lines[1]:gsub("^%s*''%s*", "")
+				end
+			end
+
+			if lines[#lines] then
+				---@type string
+				local line = lines[#lines]
+				---@type string
+				local without_trailing = line:gsub("%s+$", "")
+				if without_trailing:sub(-2) == "''" then
+					local without_spaces = without_trailing:gsub("%s+", "")
+					if without_spaces == "''" then
+						table.remove(lines, #lines)
+						metadata.removed_trailing = true
+					else
+						lines[#lines] = lines[#lines]:gsub("%s*''%s*$", "")
+					end
+				end
+			end
+
+			return table.concat(lines, "\n"), metadata
+		end,
+	},
+
+	---@type table<string, fun(text: string, metadata: table<string, boolean>, indents?: NJIndents): string[]>
+	inj_text_restorers = {
+		nix = function(text, metadata, indents)
+			---@type string[]
+			local lines = vim.split(text, "\n", { plain = true })
+
+			local indent_str = ""
+			if indents and indents.l_indent then
+				indent_str = string.rep(" ", indents.tab_indent)
+			end
+
+			-- Restore the opening ''
+			if metadata.removed_leading then
+				table.insert(lines, 1, "''")
+			else
+				lines[1] = "'' " .. (lines[1] or "")
+			end
+
+			-- Restore the closing ''
+			if metadata.removed_trailing then
+				table.insert(lines, indent_str .. "''")
+			else
+				lines[#lines] = (lines[#lines] or "") .. " ''"
+			end
+
+			return lines
+		end
+	},
+
+	---@type table<string, NJLangTweak>
+	inj_lang_tweaks = {
+		---@type NJLangTweak
+		nix = {
+			---@type NJRange
+			parse_range_offset = { s_row = 1, e_row = -1, s_col = -120, e_col = 120 },
+			---@type NJRange
+			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0 },
+		},
 	},
 	---@type table<string,string>
 	lsp_map = {

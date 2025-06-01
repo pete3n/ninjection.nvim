@@ -54,7 +54,7 @@ M.get_indents = function(bufnr)
 	---@cast lines string[]
 
 	---@type NJIndents
-	local indents = { t_indent = 0, b_indent = 0, l_indent = math.huge }
+	local indents = { t_indent = 0, b_indent = 0, l_indent = math.huge, tab_indent = 0 }
 
 	for _, line in ipairs(lines) do
 		---@cast line string
@@ -94,6 +94,12 @@ M.get_indents = function(bufnr)
 	if indents.l_indent == math.huge then
 		indents.l_indent = 0
 	end
+
+	-- Calculate the tab indentation
+	---@type integer, integer
+	local tabstop = vim.o.tabstop or 8
+	local adjusted_indent = math.max(0, (indents and indents.l_indent or 0) - tabstop)
+	indents.tab_indent = adjusted_indent
 
 	return indents, nil
 end
@@ -250,20 +256,16 @@ end
 --- Creates a child buffer to edit injected language text.
 ---
 --- Parameters ~
----@param p_bufnr integer - Buffer handle for parent buffer.
----@param p_name string - Name for parent buffer.
----@param p_range NJRange - Text range for the injected text.
----@param root_dir string - Root directory for project, or cwd.
+---@param child NJChild - Buffer child object.
 ---@param text string - Text to populate the child buffer with.
----@param lang string - Language to configure buffer for.
 ---
 ---@return { bufnr: integer?, win: integer?, indents: NJIndents } c_table, string? err
 -- Returns table containing handles for the child buffer and window, if
 -- available, and parent indents.
 --
-M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
-	---@type boolean, unknown, string?, integer?
-	local ok, raw_output, err, c_bufnr
+M.create_child = function(child, text)
+	---@type boolean, unknown, string?
+	local ok, raw_output, err
 
 	ok, raw_output = pcall(function()
 		return vim.fn.setreg(cfg.register, text)
@@ -273,12 +275,11 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	end
 	vim.notify("ninjection.edit(): Copied injected content text to register: " .. cfg.register, vim.log.levels.INFO)
 
-	---@type integer?
-	c_bufnr = vim.api.nvim_create_buf(true, true)
+	---@type integer
+	local c_bufnr = vim.api.nvim_create_buf(true, true)
 	if not c_bufnr then
 		error("ninjection.edit() error: Failed to create a child buffer.", 2)
 	end
-	---@cast c_bufnr integer
 
 	---@type integer
 	local c_win = create_child_win(c_bufnr, cfg.editor_style)
@@ -298,14 +299,14 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	end
 
 	ok, raw_output = pcall(function()
-		return vim.cmd("file " .. p_name .. ":" .. lang .. ":" .. c_bufnr)
+		return vim.cmd("file " .. child.p_name .. ":" .. child.ft .. ":" .. c_bufnr)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
 	end
 
 	ok, raw_output = pcall(function()
-		return vim.cmd("set filetype=" .. lang)
+		return vim.cmd("set filetype=" .. child.ft)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
@@ -332,12 +333,13 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	end
 	-- Initialized to 0 if unset
 	if not p_indents then
-		p_indents = { t_indent = 0, b_indent = 0, l_indent = 0 }
+		p_indents = { t_indent = 0, b_indent = 0, l_indent = 0, tab_indent = 0 }
 		---@cast p_indents NJIndents
 	end
+	child.p_indents = p_indents
 
 	ok, raw_output = pcall(function()
-		return vim.cmd("doautocmd FileType " .. lang)
+		return vim.cmd("doautocmd FileType " .. child.ft)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
@@ -359,17 +361,9 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 		end
 	end
 
-	---@type NJChild
-	local child_ninjection = {
-		bufnr = c_bufnr,
-		root_dir = root_dir,
-		p_bufnr = p_bufnr,
-		p_indents = p_indents,
-		p_range = p_range,
-	}
-
+	-- Save the child information to the buffer's ninjection table
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child_ninjection)
+		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child)
 	end)
 	if not ok then
 		error(tostring(raw_output), 2)
@@ -378,19 +372,23 @@ M.create_child = function(p_bufnr, p_name, p_range, root_dir, text, lang)
 	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
 end
 
+---@class NJChildCursor -- Options to calculate child window cursor position
+---@field win integer -- Child window handle
+---@field p_cursor integer[] -- Parent window cursor coordinates
+---@field s_row integer -- Starting row to calculate offset from
+---@field indents? NJIndents -- Optional indent preservation object
+---@field text_meta? table<string, boolean> -- Metadata for text modifications
+---
 ---@tag ninjection.buffer.set_child_cur()
 ---@brief
 --- Sets the child cursor to the same relative position as in the parent window.
 ---
 --- Parameters ~
----@param c_win integer Handle for child window to set the cursor in.
----@param p_cursor integer[] Parent cursor pos.
----@param s_row integer Starting row from the parent to offset the child cursor by.
----@param indents NJIndents? Indents to calculate additional offsets with.
 ---
----@return string? err
+--- @param opts NJChildCursor
 ---
-M.set_child_cur = function(c_win, p_cursor, s_row, indents)
+--- @return nil|string err
+function M.set_child_cur(opts)
 	---@type boolean, unknown, string?
 	local ok, raw_output, err
 	---@type integer[]?
@@ -399,31 +397,31 @@ M.set_child_cur = function(c_win, p_cursor, s_row, indents)
 	-- the cursor for the removed indents.
 	if cfg.preserve_indents and cfg.auto_format then
 		---@type integer
-		local relative_row = p_cursor[1] - (s_row + cfg.injected_comment_lines)
+		local relative_row = opts.p_cursor[1] - opts.s_row
 		relative_row = math.max(1, relative_row)
 		---@type integer
-		if indents then
-			local relative_col = p_cursor[2] - indents.l_indent
+		if opts.indents then
+			local relative_col = opts.p_cursor[2] - opts.indents.l_indent
 			relative_col = math.max(0, relative_col)
 			offset_cur = { relative_row, relative_col }
 		end
 	else
 		---@type integer
-		local relative_row = p_cursor[1] - s_row
+		local relative_row = opts.p_cursor[1] - opts.s_row
 		relative_row = math.max(1, relative_row)
-		offset_cur = { relative_row, p_cursor[2] }
+		offset_cur = { relative_row, opts.p_cursor[2] }
 	end
 	---@cast offset_cur integer[]
 
 	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_cursor(c_win, offset_cur)
+		return vim.api.nvim_win_set_cursor(opts.win, offset_cur)
 	end)
 	if not ok then
 		if cfg.debug then
 			err = tostring(raw_output)
 			vim.notify(
-				"ninjection.edit() warning: Calling vim.api.nvim_win_set_cursor"
-					.. "(0, "
+				"ninjection.buffer.set_child_cur() warning: Calling vim.api.nvim_win_set_cursor"
+					.. opts.win
 					.. tostring(offset_cur)
 					.. "\n"
 					.. err,

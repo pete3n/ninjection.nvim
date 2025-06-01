@@ -44,21 +44,6 @@
 ---
 ---@field auto_format? boolean - Auto format the new child buffer.
 ---@field format_cmd? string - Command for `auto_format`.
----@field injected_comment_lines? integer - The offset for comment delimiting
---- lines. For example, offsetting 1 line would function with this format:
----
---- `# injected_lang
---- `''
---- `	injected content
---- `'';
----
---- Offsetting 0 lines would function with this format:
----
---- `# injected_lang
---- `''injected content
---- `more injected content
---- `end content'';
----
 ---@field register? string - Register to use to copy injected content.
 ---@field debug? boolean - Output debug messages.
 ---
@@ -70,6 +55,20 @@
 ---
 ---@field inj_lang_queries? table<string,string> - Contains per-language string
 --- literals for Treesitter queries to Identify injected content nodes.
+---
+---@field inj_lang_comment_pattern? table<string,string> - Contains pattern to strip
+--- injected language comment to derive the language. Defaults to # lang style
+--- comments for Nix.
+---
+---@field inj_text_modifiers? table<string, fun(text: string): string, table> - Contains
+--- per-language functions to modify text returned by the lang query
+---
+---@field inj_text_restorers? table<string, fun(text: string, meta: table): string[]> - Contains
+--- per-language functions to restore modified text
+---
+---@field inj_lang_tweaks? table<string, NJLangTweak> - Contains
+--- language functions to workaround limitations in Treesitter queries and post-process
+--- injected content selections.
 ---
 ---@field lsp_map? table<string,string> - LSP associated with the injected
 --- languages These keys must match the language comment used to identify
@@ -85,12 +84,30 @@
 ---@field e_row integer
 ---@field e_col integer
 ---
+---@tag NJCapturePair
+---@class NJCapturePair
+---@brief Store a language string and its associated node.
+---
+---@field inj_lang string Language tag extracted from inj_lang capture
+---@field node TSNode Node associated with the injected code
+---
+---@tag NJLangTweak
+---@class NJLangTweak
+---@brief Language specific adjustments for tweaking parsing and buffers.
+---
+---@field parse_range_offset NJRange
+---@field buffer_cursor_offset NJRange
+---
 ---@tag NJNodeTable
 ---@class NJNodeTable
----@brief Store a Treesitter node and its associated coordinates.
+---@brief Store an injected language capture pair, its range, its text, and the
+--- cursor position.
 ---
----@field node TSNode
----@field range NJRange
+---@field pair NJCapturePair Injected code node and its language tag
+---@field range NJRange Range of the injected code node
+---@field text string Injected text
+---@field text_meta? table<string, boolean> Language specific text modififications
+---@field cursor_pos integer[] Cursor position during table creation
 ---
 ---@tag NJIndents
 ---@class NJIndents
@@ -99,6 +116,7 @@
 ---@field t_indent number
 ---@field b_indent number
 ---@field l_indent number
+---@field tab_indent number
 ---
 ---@tag NJParent
 ---@brief Store associated child bufnrs.
@@ -107,13 +125,17 @@
 ---
 ---@tag NJChild
 ---@class NJChild
----@brief Store associated parent buffer information.
+---@brief Store associated parent buffer information
 ---
----@field bufnr integer
----@field root_dir string
----@field p_bufnr integer
----@field p_indents NJIndents
----@field p_range NJRange
+---@field ft string Filetype in use for the child
+---@field root_dir string Root directory associated with the child
+---@field p_bufnr integer Parent bufnr the child belongs to
+---@field p_ft string Parent filetype
+---@field p_name string Parent buffer name
+---@field p_range NJRange Parent text range the child is created from
+---@field p_text_meta? table<string, boolean> Metadata for language specific
+--- text modifications
+---@field p_indents? NJIndents Parent indents if preserved
 ---
 ---@tag NJLspStatus
 ---@class NJLspStatus

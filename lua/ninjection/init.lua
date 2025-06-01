@@ -27,7 +27,6 @@ end
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
 
-local ts = require("vim.treesitter")
 local buffer = require("ninjection.buffer")
 local parse = require("ninjection.parse")
 
@@ -43,15 +42,15 @@ end
 ---
 function ninjection.select()
 	---@type boolean, unknown, string?, integer?, NJNodeTable?
-	local ok, raw_output, err, bufnr, node_info
+	local ok, result, err, bufnr, node_info
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_get_current_buf()
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
-	if type(raw_output) ~= "number" then
+	if type(result) ~= "number" then
 		if cfg.debug then
 			vim.notify(
 				"ninjection.select() warning: Could not get current buffer " .. "calling vim.api.nvim_get_current_buf()",
@@ -60,7 +59,7 @@ function ninjection.select()
 		end
 		return nil
 	end
-	bufnr = raw_output
+	bufnr = result
 	---@cast bufnr integer
 
 	node_info, err = parse.get_node_table(bufnr)
@@ -88,28 +87,49 @@ function ninjection.select()
 	end
 
 	-- Set marks to select ranges with a custom offset
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.fn.setpos("'<", { 0, v_range.s_row + 2, v_range.s_col + 1, 0 })
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.fn.setpos("'>", { 0, v_range.e_row, v_range.e_col - 1, 0 })
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		vim.cmd("normal! gv")
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
 	return nil
+end
+
+---@nodoc
+---@return string root_dir Root directory for new buffer
+local function get_root_dir()
+	-- Try getting the workspace folders list first
+	---@type boolean, unknown?
+	local ok, folders = pcall(vim.lsp.buf.list_workspace_folders)
+	if ok and type(folders) == "table" and type(folders[1]) == "string" and folders[1] ~= "" then
+		return folders[1]
+	end
+
+	-- Fallback to the current working directory
+	---@type string?
+	local cwd
+	ok, cwd = pcall(vim.fn.getcwd)
+	if ok and type(cwd) == "string" and cwd ~= "" then
+		return cwd
+	end
+
+	error("ninjection.init.get_root_dir() error: Could not determine root dir.", 2)
 end
 
 ---@tag ninjection.edit()
@@ -123,103 +143,45 @@ end
 ---@return nil
 ---
 function ninjection.edit()
-	---@type boolean, unknown, string?, integer?, string?, string?
-	local ok, raw_output, err, p_bufnr, inj_node_text, inj_node_lang
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_get_current_buf()
-	end)
+	---@type boolean, unknown?
+	local ok, result
+	ok, result = pcall(vim.api.nvim_get_current_buf)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result))
 	end
-	if type(raw_output) ~= "number" then
-		error("ninjection.edit() error: Could not retrieve current buffer handle.", 2)
+	if type(result) ~= "number" then
+		error("ninjection.edit() error: Could not retrieve current buffer handle.")
 	end
-	p_bufnr = raw_output
-	---@cast p_bufnr integer
+	---@type integer
+	local cur_bufnr = result
+
+	---@type string?, string?
+	local ft, err
+	ft, err = parse.get_ft(cur_bufnr)
+	if not ft then
+		error("Error, failed to get filetype: " .. err, 2)
+	end
+	---@cast ft string
 
 	---@type NJNodeTable?
-	local inj_node_info
-	inj_node_info, err = parse.get_node_table(p_bufnr)
-	if not inj_node_info then
+	local injection
+	injection = parse.get_injection(cur_bufnr)
+	if not injection then
 		if cfg.debug then
-			vim.notify(
-				"ninjection.edit() waring: Failed to get injected node " .. "information: " .. tostring(err),
-				vim.log.levels.WARN
-			)
+			vim.notify("ninjection.edit() warning: Failed to get injected node " .. tostring(err), vim.log.levels.WARN)
 		end
 		return nil
 	end
-	---@cast inj_node_info NJNodeTable
+	---@cast injection NJNodeTable
 
-	if inj_node_info.node then
-		ok, raw_output = pcall(function()
-			return ts.get_node_text(inj_node_info.node, p_bufnr)
-		end)
-		if not ok then
-			error(tostring(raw_output), 2)
-		end
-		inj_node_text = raw_output
-		if not inj_node_text or inj_node_text == "" then
-			vim.notify(
-				"ninjection.edit() warning: Failed to get injected node text "
-					.. "calling vim.treesitter.get_node_text()",
-				vim.log.levels.WARN
-			)
-			return nil
-		end
-	end
-	---@cast inj_node_text string
+	---@type string
+	local root_dir = get_root_dir()
 
-	if not inj_node_info.range then
-		vim.notify(
-			"ninjection.edit() warning: Failed to retrieve valid range "
-				.. "for injected content calling get_node_table().",
-			vim.log.levels.WARN
-		)
-		return nil
-	end
-
-	inj_node_lang, err = parse.get_inj_lang(p_bufnr)
-	if not inj_node_lang or inj_node_lang == "" then
-		error(
-			"ninjection.edit() error: Failed to get injected node language "
-				.. "calling get_inj_lang(): "
-				.. tostring(err),
-			2
-		)
-	end
-	---@cast inj_node_lang string
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_get_cursor(0)
-	end)
+	ok, result = pcall(vim.api.nvim_buf_get_name, 0)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
-
-	---@type integer[]?
-	local p_cursor
-	if type(raw_output) == "table" then
-		p_cursor = raw_output
-		---@cast p_cursor integer[]
-	elseif cfg.debug then
-		vim.notify(
-			"ninjection.edit() warning: No cursor position returned from " .. "vim.api.nvim_win_get_cursor(0)",
-			vim.log.levels.WARN
-		)
-		p_cursor = {}
-		-- Don't return on failed cursor
-	end
-	---@cast p_cursor integer[]
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_get_name(0)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	if type(raw_output) ~= "string" then
+	if type(result) ~= "string" then
 		if cfg.debug then
 			vim.notify(
 				"ninjection.edit() warning: No name returned from " .. "vim.api.nvim_buf_get_name(0)",
@@ -229,54 +191,50 @@ function ninjection.edit()
 		return nil
 	end
 	---@type string
-	local p_name = raw_output
+	local buf_name = result
 
-	---@type string
-	local root_dir
-	-- Try getting the first workspace folder.
-	ok, raw_output = pcall(function()
-		return vim.lsp.buf.list_workspace_folders()[1]
-	end)
-	if ok and type(raw_output) == "string" and raw_output ~= "" then
-		root_dir = raw_output
-	else
-		-- Fall back to the current working directory.
-		local nested_ok, nested_raw_output = pcall(function()
-			return vim.fn.getcwd()
-		end)
-		if nested_ok and type(nested_raw_output) == "string" and nested_raw_output ~= "" then
-			root_dir = nested_raw_output
-		else
-			error(
-				"ninjection.edit() error: Could not retrieve workspace directory "
-					.. "or current directory.\nvim.lsp.buf.list_workspace_folders()[1] error: "
-					.. tostring(raw_output)
-					.. "\nvim.fn.getcwd() error: "
-					.. tostring(nested_raw_output),
-				2
-			)
-		end
+	-- Apply filetype specific text modification functions
+	if cfg.inj_text_modifiers and cfg.inj_text_modifiers[ft] then
+		vim.notify("Calling injection_text modifier for " .. ft)
+		injection.text, injection.text_meta = cfg.inj_text_modifiers[ft](injection.text)
 	end
-	if not root_dir or root_dir == "" then
-		error("ninjection.edit() error: Unknown error setting root_dir", 2)
-	end
+
+	---@type NJChild
+	local new_child = {
+		ft = injection.pair.inj_lang, -- The injected language becomes the child ft
+		root_dir = root_dir, -- Child inherits the root directory of the parent
+		p_bufnr = cur_bufnr, -- The parent buffer will be the current buffer
+		p_name = buf_name, -- The parent buffer name will be the current buffer name
+		p_ft = ft, -- The parent filetype is the current filetype
+		p_range = injection.range, -- The parent range is the current injection range
+		p_text_meta = injection.text_meta, -- Metadata of modifications made to original text
+	}
 
 	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
 	local c_table
-	c_table, err = buffer.create_child(p_bufnr, p_name, inj_node_info.range, root_dir, inj_node_text, inj_node_lang)
+
+	c_table, err = buffer.create_child(new_child, injection.text)
 	if not c_table.bufnr or not c_table.win then
 		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end
 
-	if cfg.preserve_indents then
-		buffer.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row, c_table.indents)
-	else
-		ninjection.set_child_cur(c_table.win, p_cursor, inj_node_info.range.s_row)
+	---@type integer
+	local row_offset = 0
+	if injection.text_meta.removed_leading == true then
+		row_offset = 1
 	end
+
+	buffer.set_child_cur({
+		win = c_table.win,
+		p_cursor = injection.cursor_pos,
+		s_row = (injection.range.s_row + row_offset),
+		indents = cfg.preserve_indents and c_table.indents or nil,
+		text_meta = injection.text_meta,
+	})
 
 	---@type NJLspStatus?
 	local lsp_status
-	lsp_status, err = buffer.start_lsp(inj_node_lang, root_dir)
+	lsp_status, err = buffer.start_lsp(injection.pair.inj_lang, root_dir)
 	if not lsp_status then
 		if cfg.debug then
 			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
@@ -289,13 +247,13 @@ function ninjection.edit()
 	-- Retrieve the existing ninjection table or initialize a new one
 	---@type NJParent
 	local p_ninjection
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_get_var(p_bufnr, "ninjection")
+	ok, result = pcall(function()
+		return vim.api.nvim_buf_get_var(cur_bufnr, "ninjection")
 	end)
-	if ok and type(raw_output) == "table" then
-		p_ninjection = raw_output
+	if ok and type(result) == "table" then
+		p_ninjection = result
 	else
-		err = tostring(raw_output)
+		err = tostring(result)
 		if err:find("Key not found: ninjection") then
 			p_ninjection = { children = {} }
 		else
@@ -308,11 +266,11 @@ function ninjection.edit()
 	table.insert(p_ninjection.children, c_table.bufnr)
 
 	-- Write it back to the buffer variable.
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_var(p_bufnr, "ninjection", p_ninjection)
+	ok, result = pcall(function()
+		return vim.api.nvim_buf_set_var(cur_bufnr, "ninjection", p_ninjection)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
 	return nil
@@ -330,32 +288,32 @@ end
 ---@return nil
 ---
 function ninjection.replace()
-	---@type boolean, unknown, string?, integer?
-	local ok, raw_output, err, this_bufnr
+	---@type boolean, unknown, string?
+	local ok, result, err
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_get_current_buf()
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
-	if type(raw_output) ~= "number" then
+	if type(result) ~= "number" then
 		error(
 			"ninjection.replace() error: Could not retrieve a buffer handle "
 				.. "calling vim.api.nvim_get_current_buf().",
 			2
 		)
 	end
-	this_bufnr = raw_output
-	---@cast this_bufnr integer
+	---@type integer
+	local cur_bufnr = result
 
-	-- We need to validate that this buffer has a parent buffer, and that the
-	-- parent buffer has this buffer as a child.
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_get_var(this_bufnr, "ninjection")
+	-- We need to validate that the current buffer has a parent buffer, and that the
+	-- parent buffer has the current buffer as a child.
+	ok, result = pcall(function()
+		return vim.api.nvim_buf_get_var(cur_bufnr, "ninjection")
 	end)
-	if not ok or type(raw_output) ~= "table" then
-		err = tostring(raw_output)
+	if not ok or type(result) ~= "table" then
+		err = tostring(result)
 		if err:find("Key not found: ninjection") then
 			if cfg.debug then
 				vim.notify(
@@ -369,16 +327,16 @@ function ninjection.replace()
 		end
 	end
 	---@type NJChild
-	local nj_child_b = raw_output
+	local nj_child_b = result
 	if not nj_child_b.p_bufnr then
 		error("ninjection.replace() error: Could not retrieve valid parent buffer for this buffer.", 2)
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_buf_get_var(nj_child_b.p_bufnr, "ninjection")
 	end)
-	if not ok or type(raw_output) ~= "table" then
-		err = tostring(raw_output)
+	if not ok or type(result) ~= "table" then
+		err = tostring(result)
 		if err:find("Key not found: ninjection") then
 			error(
 				"ninjection.replace() error: This buffer appears to be an orphan. "
@@ -389,20 +347,20 @@ function ninjection.replace()
 		error("ninjection.replace() error: Could not retrieve ninjection table " .. "for parent buffer." .. err, 2)
 	end
 	---@type NJParent
-	local nj_p_b = raw_output
-	if not vim.tbl_contains(nj_p_b.children, this_bufnr) then
+	local nj_parent_b = result
+	if not vim.tbl_contains(nj_parent_b.children, cur_bufnr) then
 		error("ninjection.replace() error: The recorded parent buffer has no record of this buffer.", 2)
 	end
-	---@cast nj_p_b NJParent
+	---@cast nj_parent_b NJParent
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_win_get_cursor(0)
 	end)
-	if not ok or type(raw_output) ~= "table" then
-		error(tostring(raw_output), 2)
+	if not ok or type(result) ~= "table" then
+		error(tostring(result), 2)
 	end
 	---@type integer[]
-	local this_cursor = raw_output
+	local this_cursor = result
 	if not this_cursor[2] then
 		if cfg.debug then
 			vim.notify(
@@ -411,20 +369,19 @@ function ninjection.replace()
 			)
 		end
 	end
-
 	if not nj_child_b.p_range then
 		error("ninjection.replace() error: missing parent buffer range values. Cannot sync changes.", 2)
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_buf_get_lines(0, 0, -1, false)
 	end)
-	if not ok or type(raw_output) ~= "table" then
-		error(tostring(raw_output), 2)
+	if not ok or type(result) ~= "table" then
+		error(tostring(result), 2)
 	end
 	---@type string[]
-	local rep_text = raw_output
-	if not rep_text or rep_text == "" then
+	local rep_text = result
+	if not rep_text or #rep_text == 0 then
 		if cfg.debug then
 			vim.notify(
 				"ninjection.replace() warning: No replacement text returned " .. "by vim.api.nvim_buf_get_lines()",
@@ -435,8 +392,8 @@ function ninjection.replace()
 	end
 
 	if cfg.preserve_indents then
-		raw_output, err = buffer.restore_indents(rep_text, nj_child_b.p_indents)
-		if not raw_output or type(raw_output) ~= "table" then
+		result, err = buffer.restore_indents(rep_text, nj_child_b.p_indents)
+		if not result or type(result) ~= "table" then
 			if cfg.debug then
 				vim.notify(
 					"ninjection.replace() warning: buffer.restore_indents() could not restore indents: " .. err,
@@ -444,11 +401,36 @@ function ninjection.replace()
 				)
 			end
 		else
-			rep_text = raw_output
+			rep_text = result
 		end
 	end
 
-	ok, raw_output = pcall(function()
+	if cfg.debug then
+		vim.notify("Debug: Checking conditions for inj_text_restorers...", vim.log.levels.INFO)
+
+		if not cfg.inj_text_restorers then
+			vim.notify("cfg.inj_text_restorers is nil", vim.log.levels.WARN)
+		elseif not cfg.inj_text_restorers[nj_child_b.p_ft] then
+			vim.notify("No restorer defined for filetype: " .. tostring(nj_child_b.p_ft), vim.log.levels.WARN)
+		elseif not nj_child_b.p_text_meta then
+			vim.notify("text_meta is nil for current injection", vim.log.levels.WARN)
+		else
+			vim.notify("Calling restorer for: " .. nj_child_b.p_ft, vim.log.levels.WARN)
+			---@type string
+			local rep_lines = table.concat(rep_text, "\n")
+			ok, result =
+				pcall(cfg.inj_text_restorers[nj_child_b.p_ft], rep_lines, nj_child_b.p_text_meta, nj_child_b.p_indents)
+
+			if not ok then
+				vim.notify("Error calling restorer: " .. tostring(result), vim.log.levels.ERROR)
+			else
+				vim.notify("Restorer executed successfully", vim.log.levels.INFO)
+				rep_text = result
+			end
+		end
+	end
+
+	ok, result = pcall(function()
 		return vim.api.nvim_buf_set_text(
 			nj_child_b.p_bufnr,
 			nj_child_b.p_range.s_row,
@@ -459,23 +441,23 @@ function ninjection.replace()
 		)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.cmd("bdelete!")
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
 	-- Remove the child entry in the parent after deleting the buffer
-	nj_p_b.children[this_bufnr] = nil
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_var(nj_child_b.p_bufnr, "ninjection", nj_p_b)
+	nj_parent_b.children[cur_bufnr] = nil
+	ok, result = pcall(function()
+		return vim.api.nvim_buf_set_var(nj_child_b.p_bufnr, "ninjection", nj_parent_b)
 	end)
 	if not ok then
-		err = tostring(raw_output)
+		err = tostring(result)
 		if cfg.debug then
 			vim.notify(
 				"ninjection.replace() warning: could not remove child buffer "
@@ -486,11 +468,11 @@ function ninjection.replace()
 		end
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_set_current_buf(nj_child_b.p_bufnr)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
 	-- Reset the cursor to the same relative position in the parent buffer
@@ -498,18 +480,18 @@ function ninjection.replace()
 	local pos
 	if cfg.preserve_indents then
 		pos = {
-			this_cursor[1] + nj_child_b.p_range.s_row + 1,
+			this_cursor[1] + nj_child_b.p_range.s_row,
 			this_cursor[2] + nj_child_b.p_indents.l_indent,
 		}
 	else
 		pos = { this_cursor[1] + nj_child_b.p_range.s_row, this_cursor[2] }
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_win_set_cursor(0, pos)
 	end)
 	if not ok then
-		err = tostring(raw_output)
+		err = tostring(result)
 		if cfg.debug then
 			vim.notify(
 				"ninjection.replace() warning: could not restore cursor position in the parent buffer." .. err,
