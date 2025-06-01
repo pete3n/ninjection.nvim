@@ -1,7 +1,3 @@
--- TODO: Implement language "helpers" for example:
--- Set filetype to sh for bash, set shebang if not set
---
-
 ---@module "ninjection.config"
 ---@brief
 --- The config module contains the default ninjection configuration table and
@@ -17,7 +13,7 @@ local vc = require("ninjection.health").validate_config
 local default_config = {
 	---@type boolean
 	preserve_indents = true,
-	---@type boolean
+	---@type  boolean
 	auto_format = true,
 	---@type string
 	format_cmd = 'require("conform").format { async = true, lsp_format = "fallback" }',
