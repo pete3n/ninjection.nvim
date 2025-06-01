@@ -1,0 +1,19 @@
+# Ignore dotfiles not needed in plugin builds
+.busted             export-ignore
+.gitattributes      export-ignore
+.gitignore          export-ignore
+.luacheckrc         export-ignore
+.luarc.json         export-ignore
+.stylelua.toml      export-ignore
+
+# Ignore git-specific metadata
+.git/               export-ignore
+.github/            export-ignore
+
+# Ignore development-related directories
+tests/              export-ignore
+ci/                 export-ignore
+
+# Ignore repo documentation
+README.md           export-ignore
+assets/             export-ignore
