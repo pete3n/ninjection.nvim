@@ -261,7 +261,7 @@ M.get_injection = function(bufnr)
 	if not capture then
 		if cfg.debug then
 			vim.notify(
-				"ninjection.parse.get_injection() warning, no injected language found: " .. err,
+				"ninjection.parse.get_injection() warning, no injected language found: " .. tostring(err),
 				vim.log.levels.WARN
 			)
 		end
