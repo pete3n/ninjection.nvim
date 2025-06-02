@@ -7,7 +7,6 @@ local M = {}
 local cfg = require("ninjection.config").values
 local ts = require("vim.treesitter")
 
-
 ---@nodoc
 ---@return integer[]? cursor_pos, string? err cursor position (1:0) - indexed
 local function get_cursor()
@@ -99,8 +98,7 @@ local function get_node_text(node, bufnr)
 		return result
 	end
 	if cfg.debug then
-		vim.notify("Error retrieving node text: " .. tostring(result),
-		vim.log.levels.ERROR)
+		vim.notify("Error retrieving node text: " .. tostring(result), vim.log.levels.ERROR)
 	end
 	return nil
 end
@@ -118,12 +116,10 @@ end
 local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 	-- Convert (1:0) index to (0:0) index for node range comparison
 	---@type table<integer, integer, integer, integer>
-	local cur_point = { cursor_pos[1] - 1, cursor_pos[2],
-		cursor_pos[1] -1, cursor_pos[2] }
+	local cur_point = { cursor_pos[1] - 1, cursor_pos[2], cursor_pos[1] - 1, cursor_pos[2] }
 
 	---@type string
-	local lang_pattern = cfg.inj_lang_comment_pattern and
-	cfg.inj_lang_comment_pattern[ft] or "#%s*([%w%p]+)%s*"
+	local lang_pattern = cfg.inj_lang_comment_pattern and cfg.inj_lang_comment_pattern[ft] or "#%s*([%w%p]+)%s*"
 
 	---@type integer?, integer?
 	local inj_lang_index, inj_text_index
@@ -137,25 +133,25 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 
 	if not inj_lang_index or not inj_text_index then
 		if cfg.debug then
-			vim.notify("ninjection.parse.get_capture_pair() warning: no capture pairs " ..
-				"found for inj_lang and inj_text.", vim.log.levels.WARN)
+			vim.notify(
+				"ninjection.parse.get_capture_pair() warning: no capture pairs " .. "found for inj_lang and inj_text.",
+				vim.log.levels.WARN
+			)
 		end
 		return nil, nil
 	end
 
 	for _, match, _ in query:iter_matches(root, bufnr, 0, -1) do
-		---@type TSNode?
 		local inj_lang_node = match[inj_lang_index]
-		---@type TSNode?
 		local inj_text_node = match[inj_text_index]
 
-		if inj_lang_node and inj_text_node then
+		if inj_lang_node ~= nil and inj_text_node ~= nil then
+			---@cast inj_lang_node TSNode
+			---@cast inj_text_node TSNode
+
 			if ts.node_contains(inj_text_node, cur_point) then
-				---@type string?
 				local capture_text = get_node_text(inj_lang_node, bufnr)
 				if capture_text then
-					---@cast capture_text string
-					---@type string
 					local inj_lang_text = capture_text:gsub(lang_pattern, "%1")
 					return { inj_lang = inj_lang_text, node = inj_text_node }
 				end
@@ -163,9 +159,16 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 		end
 	end
 
+	-- If no valid match found, log a warning
 	if cfg.debug then
-		vim.notify("ninjection.parse.get_capture_pair() warning: no injected " ..
-			"language found under cursor.", vim.log.levels.WARN)
+		vim.notify(
+			string.format(
+				"ninjection.parse.get_capture_pair(): no matching TSNode found at cursor (%d, %d)",
+				cur_point[1] + 1,
+				cur_point[2]
+			),
+			vim.log.levels.WARN
+		)
 	end
 	return nil, nil
 end
@@ -194,7 +197,6 @@ M.get_ft = function(bufnr)
 	---@cast result string
 	return result, nil
 end
-
 
 ---@tag ninjection.parse.get_node_info()
 ---@brief
@@ -250,8 +252,9 @@ M.get_injection = function(bufnr)
 	if not capture then
 		if cfg.debug then
 			vim.notify(
-				"ninjection.parse.get_injection() warning, no injected language found: " ..
-				err, vim.log.levels.WARN)
+				"ninjection.parse.get_injection() warning, no injected language found: " .. err,
+				vim.log.levels.WARN
+			)
 		end
 		return nil, nil
 	end
@@ -261,9 +264,7 @@ M.get_injection = function(bufnr)
 	local injection_text = get_node_text(capture.node, bufnr)
 	if not injection_text then
 		if cfg.debug then
-			vim.notify(
-				"ninjection.parse.get_injection() warning, no injected text found: ",
-				vim.log.levels.WARN)
+			vim.notify("ninjection.parse.get_injection() warning, no injected text found: ", vim.log.levels.WARN)
 		end
 		return nil, nil
 	end
