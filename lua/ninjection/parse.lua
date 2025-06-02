@@ -151,9 +151,10 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 			if type(inj_text_node) ~= "userdata" or not inj_text_node.range then
 				if cfg.debug then
 					vim.notify(
-						"ninjection: inj_text_node is not a valid TSNode (missing `range()` method)",
-						vim.print(vim.inspect(inj_text_node)),
-						vim.log.levels.ERROR
+						"ninjection: inj_text_node is not a valid TSNode (missing `range()` method)\n"
+							.. vim.inspect(inj_text_node),
+						vim.log.levels.WARN,
+						{ title = "Ninjection" }
 					)
 				end
 			end
