@@ -153,6 +153,11 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 			---@cast inj_lang_node TSNode
 			---@cast inj_text_node TSNode
 
+			print("inj_text_node typeof: ", type(inj_text_node))
+			print("inj_text_node metatable: ", getmetatable(inj_text_node))
+			print("inj_text_node has :range(): ", inj_text_node.range and "yes" or "no")
+			print("inj_text_node: ", vim.inspect(inj_text_node))
+
 			if type(inj_text_node) ~= "userdata" or not inj_text_node.range then
 				if cfg.debug then
 					vim.notify(
