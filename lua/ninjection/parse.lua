@@ -148,7 +148,16 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 		if inj_lang_node ~= nil and inj_text_node ~= nil then
 			---@cast inj_lang_node TSNode
 			---@cast inj_text_node TSNode
-
+			if type(inj_text_node) ~= "userdata" or not inj_text_node.range then
+				if cfg.debug then
+					vim.notify(
+						"ninjection: inj_text_node is not a valid TSNode (missing `range()` method)",
+						vim.print(vim.inspect(inj_text_node)),
+						vim.log.levels.ERROR
+					)
+				end
+			end
+		else
 			if ts.node_contains(inj_text_node, cur_point) then
 				local capture_text = get_node_text(inj_lang_node, bufnr)
 				if capture_text then
