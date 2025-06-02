@@ -149,6 +149,13 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 		local inj_lang_node = match[inj_lang_index]
 		local inj_text_node = match[inj_text_index]
 
+    if type(inj_text_node) == "table" and type(inj_text_node[1]) == "userdata" then
+      inj_text_node = inj_text_node[1]
+    end
+    if type(inj_lang_node) == "table" and type(inj_lang_node[1]) == "userdata" then
+      inj_lang_node = inj_lang_node[1]
+    end
+
 		if inj_lang_node ~= nil and inj_text_node ~= nil then
 			---@cast inj_lang_node TSNode
 			---@cast inj_text_node TSNode
