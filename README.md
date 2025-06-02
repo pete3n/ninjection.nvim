@@ -71,7 +71,7 @@ identify these code blocks. The default query for Nix is:
 ```
 
 ## Dependencies
-Ninjection requires Neovim version 0.8.0 or greater, with
+Ninjection requires Neovim version 0.11.0 or greater, with
 [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) and [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig) both enabled.
 
 You can verify these dependencies are met by running:

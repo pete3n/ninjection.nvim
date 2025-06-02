@@ -49,11 +49,11 @@ local function lualib_installed(lib_name)
 end
 
 function M.check()
-	start("Checking Neovim version >= 0.8")
-	if vim.version().major == 0 and vim.version().minor < 8 then
-		h_error("Neovim 0.8 or greater required")
+	start("Checking Neovim version >= 0.11.0")
+	if vim.version().major == 0 and vim.version().minor < 11 then
+		h_error("Neovim 0.11.0 or greater required")
 	else
-		ok("Neovim >= 0.8 detected")
+		ok("Neovim >= 0.11.0 detected")
 	end
 
 	start("Checking for required plugins")
