@@ -125,6 +125,9 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 	---@type string
 	local lang_pattern = cfg.inj_lang_comment_pattern and cfg.inj_lang_comment_pattern[ft] or "#%s*([%w%p]+)%s*"
 
+	-- Check for the inj_lang and inj_text labels in the query captures. This is
+	-- defined from cfg.inj_lang_queries.[ft] where ft is the name of the table
+	-- string indicating the file type.
 	---@type integer?, integer?
 	local inj_lang_index, inj_text_index
 	for i, name in ipairs(query.captures) do
@@ -138,53 +141,67 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 	if not inj_lang_index or not inj_text_index then
 		if cfg.debug then
 			vim.notify(
-				"ninjection.parse.get_capture_pair() warning: no capture pairs " .. "found for inj_lang and inj_text.",
+				"ninjection.parse.get_capture_pair() warning: no capture pairs found.",
 				vim.log.levels.WARN
 			)
 		end
 		return nil, nil
 	end
 
+	-- Iterate through all matched queries and return the first valid pair of
+	-- injected language string and node
 	for _, match, _ in query:iter_matches(root, bufnr, 0, -1) do
-		local inj_lang_node = match[inj_lang_index]
-		local inj_text_node = match[inj_text_index]
+		---@type table?, table?
+		local inj_lang_matches = match[inj_lang_index]
+		local inj_text_matches = match[inj_text_index]
+		if type(inj_lang_matches) == "table" and type(inj_text_matches) == "table" then
+			---@cast inj_lang_matches table
+			---@cast inj_text_matches table
 
-    if type(inj_text_node) == "table" and type(inj_text_node[1]) == "userdata" then
-      inj_text_node = inj_text_node[1]
-    end
-    if type(inj_lang_node) == "table" and type(inj_lang_node[1]) == "userdata" then
-      inj_lang_node = inj_lang_node[1]
-    end
+      for i = 1, math.min(#inj_lang_matches, #inj_text_matches) do
+				---@type TSNode?, TSNode?
+        local inj_lang_node = inj_lang_matches[i]
+        local inj_text_node = inj_text_matches[i]
 
-		if inj_lang_node ~= nil and inj_text_node ~= nil then
-			---@cast inj_lang_node TSNode
-			---@cast inj_text_node TSNode
+				if inj_lang_node ~= nil and inj_text_node ~= nil then
+					---@cast inj_lang_node TSNode
+					---@cast inj_text_node TSNode
 
-			print("inj_text_node typeof: ", type(inj_text_node))
-			print("inj_text_node metatable: ", getmetatable(inj_text_node))
-			print("inj_text_node has :range(): ", inj_text_node.range and "yes" or "no")
-			print("inj_text_node: ", vim.inspect(inj_text_node))
+					if not inj_text_node.range and cfg.debug then
+						vim.notify(
+							"ninjection: inj_text_node is not a valid TSNode (missing `range()` method)\n"
+								.. vim.inspect(inj_text_node),
+							vim.log.levels.WARN,
+							{ title = "Ninjection" }
+						)
+					elseif ts.node_contains(inj_text_node, cur_point) then
+						---@type string?
+						local capture_text = get_node_text(inj_lang_node, bufnr)
+						if capture_text and type(capture_text) == "string" then
+							---@cast capture_text string
+							---@type string
+							local inj_lang_text = capture_text:gsub(lang_pattern, "%1")
 
-			if type(inj_text_node) ~= "userdata" or not inj_text_node.range then
-				if cfg.debug then
-					vim.notify(
-						"ninjection: inj_text_node is not a valid TSNode (missing `range()` method)\n"
-							.. vim.inspect(inj_text_node),
-						vim.log.levels.WARN,
-						{ title = "Ninjection" }
-					)
-				end
-			elseif ts.node_contains(inj_text_node, cur_point) then
-				local capture_text = get_node_text(inj_lang_node, bufnr)
-				if capture_text then
-					local inj_lang_text = capture_text:gsub(lang_pattern, "%1")
-					return { inj_lang = inj_lang_text, node = inj_text_node }
+							-- Success condition: Returns the text identifying the language
+							-- being injected and the TSNode paired with that lable.
+							return { inj_lang = inj_lang_text, node = inj_text_node }
+						else
+							if not inj_text_node.range and cfg.debug then
+								vim.notify(
+									("inj_text_node %s is missing range()"):format(inj_text_node:type()),
+									vim.log.levels.WARN
+								)
+							end
+							-- Error condition: valid nodes and capture labels were identified
+							-- but no text was found indicating what language is being injected.
+							return nil, nil
+						end
+					end
 				end
 			end
 		end
 	end
 
-	-- If no valid match found, log a warning
 	if cfg.debug then
 		vim.notify(
 			string.format(
@@ -195,6 +212,9 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 			vim.log.levels.WARN
 		)
 	end
+	-- Failed condition: No matches found for injected language pairs, only indicates
+	-- an error if the cursor position is in a valid location and a correct inj_lang
+	-- queries are configured.
 	return nil, nil
 end
 
