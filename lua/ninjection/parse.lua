@@ -74,8 +74,12 @@ local function get_root(bufnr, lang)
 	---@type boolean, unknown?
 	local ok, result = pcall(function()
 		local parser = vim.treesitter.get_parser(bufnr, lang)
-		local tree = parser:parse()[1]
-		return tree:root()
+		if parser then
+			local tree = parser:parse()[1]
+			return tree:root()
+		else
+			return nil, nil
+		end
 	end)
 
 	if not ok then
@@ -148,6 +152,7 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 		if inj_lang_node ~= nil and inj_text_node ~= nil then
 			---@cast inj_lang_node TSNode
 			---@cast inj_text_node TSNode
+
 			if type(inj_text_node) ~= "userdata" or not inj_text_node.range then
 				if cfg.debug then
 					vim.notify(
@@ -157,9 +162,7 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 						{ title = "Ninjection" }
 					)
 				end
-			end
-		else
-			if ts.node_contains(inj_text_node, cur_point) then
+			elseif ts.node_contains(inj_text_node, cur_point) then
 				local capture_text = get_node_text(inj_lang_node, bufnr)
 				if capture_text then
 					local inj_lang_text = capture_text:gsub(lang_pattern, "%1")
