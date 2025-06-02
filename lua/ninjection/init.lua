@@ -26,7 +26,6 @@ end
 
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
-
 local buffer = require("ninjection.buffer")
 local parse = require("ninjection.parse")
 

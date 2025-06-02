@@ -7,7 +7,11 @@ local M = {}
 ---@nodoc
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
-local lspconfig = require("lspconfig")
+local ok, lspconfig = pcall(require, "lspconfig")
+if not ok then
+	vim.notify("ninjection.nvim requires 'lspconfig' plugin for LSP features", vim.log.levels.ERROR)
+	return
+end
 
 -- We need to provide a way of recording and restoring whitespace from the parent
 -- buffer to allow easily formatting the buffer without worrying about its
