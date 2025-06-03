@@ -520,7 +520,11 @@ function ninjection.format()
 
 			if cfg.auto_format and cfg.format_cmd then
 				local fmt_ok, fmt_result = pcall(function()
-					return vim.cmd("lua " .. cfg.format_cmd)
+					local active_buf = vim.api.nvim_get_current_buf()
+					vim.notify("Formatting buffer: " .. active_buf, vim.log.levels.DEBUG)
+					vim.cmd("lua " .. cfg.format_cmd)
+					local post_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+					vim.notify("Post-format lines:\n" .. table.concat(post_lines, "\n"), vim.log.levels.DEBUG)
 				end)
 				if not fmt_ok then
 					vim.notify(
