@@ -35,80 +35,54 @@ end
 
 ---@tag ninjection.select()
 ---@brief
---- Identifies and selects injected text in visual mode.
+--- Identifies and selects injected text in visual line mode.
 ---
 ---@return nil
----
 function ninjection.select()
-	---@type boolean, unknown, string?, integer?
-	local ok, result, err, bufnr
+  local bufnr = vim.api.nvim_get_current_buf()
+  if type(bufnr) ~= "number" then
+    if cfg.debug then
+      vim.notify(
+        "ninjection.select() warning: Could not get current buffer",
+        vim.log.levels.WARN
+      )
+    end
+    return nil
+  end
 
-	ok, result = pcall(function()
-		return vim.api.nvim_get_current_buf()
-	end)
-	if not ok then
-		error(tostring(result), 2)
-	end
-	if type(result) ~= "number" then
-		if cfg.debug then
-			vim.notify(
-				"ninjection.select() warning: Could not get current buffer " .. "calling vim.api.nvim_get_current_buf()",
-				vim.log.levels.WARN
-			)
-		end
-		return nil
-	end
-	bufnr = result
-	---@cast bufnr integer
+  ---@type NJNodeTable?
+  local injection, err = parse.get_injection(bufnr)
+  if not injection or not injection.pair.node then
+    if cfg.debug then
+      vim.notify("ninjection.select() warning: No valid TSNode returned: " .. tostring(err), vim.log.levels.WARN)
+    end
+    return nil
+  end
 
-	---@type NJNodeTable?
-	local injection
-	injection, err = parse.get_injection(bufnr)
-	if not injection or not injection.pair.node then
-		if cfg.debug then
-			vim.notify("ninjection.select() warning: No valid TSNode returned." ..
-				tostring(err), vim.log.levels.WARN)
-		end
-		return nil
-	end
-	---@cast injection NJNodeTable
+  ---@type NJRange?
+  local v_range
+  v_range, err = parse.get_visual_range(injection.pair.node, bufnr)
+  if not v_range then
+    if cfg.debug then
+      vim.notify("ninjection.select() warning: no visual range returned: " .. tostring(err), vim.log.levels.WARN)
+    end
+    return nil
+  end
 
-	---@type NJRange?
-	local v_range
-	v_range, err = parse.get_visual_range(injection.pair.node, bufnr)
-	if not v_range then
-		if cfg.debug then
-			vim.notify("ninjection.select() warning: no visual range returned: " .. tostring(err), vim.log.levels.WARN)
-		end
-		return nil
-	end
-	---@cast v_range NJRange
+  -- Select full lines using linewise visual mode
+  local ok, result = pcall(function()
+    vim.fn.setpos("'<", { 0, v_range.s_row + 1, 1, 0 }) -- start at beginning of start line
+    vim.fn.setpos("'>", { 0, v_range.e_row + 1, 1, 0 }) -- end at beginning of end line
+    vim.cmd("normal! V") -- force visual line mode
+  end)
 
-	-- Set marks to select ranges with a custom offset
-	ok, result = pcall(function()
-		return vim.fn.setpos("'<", { 0, v_range.s_row + 2, v_range.s_col + 1, 0 })
-	end)
-	if not ok then
-		error(tostring(result), 2)
-	end
+  if not ok then
+    error("ninjection.select() error: " .. tostring(result), 2)
+  end
 
-	ok, result = pcall(function()
-		return vim.fn.setpos("'>", { 0, v_range.e_row, v_range.e_col - 1, 0 })
-	end)
-	if not ok then
-		error(tostring(result), 2)
-	end
-
-	-- TODO: Implement more precise non-line mode selection
-	ok, result = pcall(function()
-		vim.cmd("normal! gv")
-	end)
-	if not ok then
-		error(tostring(result), 2)
-	end
-
-	return nil
+  return nil
 end
+
 
 ---@nodoc
 ---@return string root_dir Root directory for new buffer
