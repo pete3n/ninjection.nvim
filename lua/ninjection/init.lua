@@ -486,10 +486,12 @@ function ninjection.format()
 	local injection, err
 	injection, err = parse.get_injection(cur_bufnr)
 	if not injection or not injection.pair.node then
-		vim.notify(
-			"ninjection.format() error: No injected language node found: " .. tostring(err),
-			vim.log.levels.ERROR
-		)
+		if cfg.debug then
+			vim.notify(
+				"ninjection.format() warning: No injected language node found: " .. tostring(err),
+				vim.log.levels.WARN
+			)
+		end
 		return nil
 	end
 	---@cast injection NJNodeTable
@@ -515,19 +517,30 @@ function ninjection.format()
 				scope = "local",
 				buf = scratch_buf,
 			})
-			if cfg.auto_format then
-				assert(loadstring(cfg.format_cmd))()
+
+			if cfg.format_cmd then
+				---@type function
+				local format_fn = loadstring("return " .. cfg.format_cmd)()
+				ok, result = pcall(format_fn())
+
+				if not ok then
+					vim.notify(
+						"ninjection.format() error: Failed to format scratch buffer: " .. tostring(result),
+						vim.log.levels.ERROR
+					)
+				end
 			end
 		end)
 	end)
 
 	if not ok then
 		vim.notify(
-			"ninjection.format() error: Failed to format scratch buffer: " .. tostring(result),
+			"ninjection.format() error: Failed to modify scratch buffer: " .. tostring(result),
 			vim.log.levels.ERROR
 		)
 		return nil
 	end
+	vim.notify("Scratch filetype: " .. vim.bo[scratch_buf].filetype, vim.log.levels.INFO)
 
 	-- Re-indent formatted text
 	local formatted = vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false)
