@@ -35,6 +35,9 @@ local default_config = {
 		border = "single",
 	},
 	---@type table<string, string>
+	--- inj_lang and inj_text mandatory labels to indicate the language being
+	--- injected and the text associated with that injected node, the string name
+	--- indicates the file type that the language is being injected into.
 	inj_lang_queries = {
 		nix = [[
 			(
