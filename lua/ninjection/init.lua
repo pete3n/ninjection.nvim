@@ -129,17 +129,9 @@ function ninjection.edit()
 	---@type integer
 	local cur_bufnr = result
 
-	---@type string?, string?
-	local ft, err
-	ft, err = parse.get_ft(cur_bufnr)
-	if not ft then
-		error("Error, failed to get filetype: " .. err, 2)
-	end
-	---@cast ft string
-
-	---@type NJNodeTable?
-	local injection
-	injection = parse.get_injection(cur_bufnr)
+	---@type NJNodeTable?, string?
+	local injection, err
+	injection, err = parse.get_injection(cur_bufnr)
 	if not injection then
 		if cfg.debug then
 			vim.notify("ninjection.edit() warning: Failed to get injected node " .. tostring(err), vim.log.levels.WARN)
@@ -168,9 +160,9 @@ function ninjection.edit()
 	local buf_name = result
 
 	-- Apply filetype specific text modification functions
-	if cfg.inj_text_modifiers and cfg.inj_text_modifiers[ft] then
-		vim.notify("Calling injection_text modifier for " .. ft)
-		injection.text, injection.text_meta = cfg.inj_text_modifiers[ft](injection.text)
+	if cfg.inj_text_modifiers and cfg.inj_text_modifiers[injection.ft] then
+		vim.notify("Calling injection_text modifier for: " .. injection.ft)
+		injection.text, injection.text_meta = cfg.inj_text_modifiers[injection.ft](injection.text)
 	end
 
 	---@type NJChild
@@ -179,7 +171,7 @@ function ninjection.edit()
 		root_dir = root_dir, -- Child inherits the root directory of the parent
 		p_bufnr = cur_bufnr, -- The parent buffer will be the current buffer
 		p_name = buf_name, -- The parent buffer name will be the current buffer name
-		p_ft = ft, -- The parent filetype is the current filetype
+		p_ft = injection.ft, -- The parent filetype is the current filetype
 		p_range = injection.range, -- The parent range is the current injection range
 		p_text_meta = injection.text_meta, -- Metadata of modifications made to original text
 	}

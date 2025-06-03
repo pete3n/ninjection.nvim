@@ -221,7 +221,7 @@ end
 ---@nodoc
 ---@param bufnr integer Buffer number to check filetype for
 ---@return string? ft, string? err Detected filetype or error
-M.get_ft = function(bufnr)
+local function get_ft(bufnr)
 	---@type boolean, unknown?
 	local ok, result = pcall(function()
 		return vim.api.nvim_get_option_value("filetype", { buf = bufnr })
@@ -253,6 +253,7 @@ end
 ---
 ---@return NJNodeTable? injection, string? err
 --- Returns a table containing:
+---  - ft: `string` - The filetype of the buffer containing the injection
 ---  - lang: `string` - the injected language (not the parent filetype)
 ---  - node: `TSNode` - the Treesitter node element (see :h TSNode)
 ---  - range: `NJRange` - row/col ranges for the node
@@ -262,7 +263,7 @@ end
 M.get_injection = function(bufnr)
 	---@type string?, string?
 	local ft, err
-	ft, err = M.get_ft(bufnr)
+	ft, err = get_ft(bufnr)
 	if not ft then
 		error("Error, failed to get filetype: " .. err, 2)
 	end
@@ -320,6 +321,7 @@ M.get_injection = function(bufnr)
 
 	---@type NJNodeTable
 	local injection = {
+		ft = ft,
 		pair = capture,
 		range = {
 			s_row = s_row,

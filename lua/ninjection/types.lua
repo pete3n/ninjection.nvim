@@ -103,6 +103,7 @@
 ---@brief Store an injected language capture pair, its range, its text, and the
 --- cursor position.
 ---
+---@field ft string Filetype of the buffer containing the injection
 ---@field pair NJCapturePair Injected code node and its language tag
 ---@field range NJRange Range of the injected code node
 ---@field text string Injected text
