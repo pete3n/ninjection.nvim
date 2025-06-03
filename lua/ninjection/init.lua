@@ -99,8 +99,9 @@ function ninjection.select()
 		error(tostring(result), 2)
 	end
 
+	-- TODO: Implement more precise non-line mode selection
 	ok, result = pcall(function()
-		vim.cmd("normal! gv")
+		vim.cmd("normal! gV")
 	end)
 	if not ok then
 		error(tostring(result), 2)
