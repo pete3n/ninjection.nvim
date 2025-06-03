@@ -16,6 +16,11 @@ local subcommand_tbl = {
 			require("ninjection").select()
 		end,
 	},
+	format = {
+		impl = function()
+			require("ninjection").format()
+		end,
+	},
 }
 
 ---@nodoc
@@ -62,6 +67,9 @@ vim.keymap.set("n", "<Plug>(NinjectionReplace)", function()
 end, { noremap = true, silent = true })
 vim.keymap.set("n", "<Plug>(NinjectionSelect)", function()
 	require("ninjection").select()
+end, { noremap = true, silent = true })
+vim.keymap.set("n", "<Plug>(NinjectionFormat)", function()
+	require("ninjection").format()
 end, { noremap = true, silent = true })
 
 ---@mod ninjection-command USER COMMAND

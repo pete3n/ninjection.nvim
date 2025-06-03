@@ -44,6 +44,7 @@
 ---
 ---@field auto_format? boolean - Auto format the new child buffer.
 ---@field format_cmd? string - Command for `auto_format`.
+---@field format_indent? integer - Additional spaces to indent injected text blocks.
 ---@field register? string - Register to use to copy injected content.
 ---@field debug? boolean - Output debug messages.
 ---
