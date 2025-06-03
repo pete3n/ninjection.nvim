@@ -472,8 +472,8 @@ end
 ---
 --- @return nil
 function ninjection.format()
-	---@type boolean, unknown?, string?, integer
-	local ok, result, err, cur_bufnr
+	---@type boolean, unknown?, integer
+	local ok, result, cur_bufnr
 
 	ok, result = pcall(vim.api.nvim_get_current_buf)
 	if not ok or type(result) ~= "number" then
@@ -482,8 +482,8 @@ function ninjection.format()
 	end
 	cur_bufnr = result
 
-	---@type NJNodeTable?
-	local injection
+	---@type NJNodeTable?, string?
+	local injection, err
 	injection, err = parse.get_injection(cur_bufnr)
 	if not injection or not injection.pair.node then
 		vim.notify(
@@ -499,7 +499,7 @@ function ninjection.format()
 	---@type string
 	local parent_indent =
 		vim.api.nvim_buf_get_lines(cur_bufnr, injection.range.s_row, injection.range.s_row + 1, false)[1]
-	---@type integer, integer
+	---@type string?, string
 	local base_indent = parent_indent:match("^%s*") or ""
 	local format_indent = string.rep(" ", cfg.format_indent or 2)
 
@@ -518,7 +518,7 @@ function ninjection.format()
 		return nil
 	end
 	ok, err = pcall(function()
-		return vim.cmd("set filetype=" .. injection.ft)
+		return vim.cmd("set filetype=" .. injection.pair.inj_lang)
 	end)
 	if not ok then
 		error(tostring(err), 2)
@@ -526,9 +526,11 @@ function ninjection.format()
 	vim.api.nvim_buf_set_lines(scratch_buf, 0, -1, false, original_text)
 
 	vim.api.nvim_set_current_buf(scratch_buf)
-	ok, result = pcall(function()
-		loadstring(cfg.format_cmd)()
-	end)
+	if cfg.auto_format then
+		ok, result = pcall(function()
+			return vim.cmd("lua " .. cfg.format_cmd)
+		end)
+	end
 	if not ok then
 		vim.notify("ninjection.format() error during formatting: " .. tostring(result), vim.log.levels.ERROR)
 		return nil
