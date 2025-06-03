@@ -39,51 +39,47 @@ end
 ---
 ---@return nil
 function ninjection.select()
-  local bufnr = vim.api.nvim_get_current_buf()
-  if type(bufnr) ~= "number" then
-    if cfg.debug then
-      vim.notify(
-        "ninjection.select() warning: Could not get current buffer",
-        vim.log.levels.WARN
-      )
-    end
-    return nil
-  end
+	local bufnr = vim.api.nvim_get_current_buf()
+	if type(bufnr) ~= "number" then
+		if cfg.debug then
+			vim.notify("ninjection.select() warning: Could not get current buffer", vim.log.levels.WARN)
+		end
+		return nil
+	end
 
-  ---@type NJNodeTable?
-  local injection, err = parse.get_injection(bufnr)
-  if not injection or not injection.pair.node then
-    if cfg.debug then
-      vim.notify("ninjection.select() warning: No valid TSNode returned: " .. tostring(err), vim.log.levels.WARN)
-    end
-    return nil
-  end
+	---@type NJNodeTable?
+	local injection, err = parse.get_injection(bufnr)
+	if not injection or not injection.pair.node then
+		if cfg.debug then
+			vim.notify("ninjection.select() warning: No valid TSNode returned: " .. tostring(err), vim.log.levels.WARN)
+		end
+		return nil
+	end
 
-  ---@type NJRange?
-  local v_range
-  v_range, err = parse.get_visual_range(injection.pair.node, bufnr)
-  if not v_range then
-    if cfg.debug then
-      vim.notify("ninjection.select() warning: no visual range returned: " .. tostring(err), vim.log.levels.WARN)
-    end
-    return nil
-  end
+	---@type NJRange?
+	local v_range
+	v_range, err = parse.get_visual_range(injection.pair.node, bufnr)
+	if not v_range then
+		if cfg.debug then
+			vim.notify("ninjection.select() warning: no visual range returned: " .. tostring(err), vim.log.levels.WARN)
+		end
+		return nil
+	end
 
-  -- Select full lines using linewise visual mode
+	-- Select full lines using linewise visual mode
 	-- TODO: Implement non-line selection with column positions
-  local ok, result = pcall(function()
-    vim.fn.setpos("'<", { 0, v_range.s_row + 1, 1, 0 }) -- start at beginning of start line
-    vim.fn.setpos("'>", { 0, v_range.e_row + 1, 1, 0 }) -- end at beginning of end line
+	local ok, result = pcall(function()
+		vim.fn.setpos("'<", { 0, v_range.s_row + 1, 1, 0 }) -- start at beginning of start line
+		vim.fn.setpos("'>", { 0, v_range.e_row + 1, 1, 0 }) -- end at beginning of end line
 		vim.cmd("normal! `<V`>") -- Visual line select using marks
-  end)
+	end)
 
-  if not ok then
-    error("ninjection.select() error: " .. tostring(result), 2)
-  end
+	if not ok then
+		error("ninjection.select() error: " .. tostring(result), 2)
+	end
 
-  return nil
+	return nil
 end
-
 
 ---@nodoc
 ---@return string root_dir Root directory for new buffer
