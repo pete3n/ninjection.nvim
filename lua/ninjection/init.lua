@@ -40,8 +40,8 @@ end
 ---@return nil
 ---
 function ninjection.select()
-	---@type boolean, unknown, string?, integer?, NJNodeTable?
-	local ok, result, err, bufnr, node_info
+	---@type boolean, unknown, string?, integer?
+	local ok, result, err, bufnr
 
 	ok, result = pcall(function()
 		return vim.api.nvim_get_current_buf()
@@ -61,29 +61,28 @@ function ninjection.select()
 	bufnr = result
 	---@cast bufnr integer
 
-	node_info, err = parse.get_node_table(bufnr)
-	if not node_info then
+	---@type NJNodeTable?
+	local injection
+	injection, err = parse.get_injection(bufnr)
+	if not injection or not injection.pair.node then
 		if cfg.debug then
-			vim.notify("ninjection.select() warning: could not retrieve TSNode: " .. tostring(err), vim.log.levels.WARN)
+			vim.notify("ninjection.select() warning: No valid TSNode returned." ..
+				tostring(err), vim.log.levels.WARN)
 		end
 		return nil
 	end
-	if not node_info.node then
-		if cfg.debug then
-			vim.notify("ninjection.select() warning: No valid TSNode returned.", vim.log.levels.WARN)
-		end
-		return nil
-	end
+	---@cast injection NJNodeTable
 
 	---@type NJRange?
 	local v_range
-	v_range, err = parse.get_visual_range(node_info.node, bufnr)
+	v_range, err = parse.get_visual_range(injection.pair.node, bufnr)
 	if not v_range then
 		if cfg.debug then
 			vim.notify("ninjection.select() warning: no visual range returned: " .. tostring(err), vim.log.levels.WARN)
 		end
 		return nil
 	end
+	---@cast v_range NJRange
 
 	-- Set marks to select ranges with a custom offset
 	ok, result = pcall(function()
