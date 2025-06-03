@@ -7,8 +7,8 @@ local M = {}
 ---@nodoc
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
-local ok, lspconfig = pcall(require, "lspconfig")
-if not ok then
+local has_lspconfig, lspconfig = pcall(require, "lspconfig")
+if not has_lspconfig then
 	vim.notify("ninjection.nvim requires 'lspconfig' plugin for LSP features", vim.log.levels.ERROR)
 	return
 end
