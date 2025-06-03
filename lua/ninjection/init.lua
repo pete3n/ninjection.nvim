@@ -519,16 +519,22 @@ function ninjection.format()
 			})
 
 			if cfg.format_cmd then
+				---@type function?
 				local format_fn_loader = loadstring("return " .. cfg.format_cmd)
-				if not format_fn_loader then
-					error("Invalid format_cmd: cannot load function")
+				if type(format_fn_loader) ~= "function" then
+					error("Invalid format_cmd: loadstring did not return a function")
 				end
-				local format_fn = format_fn_loader()
-				if type(format_fn) ~= "function" then
-					error("format_cmd did not return a function")
-				end
-				ok, result = pcall(format_fn)
+				---@cast format_fn_loader function
 
+				---@type function?
+				local format_fn
+				ok, format_fn = pcall(format_fn_loader)
+				if not ok or type(format_fn) ~= "function" then
+					error("Invalid format_cmd: evaluated result is not a function")
+				end
+				---@cast format_fn function
+
+				ok, result = pcall(format_fn)
 				if not ok then
 					vim.notify(
 						"ninjection.format() error: Failed to format scratch buffer: " .. tostring(result),
