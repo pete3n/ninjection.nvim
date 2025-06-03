@@ -466,7 +466,7 @@ end
 ---@tag ninjection.format()
 ---@brief
 --- Formats the injected code block under cursor using a specified format cmd,
---- Sets indentation based on existing indents and configured offsets.
+--- Sets indentation based on existing indents and configurable offsets.
 ---
 --- Requires `cfg.format_cmd` and `cfg.format_indent` to be set.
 ---
@@ -495,9 +495,7 @@ function ninjection.format()
 		return nil
 	end
 	---@cast injection NJNodeTable
-	--
-	-- Get the parent indentation from the line above the start of the injected code
-	-- this will be the base indentation for any additional indents defined in the config.
+
 	---@type string
 	local parent_indent = vim.api.nvim_buf_get_lines(cur_bufnr, injection.range.s_row, injection.range.s_row + 1, false)[1]
 		or ""
@@ -510,6 +508,8 @@ function ninjection.format()
 	local scratch_buf = vim.api.nvim_create_buf(false, true)
 	vim.api.nvim_buf_set_lines(scratch_buf, 0, -1, false, original_lines)
 
+	vim.notify("Original lines:\n" .. table.concat(original_lines, "\n"), vim.log.levels.DEBUG)
+
 	-- Set filetype and format inside scratch buffer context
 	ok, result = pcall(function()
 		vim.api.nvim_buf_call(scratch_buf, function()
@@ -519,9 +519,15 @@ function ninjection.format()
 			})
 
 			if cfg.format_cmd then
-				---@type function
-				local format_fn = loadstring("return " .. cfg.format_cmd)()
-				ok, result = pcall(format_fn())
+				local format_fn_loader = loadstring("return " .. cfg.format_cmd)
+				if not format_fn_loader then
+					error("Invalid format_cmd: cannot load function")
+				end
+				local format_fn = format_fn_loader()
+				if type(format_fn) ~= "function" then
+					error("format_cmd did not return a function")
+				end
+				ok, result = pcall(format_fn)
 
 				if not ok then
 					vim.notify(
@@ -544,6 +550,8 @@ function ninjection.format()
 
 	-- Re-indent formatted text
 	local formatted = vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false)
+	vim.notify("Formatted lines:\n" .. table.concat(formatted, "\n"), vim.log.levels.DEBUG)
+
 	local indented = vim.tbl_map(function(line)
 		return base_indent .. format_indent .. line
 	end, formatted)
