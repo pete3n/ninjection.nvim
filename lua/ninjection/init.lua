@@ -518,12 +518,10 @@ function ninjection.format()
 				buf = scratch_buf,
 			})
 
-			if cfg.format_cmd then
-				---@type boolean, unknown
+			if cfg.auto_format and cfg.format_cmd then
 				local fmt_ok, fmt_result = pcall(function()
 					return vim.cmd("lua " .. cfg.format_cmd)
 				end)
-
 				if not fmt_ok then
 					vim.notify(
 						"ninjection.format() error: Failed to format scratch buffer: " .. tostring(fmt_result),
