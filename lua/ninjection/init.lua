@@ -70,10 +70,12 @@ function ninjection.select()
   end
 
   -- Select full lines using linewise visual mode
+	-- TODO: Implement non-line selection with column positions
   local ok, result = pcall(function()
     vim.fn.setpos("'<", { 0, v_range.s_row + 1, 1, 0 }) -- start at beginning of start line
     vim.fn.setpos("'>", { 0, v_range.e_row + 1, 1, 0 }) -- end at beginning of end line
-    vim.cmd("normal! V") -- force visual line mode
+    vim.cmd("normal! gv") -- reselect range
+    vim.cmd("normal! V") -- select visual line mode
   end)
 
   if not ok then
