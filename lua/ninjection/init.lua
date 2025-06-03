@@ -493,50 +493,43 @@ function ninjection.format()
 		return nil
 	end
 	---@cast injection NJNodeTable
-
+	--
 	-- Get the parent indentation from the line above the start of the injected code
 	-- this will be the base indentation for any additional indents defined in the config.
 	---@type string
-	local parent_indent =
-		vim.api.nvim_buf_get_lines(cur_bufnr, injection.range.s_row, injection.range.s_row + 1, false)[1]
-	---@type string?, string
+	local parent_indent = vim.api.nvim_buf_get_lines(cur_bufnr, injection.range.s_row, injection.range.s_row + 1, false)[1]
+		or ""
+	---@type string, string
 	local base_indent = parent_indent:match("^%s*") or ""
 	local format_indent = string.rep(" ", cfg.format_indent or 2)
-
 	---@type string[]
-	local original_text = vim.split(injection.text, "\n", { plain = true })
+	local original_lines = vim.split(injection.text, "\n", { plain = true })
 	---@type integer
 	local scratch_buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_buf_set_lines(scratch_buf, 0, -1, false, original_lines)
+
+	-- Set filetype and format inside scratch buffer context
 	ok, result = pcall(function()
-		return vim.api.nvim_set_current_buf(scratch_buf)
+		vim.api.nvim_buf_call(scratch_buf, function()
+			vim.api.nvim_set_option_value("filetype", injection.pair.inj_lang, {
+				scope = "local",
+				buf = scratch_buf,
+			})
+			if cfg.auto_format then
+				assert(loadstring(cfg.format_cmd))()
+			end
+		end)
 	end)
+
 	if not ok then
 		vim.notify(
-			"ninjection.format() error: Cannot switch to scratch buffer: " .. tostring(result),
+			"ninjection.format() error: Failed to format scratch buffer: " .. tostring(result),
 			vim.log.levels.ERROR
 		)
 		return nil
 	end
-	ok, err = pcall(function()
-		return vim.cmd("set filetype=" .. injection.pair.inj_lang)
-	end)
-	if not ok then
-		error(tostring(err), 2)
-	end
-	vim.api.nvim_buf_set_lines(scratch_buf, 0, -1, false, original_text)
 
-	vim.api.nvim_set_current_buf(scratch_buf)
-	if cfg.auto_format then
-		ok, result = pcall(function()
-			return vim.cmd("lua " .. cfg.format_cmd)
-		end)
-	end
-	if not ok then
-		vim.notify("ninjection.format() error during formatting: " .. tostring(result), vim.log.levels.ERROR)
-		return nil
-	end
-
-	-- Fetch formatted text
+	-- Re-indent formatted text
 	local formatted = vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false)
 	local indented = vim.tbl_map(function(line)
 		return base_indent .. format_indent .. line
@@ -544,9 +537,6 @@ function ninjection.format()
 
 	-- Replace original lines
 	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row, injection.range.e_row + 1, false, indented)
-
-	-- Restore cursor to original buffer
-	vim.api.nvim_set_current_buf(cur_bufnr)
 
 	return nil
 end
