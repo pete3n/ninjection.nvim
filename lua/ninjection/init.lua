@@ -552,28 +552,33 @@ function ninjection.format()
 		end
 	end
 
-	ok, result = pcall(function()
-		return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
-	end)
-	if not ok or type(result) ~= "table" then
-		error(tostring(result), 2)
-	end
-	---@type string[]
-	local rep_text = result
-	if not rep_text or #rep_text == 0 then
-		if cfg.debug then
-			vim.notify(
-				"ninjection.replace() warning: No formatted text returned " .. "by vim.api.nvim_buf_get_lines()",
-				vim.log.levels.WARN
+	vim.lsp.buf.format({
+		bufnr = c_table.bufnr,
+		async = true,
+		timeout_ms = 2000,
+		-- You could set filter here if needed
+		-- filter = function(client) return client.name == "null-ls" end,
+		-- You can pass your own formatting options if needed
+		-- formatting_options = {}
+		callback = function()
+			local fmt_ok, rep_lines = pcall(vim.api.nvim_buf_get_lines, c_table.bufnr, 0, -1, false)
+			if not fmt_ok or type(rep_lines) ~= "table" then
+				error("ninjection.format() error: Failed to get formatted lines: " .. tostring(rep_lines))
+			end
+
+			if cfg.debug then
+				vim.notify("Replacement text (post-format):\n" .. table.concat(rep_lines, "\n"))
+			end
+
+			vim.api.nvim_buf_set_lines(
+				cur_bufnr,
+				injection.range.s_row + 1,
+				injection.range.e_row - 1,
+				false,
+				rep_lines
 			)
-		end
-		return nil
-	end
-
-	vim.notify("Current bufnr: " .. vim.inspect(cur_bufnr))
-	vim.notify("Replacement text: " .. table.concat(rep_text, "\n"))
-
-	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row - 1, false, rep_text)
+		end,
+	})
 
 	return nil
 end
