@@ -553,7 +553,7 @@ function ninjection.format()
 	end
 	---@cast lsp_status NJLspStatus
 
-	vim.api.wait(5000, lsp_status.status == "started")
+	vim.wait(5000)
 
 	ok, result = pcall(function()
 		return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
