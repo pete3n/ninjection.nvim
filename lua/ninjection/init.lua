@@ -549,6 +549,27 @@ function ninjection.format()
 		end
 	end
 
+	ok, result = pcall(function()
+		return vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	end)
+	if not ok or type(result) ~= "table" then
+		error(tostring(result), 2)
+	end
+	---@type string[]
+	local rep_text = result
+	if not rep_text or #rep_text == 0 then
+		if cfg.debug then
+			vim.notify(
+				"ninjection.replace() warning: No formatted text returned " .. "by vim.api.nvim_buf_get_lines()",
+				vim.log.levels.WARN
+			)
+		end
+		return nil
+	end
+
+	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row - 1, false, rep_text)
+
 	return nil
 end
+
 return ninjection
