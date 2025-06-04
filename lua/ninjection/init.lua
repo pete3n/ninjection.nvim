@@ -583,6 +583,8 @@ function ninjection.format()
 			error("Failed to get formatted lines: " .. tostring(lines))
 		end
 
+		vim.notify("Formatted lines: " .. table.concat(lines, "\n"))
+
 		vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row - 1, false, lines)
 	end, 1000)
 
