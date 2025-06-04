@@ -463,6 +463,31 @@ function ninjection.replace()
 	end
 end
 
+local function wait_for_lsp_and_format(bufnr, callback, timeout_ms)
+	local interval = 50
+	local elapsed = 0
+
+	local function poll()
+		local clients = vim.lsp.get_active_clients({ bufnr = bufnr })
+		if #clients > 0 then
+			vim.lsp.buf.format({
+				bufnr = bufnr,
+				async = true,
+				timeout_ms = 2000,
+				callback = callback,
+			})
+		elseif elapsed < timeout_ms then
+			elapsed = elapsed + interval
+			vim.defer_fn(poll, interval)
+		else
+			vim.notify("LSP did not attach within " .. timeout_ms .. "ms", vim.log.levels.WARN)
+			callback() -- fallback: still run callback even if no format
+		end
+	end
+
+	poll()
+end
+
 ---@tag ninjection.format()
 ---@brief
 --- Formats the injected code block under cursor using a specified format cmd,
@@ -552,33 +577,14 @@ function ninjection.format()
 		end
 	end
 
-	vim.lsp.buf.format({
-		bufnr = c_table.bufnr,
-		async = true,
-		timeout_ms = 2000,
-		-- You could set filter here if needed
-		-- filter = function(client) return client.name == "null-ls" end,
-		-- You can pass your own formatting options if needed
-		-- formatting_options = {}
-		callback = function()
-			local fmt_ok, rep_lines = pcall(vim.api.nvim_buf_get_lines, c_table.bufnr, 0, -1, false)
-			if not fmt_ok or type(rep_lines) ~= "table" then
-				error("ninjection.format() error: Failed to get formatted lines: " .. tostring(rep_lines))
-			end
+	wait_for_lsp_and_format(c_table.bufnr, function()
+		local fmt_ok, lines = pcall(vim.api.nvim_buf_get_lines, c_table.bufnr, 0, -1, false)
+		if not fmt_ok or type(lines) ~= "table" then
+			error("Failed to get formatted lines: " .. tostring(lines))
+		end
 
-			if cfg.debug then
-				vim.notify("Replacement text (post-format):\n" .. table.concat(rep_lines, "\n"))
-			end
-
-			vim.api.nvim_buf_set_lines(
-				cur_bufnr,
-				injection.range.s_row + 1,
-				injection.range.e_row - 1,
-				false,
-				rep_lines
-			)
-		end,
-	})
+		vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row - 1, false, lines)
+	end, 1000)
 
 	return nil
 end
