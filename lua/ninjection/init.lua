@@ -553,7 +553,18 @@ function ninjection.format()
 	end
 	---@cast lsp_status NJLspStatus
 
-	vim.wait(5000)
+	local timeout_ms = 5000
+	local interval_ms = 50
+	local elapsed_ms = 0
+
+	while (not lsp_status or lsp_status.status ~= "started") and elapsed_ms < timeout_ms do
+		vim.wait(interval_ms)
+		elapsed_ms = elapsed_ms + interval_ms
+	end
+
+	if lsp_status.status ~= "started" then
+		vim.notify("LSP did not start within timeout", vim.log.levels.WARN)
+	end
 
 	ok, result = pcall(function()
 		return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
