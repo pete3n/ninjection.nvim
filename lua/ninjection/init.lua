@@ -463,31 +463,6 @@ function ninjection.replace()
 	end
 end
 
-local function wait_for_lsp_and_format(bufnr, callback, timeout_ms)
-	local interval = 50
-	local elapsed = 0
-
-	local function poll()
-		local clients = vim.lsp.get_active_clients({ bufnr = bufnr })
-		if #clients > 0 then
-			vim.lsp.buf.format({
-				bufnr = bufnr,
-				async = true,
-				timeout_ms = 2000,
-				callback = callback,
-			})
-		elseif elapsed < timeout_ms then
-			elapsed = elapsed + interval
-			vim.defer_fn(poll, interval)
-		else
-			vim.notify("LSP did not attach within " .. timeout_ms .. "ms", vim.log.levels.WARN)
-			callback() -- fallback: still run callback even if no format
-		end
-	end
-
-	poll()
-end
-
 ---@tag ninjection.format()
 ---@brief
 --- Formats the injected code block under cursor using a specified format cmd,
@@ -576,17 +551,32 @@ function ninjection.format()
 			-- Don't return early on LSP failure
 		end
 	end
+	---@cast lsp_status NJLspStatus
 
-	wait_for_lsp_and_format(c_table.bufnr, function()
-		local fmt_ok, lines = pcall(vim.api.nvim_buf_get_lines, c_table.bufnr, 0, -1, false)
-		if not fmt_ok or type(lines) ~= "table" then
-			error("Failed to get formatted lines: " .. tostring(lines))
+	vim.api.wait(5000, lsp_status.status == "started")
+
+	ok, result = pcall(function()
+		return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
+	end)
+	if not ok or type(result) ~= "table" then
+		error(tostring(result), 2)
+	end
+	---@type string[]
+	local rep_text = result
+	if not rep_text or #rep_text == 0 then
+		if cfg.debug then
+			vim.notify(
+				"ninjection.replace() warning: No formatted text returned " .. "by vim.api.nvim_buf_get_lines()",
+				vim.log.levels.WARN
+			)
 		end
+		return nil
+	end
 
-		vim.notify("Formatted lines: " .. table.concat(lines, "\n"))
+	vim.notify("Current bufnr: " .. vim.inspect(cur_bufnr))
+	vim.notify("Replacement text: " .. table.concat(rep_text, "\n"))
 
-		vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row - 1, false, lines)
-	end, 1000)
+	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row - 1, false, rep_text)
 
 	return nil
 end
