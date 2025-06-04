@@ -545,7 +545,7 @@ function ninjection.format()
 	---@type NJLspStatus?
 	local lsp_status
 	lsp_status, err = buffer.start_lsp(injection.pair.inj_lang, root_dir)
-	if not lsp_status then
+	if not lsp_status or lsp_status.status then
 		if cfg.debug then
 			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
 			-- Don't return early on LSP failure

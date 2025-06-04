@@ -451,42 +451,33 @@ end
 ---@return NJLspStatus? result, string? err - The LSP status.
 ---
 M.start_lsp = function(lang, root_dir)
-	---@type boolean, unknown, string?
-	local ok, raw_output, lang_lsp
-
 	-- The injected language must be mapped to an LSP
-	lang_lsp = cfg.lsp_map[lang]
+	---@type string?, string?
+	local lang_lsp = cfg.lsp_map[lang]
+	local err
 	if not lang_lsp then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: No LSP mapped to "
-				.. "language: "
-				.. lang
-				.. " check your configuration.",
-			vim.log.levels.WARN
-		)
-		return { "unmapped", -1 }
+		err = "ninjection.buffer.start_lsp() warning: No LSP mapped to "
+			.. "language: "
+			.. lang
+			.. " check your configuration."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection debug" })
+		end
+		return { "unmapped", -1 }, err
 	end
 	---@cast lang_lsp string
 
 	-- The LSP must have an available configuration
-	ok, raw_output = pcall(function()
+	---@type boolean, lspconfig.Config?
+	local ok, lsp_def = pcall(function()
 		return lspconfig[lang_lsp]
 	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	---@type lspconfig.Config?
-	local lsp_def = raw_output
-	if not lsp_def then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: Could not find "
-				.. "default_config for "
-				.. lang_lsp
-				.. ". Ensure it is installed and "
-				.. "properly configured for lspconfig.",
-			vim.log.levels.WARN
-		)
-		return { "unconfigured", -1 }
+	if not ok or not lsp_def then
+		err = "Ninjection.buffer.start_lsp() error: no LSP configuration for: " .. lang_lsp .. " " .. tostring(lsp_def)
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection warning" })
+		end
+		return { "unconfigured", -1 }, err
 	end
 	---@cast lsp_def lspconfig.Config
 
@@ -495,71 +486,66 @@ M.start_lsp = function(lang, root_dir)
 	---@type string[]|fun(dispatchers: vim.lsp.rpc.Dispatchers): vim.lsp.rpc.PublicClient?
 	local lsp_cmd = lsp_def.cmd
 	if not lsp_cmd or #lsp_cmd == 0 then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: Command to execute "
-				.. lang_lsp
-				.. " does not exist. Ensure it is installed and configured.",
-			vim.log.levels.WARN
-		)
-		return { "unavailable", -1 }
+		err = "ninjection.buffer.start_lsp() warning: Command to execute "
+				.. lang_lsp .. " does not exist. Ensure it is installed and configured."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
+		end
+		return { "unavailable", -1 }, err
 	end
 	---@cast lsp_cmd string[]
 
 	-- The LSP binary path must be executable
 	-- The command must be the first element
-	ok, raw_output = pcall(function()
+	---@type unknown?
+	local is_executable
+	ok, is_executable = pcall(function()
 		return vim.fn.executable(lsp_cmd[1])
 	end)
-	if not ok then
-		error(tostring(raw_output), 2)
+	if not ok or is_executable ~= 1 then
+		err = "ninjection.buffer.start_lsp() warning: The LSP command: " .. lsp_cmd[1]
+		.. " is not executable. " .. tostring(is_executable)
+		vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
+		return { "no-exec", -1 }, err
 	end
-	if raw_output ~= 1 then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: The LSP command: " .. lsp_cmd[1] .. " is not executable.",
-			vim.log.levels.WARN
-		)
-		return { "no-exec", -1 }
-	end
+	---@cast is_executable integer
 
 	-- The LSP must support our injected language
 	if not vim.tbl_contains(lsp_def.filetypes, lang) then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: The configured LSP: "
+		err = "ninjection.buffer.start_lsp() warning: The configured LSP: "
 				.. lang_lsp
 				.. " does not support "
 				.. lang
 				.. " modify your configuration "
-				.. " to use an appropriate LSP.",
-			vim.log.levels.WARN
-		)
-		return { "unsupported", -1 }
+				.. " to use an appropriate LSP."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
+		end
+		return { "unsupported", -1 }, err
 	end
 
-	ok, raw_output = pcall(function()
+	---@type integer?
+	local client_id
+	ok, client_id = pcall(function()
 		return vim.lsp.start({
 			name = lang_lsp,
 			cmd = lsp_cmd,
 			root_dir = root_dir,
 		})
 	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	---@type integer?
-	local client_id = raw_output
-	if client_id == nil then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: The LSP: "
+	if not ok or not client_id then
+		err = "ninjection.buffer.start_lsp() warning: The LSP: "
 				.. lang_lsp
 				.. " did not return a client_id, check your language client logs "
-				.. "(default ~/.local/state/nvim/lsp.log) for more information.",
-			vim.log.levels.WARN
-		)
-		return { "failed_start", -1 }
+				.. "(default ~/.local/state/nvim/lsp.log) for more information."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
+		end
+		return { "failed_start", -1 }, err
 	end
 	---@cast client_id integer
 
-	return { "started", client_id }
+	return { "started", client_id }, nil
 end
 
 return M
