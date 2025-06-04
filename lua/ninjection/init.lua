@@ -517,14 +517,14 @@ function ninjection.format()
 				scope = "local",
 				buf = scratch_buf,
 			})
+			vim.api.nvim_set_option_value("buflisted", true, { scope = "local", buf = scratch_buf })
+
+			vim.notify("Current buf in buf_call: " .. vim.api.nvim_get_current_buf(), vim.log.levels.DEBUG)
 
 			if cfg.auto_format and cfg.format_cmd then
 				local fmt_ok, fmt_result = pcall(function()
-					local active_buf = vim.api.nvim_get_current_buf()
-					vim.notify("Formatting buffer: " .. active_buf, vim.log.levels.DEBUG)
-					vim.cmd("lua " .. cfg.format_cmd)
-					local post_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-					vim.notify("Post-format lines:\n" .. table.concat(post_lines, "\n"), vim.log.levels.DEBUG)
+					local conform = require("conform")
+					conform.format({ async = false, bufnr = scratch_buf })
 				end)
 				if not fmt_ok then
 					vim.notify(
@@ -543,7 +543,10 @@ function ninjection.format()
 		)
 		return nil
 	end
-	vim.notify("Scratch filetype: " .. vim.bo[scratch_buf].filetype, vim.log.levels.INFO)
+	vim.notify(
+		"Scratch filetype: " .. vim.api.nvim_get_option_value("filetype", { buf = scratch_buf }),
+		vim.log.levels.INFO
+	)
 
 	-- Re-indent formatted text
 	local formatted = vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false)
