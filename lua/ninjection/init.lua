@@ -550,7 +550,7 @@ function ninjection.format()
 	end
 
 	ok, result = pcall(function()
-		return vim.api.nvim_buf_get_lines(0, 0, -1, false)
+		return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
 	end)
 	if not ok or type(result) ~= "table" then
 		error(tostring(result), 2)
