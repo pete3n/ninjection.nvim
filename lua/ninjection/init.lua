@@ -539,6 +539,9 @@ function ninjection.format()
 		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end
 
+	vim.notify("Child bufnr: " .. tostring(c_table.bufnr))
+	vim.notify("Injected text: " .. tostring(injection.text))
+
 	---@type NJLspStatus?
 	local lsp_status
 	lsp_status, err = buffer.start_lsp(injection.pair.inj_lang, root_dir)
@@ -566,6 +569,9 @@ function ninjection.format()
 		end
 		return nil
 	end
+
+	vim.notify("Current bufnr: " .. tostring(cur_bufnr))
+	vim.notify("Replacement text: " .. tostring(rep_text))
 
 	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row - 1, false, rep_text)
 
