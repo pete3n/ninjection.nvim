@@ -472,108 +472,77 @@ end
 ---
 --- @return nil
 function ninjection.format()
-	---@type boolean, unknown?, integer
-	local ok, result, cur_bufnr
-
+	---@type boolean, unknown?
+	local ok, result
 	ok, result = pcall(vim.api.nvim_get_current_buf)
-	if not ok or type(result) ~= "number" then
-		vim.notify("ninjection.format() error: Cannot get current buffer", vim.log.levels.ERROR)
-		return nil
+	if not ok then
+		error(tostring(result))
 	end
-	cur_bufnr = result
+	if type(result) ~= "number" then
+		error("ninjection.edit() error: Could not retrieve current buffer handle.")
+	end
+	---@type integer
+	local cur_bufnr = result
 
 	---@type NJNodeTable?, string?
 	local injection, err
 	injection, err = parse.get_injection(cur_bufnr)
-	if not injection or not injection.pair.node then
+	if not injection then
 		if cfg.debug then
-			vim.notify(
-				"ninjection.format() warning: No injected language node found: " .. tostring(err),
-				vim.log.levels.WARN
-			)
+			vim.notify("ninjection.edit() warning: Failed to get injected node " .. tostring(err), vim.log.levels.WARN)
 		end
 		return nil
 	end
 	---@cast injection NJNodeTable
 
 	---@type string
-	local parent_indent = vim.api.nvim_buf_get_lines(cur_bufnr, injection.range.s_row, injection.range.s_row + 1, false)[1]
-		or ""
-	---@type string, string
-	local base_indent = parent_indent:match("^%s*") or ""
-	local format_indent = string.rep(" ", cfg.format_indent or 2)
-	---@type string[]
-	local original_lines = vim.split(injection.text, "\n", { plain = true })
-	---@type integer
-	local scratch_buf = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_lines(scratch_buf, 0, -1, false, original_lines)
+	local root_dir = get_root_dir()
 
-	vim.notify("Original lines:\n" .. table.concat(original_lines, "\n"), vim.log.levels.DEBUG)
-
-	-- Set filetype and format inside scratch buffer context
-	ok, result = pcall(function()
-		vim.api.nvim_buf_call(scratch_buf, function()
-			vim.api.nvim_set_option_value("filetype", injection.pair.inj_lang, {
-				scope = "local",
-				buf = scratch_buf,
-			})
-			vim.api.nvim_set_option_value("buflisted", true, { scope = "local", buf = scratch_buf })
-			vim.api.nvim_set_option_value("buftype", "", { scope = "local", buf = scratch_buf })
-			vim.api.nvim_buf_set_name(scratch_buf, "ninjection://format/" .. injection.pair.inj_lang)
-
-			vim.cmd("doautocmd FileType " .. injection.pair.inj_lang)
-			vim.notify("Current buf in buf_call: " .. vim.api.nvim_get_current_buf(), vim.log.levels.DEBUG)
-
-			if cfg.auto_format and cfg.format_cmd then
-				local fmt_ok, fmt_result = pcall(function()
-					local conform = require("conform")
-					local info = conform.get_formatter_info(injection.pair.inj_lang)
-					vim.notify("Formatter info: " .. vim.inspect(info), vim.log.levels.DEBUG)
-
-					conform.format({
-						async = false,
-						bufnr = scratch_buf,
-						lsp_fallback = false,
-						timeout_ms = 3000,
-						formatters = {
-							[injection.pair.inj_lang] = { tempfile = true },
-						},
-					})
-				end)
-				if not fmt_ok then
-					vim.notify(
-						"ninjection.format() error: Failed to format scratch buffer: " .. tostring(fmt_result),
-						vim.log.levels.ERROR
-					)
-				end
-			end
-		end)
-	end)
-
+	ok, result = pcall(vim.api.nvim_buf_get_name, 0)
 	if not ok then
-		vim.notify(
-			"ninjection.format() error: Failed to modify scratch buffer: " .. tostring(result),
-			vim.log.levels.ERROR
-		)
+		error(tostring(result), 2)
+	end
+	if type(result) ~= "string" then
+		if cfg.debug then
+			vim.notify(
+				"ninjection.edit() warning: No name returned from " .. "vim.api.nvim_buf_get_name(0)",
+				vim.log.levels.WARN
+			)
+		end
 		return nil
 	end
-	vim.notify(
-		"Scratch filetype: " .. vim.api.nvim_get_option_value("filetype", { buf = scratch_buf }),
-		vim.log.levels.INFO
-	)
+	---@type string
+	local buf_name = result
 
-	-- Re-indent formatted text
-	local formatted = vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false)
-	vim.notify("Formatted lines:\n" .. table.concat(formatted, "\n"), vim.log.levels.DEBUG)
+	---@type NJChild
+	local new_child = {
+		ft = injection.pair.inj_lang, -- The injected language becomes the child ft
+		root_dir = root_dir, -- Child inherits the root directory of the parent
+		p_bufnr = cur_bufnr, -- The parent buffer will be the current buffer
+		p_name = buf_name, -- The parent buffer name will be the current buffer name
+		p_ft = injection.ft, -- The parent filetype is the current filetype
+		p_range = injection.range, -- The parent range is the current injection range
+		p_text_meta = injection.text_meta, -- Metadata of modifications made to original text
+	}
 
-	local indented = vim.tbl_map(function(line)
-		return base_indent .. format_indent .. line
-	end, formatted)
+	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
+	local c_table
 
-	-- Replace original lines
-	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row, injection.range.e_row + 1, false, indented)
+	c_table, err = buffer.create_child(new_child, injection.text)
+	if not c_table.bufnr or not c_table.win then
+		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
+	end
+
+	---@type NJLspStatus?
+	local lsp_status
+	lsp_status, err = buffer.start_lsp(injection.pair.inj_lang, root_dir)
+	if not lsp_status then
+		if cfg.debug then
+			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
+			-- Don't return early on LSP failure
+		end
+	end
 
 	return nil
 end
-
 return ninjection
