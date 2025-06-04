@@ -518,9 +518,10 @@ function ninjection.format()
 				buf = scratch_buf,
 			})
 			vim.api.nvim_set_option_value("buflisted", true, { scope = "local", buf = scratch_buf })
+			vim.api.nvim_set_option_value("buftype", "", { scope = "local", buf = scratch_buf })
+			vim.api.nvim_buf_set_name(scratch_buf, "ninjection://format/" .. injection.pair.inj_lang)
 
 			vim.cmd("doautocmd FileType " .. injection.pair.inj_lang)
-
 			vim.notify("Current buf in buf_call: " .. vim.api.nvim_get_current_buf(), vim.log.levels.DEBUG)
 
 			if cfg.auto_format and cfg.format_cmd then
