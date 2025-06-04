@@ -552,6 +552,7 @@ function ninjection.format()
 		end
 	end
 	---@cast lsp_status NJLspStatus
+	vim.notify("LSP status is: " .. lsp_status.status)
 
 	local timeout_ms = 5000
 	local interval_ms = 50
