@@ -576,8 +576,17 @@ function ninjection.format()
 	vim.notify("Current bufnr: " .. vim.inspect(cur_bufnr))
 	vim.notify("Replacement text: " .. table.concat(rep_text, "\n"))
 
-	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row - 1, false, rep_text)
+	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row, false, rep_text)
 
+	-- Close child window if it still exists
+	if c_table.win and vim.api.nvim_win_is_valid(c_table.win) then
+		vim.api.nvim_win_close(c_table.win, true)
+	end
+
+	-- Wipe child buffer if it still exists
+	if c_table.bufnr and vim.api.nvim_buf_is_valid(c_table.bufnr) then
+		vim.api.nvim_buf_delete(c_table.bufnr, { force = true })
+	end
 	return nil
 end
 
