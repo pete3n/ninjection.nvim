@@ -524,7 +524,18 @@ function ninjection.format()
 			if cfg.auto_format and cfg.format_cmd then
 				local fmt_ok, fmt_result = pcall(function()
 					local conform = require("conform")
-					conform.format({ async = false, bufnr = scratch_buf })
+					local info = conform.get_formatter_info(injection.pair.inj_lang)
+					vim.notify("Formatter info: " .. vim.inspect(info), vim.log.levels.DEBUG)
+
+					conform.format({
+						async = false,
+						bufnr = scratch_buf,
+						lsp_fallback = false,
+						timeout_ms = 3000,
+						formatters = {
+							[injection.pair.inj_lang] = { tempfile = true },
+						},
+					})
 				end)
 				if not fmt_ok then
 					vim.notify(
