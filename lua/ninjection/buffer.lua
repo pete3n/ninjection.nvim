@@ -476,7 +476,7 @@ end
 
 ---@tag ninjection.buffer.start_lsp()
 ---@brief
---- Starts an appropriate LSP for the provided language.
+--- Starts an appropriate LSP for the provided language and attach it to bufnr.
 ---
 --- Parameters ~
 ---@param lang string - The filetype of the injected language (e.g., "lua", "python").
@@ -562,11 +562,19 @@ M.start_lsp = function(lang, root_dir, bufnr)
 		return NJLspStatus.new("unsupported", nil), err
 	end
 
+	vim.notify("bufnr: " .. bufnr)
+	local filetype = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
+	vim.notify("filetype of bufnr: " .. filetype)
+	local buflisted = vim.api.nvim_get_option_value("buflisted", { buf = bufnr })
+	vim.notify("buflisted: " .. tostring(buflisted))
+	vim.notify("cmd: " .. vim.inspect(lsp_cmd))
+
 	---@type integer?
 	local client_id = vim.lsp.start({
 		name = lang_lsp,
 		cmd = lsp_cmd,
 		root_dir = root_dir,
+		bufnr = bufnr,
 	})
 
 	-- Attach explicitly to the buffer

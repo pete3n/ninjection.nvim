@@ -586,8 +586,8 @@ function ninjection.format()
 
 	vim.notify("Child bufnr: " .. tostring(c_table.bufnr))
 	vim.notify("Injected text: " .. injection.text)
-
 	vim.notify("Requested LSP start for bufnr: " .. c_table.bufnr)
+
 	---@type NJLspStatus?
 	local lsp_info
 	ok, lsp_info, err = pcall(buffer.start_lsp, injection.pair.inj_lang, root_dir, c_table.bufnr)
