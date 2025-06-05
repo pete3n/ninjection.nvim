@@ -31,29 +31,18 @@ end
 ---  - `l_indent`: minimum number of leading spaces on nonempty lines.
 ---
 M.get_indents = function(bufnr)
-	---@type boolean, unknown, string[]
-	local ok, raw_output, lines
-
-	ok, raw_output = pcall(function()
+	---@type boolean, string[]?
+	local line_ok, lines
+	line_ok, lines = pcall(function()
 		return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	if type(raw_output) ~= "table" then
-		error("ninjection error: Expected vim.api.nvim_buf_get_lines() to return a table.", 2)
-	end
-	---@cast raw_output string[]
-	lines = raw_output
-
-	if #lines == 0 then
+	if not line_ok or not lines or #lines == 0 then
+		---@type string
+		local err = "ninjection.buffer.get_indents() error: Unable to retrieve lines from bufnr " .. bufnr
 		if cfg.debug then
-			vim.notify(
-				"ninjection.buffer.get_indents() warning: No lines returned "
-					.. "from calling vim.api.nvim_buf_get_lines()",
-				vim.log.levels.WARN
-			)
+			vim.notify(err, vim.log.levels.ERROR)
 		end
+		return nil, err
 	end
 	---@cast lines string[]
 
@@ -122,36 +111,34 @@ end
 --- Lines with the indents restored.
 ---
 M.restore_indents = function(text, indents)
-	---@type boolean, unknown, string[]?
-	local ok, raw_output, lines
-
+	---@type string[]?
+	local lines
 	if type(text) == "string" then
-		ok, raw_output = pcall(function()
+		---@type boolean
+		local split_ok
+		split_ok, lines = pcall(function()
 			return vim.split(text, "\n")
 		end)
-		if not ok then
-			error(tostring(raw_output), 2)
-		end
-		if type(raw_output) ~= "table" then
-			error("ninjection error: Expected a table returned from vim.split()", 2)
-		end
-		---@cast raw_output string[]
-		lines = raw_output
-		if #lines == 0 then
+		if not split_ok or not lines or #lines == 0 then
+			---@type string err
+			local err = "ninjection.buffer.restore_indents() error: Unable to split text lines."
 			if cfg.debug then
-				vim.notify(
-					"ninjection.buffer.restore_indents() warning: No lines " .. "returned from calling vim.split()",
-					vim.log.levels.WARN
-				)
+				vim.notify(err, vim.log.levels.ERROR)
 			end
-			return nil
+			return nil, err
 		end
+		---@cast lines string[]
 	elseif type(text) == "table" then
 		lines = text
+		---@cast lines string[]
 	else
-		error("ninjection.buffer.restore_indents() error: Text must be a string or " .. "a table of lines", 2)
+		local err = "ninjection.buffer.restore_indents() error: Text must be a string or a table of lines."
+		---@type string err
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return nil, err
 	end
-	---@cast lines string[]
 
 	-- Create the left indentation string.
 	---@type string
@@ -175,8 +162,10 @@ M.restore_indents = function(text, indents)
 	for _ = 1, (indents.b_indent or 0) do
 		if cfg.preserve_indents then
 			-- Compute the left indent string, subtracting one tab size.
+			---@type integer
 			local tab_size = vim.o.tabstop or 8
 			-- Ensure the resulting indent length is not negative.
+			---@type string
 			local adjusted_indent = string.rep(" ", math.max(0, (indents.l_indent or 0) - tab_size))
 			table.insert(lines, adjusted_indent)
 		else
