@@ -358,7 +358,7 @@ M.create_child = function(child, text, create_win)
 
 	---@type boolean
 	local sft_ok = pcall(function()
-		return vim.cmd("set filetype=" .. child.ft)
+		return vim.api.nvim_set_option_value("filetype", child.ft, { buf = c_bufnr })
 	end)
 	if not sft_ok then
 		err = "ninjection.buffer.create_child() error: Failed to set set filetype."
