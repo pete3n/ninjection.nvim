@@ -463,7 +463,7 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection debug" })
 		end
-		return { "unmapped", -1 }, err
+		return { status = "unmapped", client_id = -1 }, err
 	end
 	---@cast lang_lsp string
 
@@ -477,7 +477,7 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection warning" })
 		end
-		return { "unconfigured", -1 }, err
+		return { status = "unconfigured", client_id = -1 }, err
 	end
 	---@cast lsp_def lspconfig.Config
 
@@ -491,7 +491,7 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
 		end
-		return { "unavailable", -1 }, err
+		return { status = "unavailable", client_id = -1 }, err
 	end
 	---@cast lsp_cmd string[]
 
@@ -506,7 +506,7 @@ M.start_lsp = function(lang, root_dir)
 		err = "ninjection.buffer.start_lsp() warning: The LSP command: " .. lsp_cmd[1]
 		.. " is not executable. " .. tostring(is_executable)
 		vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
-		return { "no-exec", -1 }, err
+		return { status = "no-exec", client_id = -1 }, err
 	end
 	---@cast is_executable integer
 
@@ -521,7 +521,7 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
 		end
-		return { "unsupported", -1 }, err
+		return { status = "unsupported", client_id = -1 }, err
 	end
 
 	---@type integer?
@@ -541,11 +541,11 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
 		end
-		return { "failed_start", -1 }, err
+		return { status = "failed_start", client_id = -1 }, err
 	end
 	---@cast client_id integer
 
-	return { "started", client_id }, nil
+	return { status = "started", client_id = client_id }, nil
 end
 
 return M
