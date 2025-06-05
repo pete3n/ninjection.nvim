@@ -197,9 +197,18 @@ function ninjection.edit()
 	---@type NJLspStatus?
 	local lsp_info
 	lsp_info, err = buffer.start_lsp(injection.pair.inj_lang, root_dir, c_table.bufnr)
-	if not lsp_info or not lsp_info:is_attached(c_table.bufnr) then
-		if cfg.debug then
+	if not lsp_info then
+		if cfg.debug and err then
 			vim.notify("ninjection.edit() warning: starting LSP failed: " .. err, vim.log.levels.WARN)
+			-- Don't return early on LSP failure
+		end
+	end
+	if lsp_info and not lsp_info:is_attached(c_table.bufnr) then
+		if cfg.debug and err then
+			vim.notify(
+				"ninjection.edit() warning: LSP failed to attach to buffer: " .. c_table.bufnr,
+				vim.log.levels.WARN
+			)
 			-- Don't return early on LSP failure
 		end
 	end
