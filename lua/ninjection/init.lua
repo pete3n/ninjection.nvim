@@ -643,19 +643,13 @@ function ninjection.format()
 		end
 		vim.notify("Replacement text: " .. table.concat(rep_lines, "\n"))
 
-		-- Continue with indent logic, etc.
 		indent_block(cur_bufnr, injection.range, rep_lines)
 	end)
 
-	-- Close child window if it still exists
-	--	if c_table.win and vim.api.nvim_win_is_valid(c_table.win) then
-	--		vim.api.nvim_win_close(c_table.win, true)
-	--	end
+	if c_table.bufnr and vim.api.nvim_buf_is_valid(c_table.bufnr) then
+		vim.api.nvim_buf_delete(c_table.bufnr, { force = true })
+	end
 
-	--	-- Wipe child buffer if it still exists
-	--	if c_table.bufnr and vim.api.nvim_buf_is_valid(c_table.bufnr) then
-	--		vim.api.nvim_buf_delete(c_table.bufnr, { force = true })
-	--	end
 	return nil
 end
 
