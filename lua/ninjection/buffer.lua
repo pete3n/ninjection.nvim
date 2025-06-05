@@ -452,23 +452,23 @@ NJLspStatus.__index = NJLspStatus
 ---@param bufnr integer
 ---@return boolean
 function NJLspStatus:is_attached(bufnr)
-  if self.status ~= "started" or not self.client_id then
-    return false
-  end
+	if self.status ~= "started" or not self.client_id then
+		return false
+	end
 
-  local client = vim.lsp.get_client_by_id(self.client_id)
-  if not client or not client.initialized then
-    return false
-  end
+	local client = vim.lsp.get_client_by_id(self.client_id)
+	if not client or not client.initialized then
+		return false
+	end
 
-  return client.attached_buffers and client.attached_buffers[bufnr] == true
+	return client.attached_buffers and client.attached_buffers[bufnr] == true
 end
 
 function NJLspStatus.new(status, client_id)
-  return setmetatable({
-    status = status,
-    client_id = client_id or -1,
-  }, NJLspStatus)
+	return setmetatable({
+		status = status,
+		client_id = client_id or -1,
+	}, NJLspStatus)
 end
 
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
@@ -522,9 +522,10 @@ M.start_lsp = function(lang, root_dir, bufnr)
 	local lsp_cmd = lsp_def.cmd
 	if not lsp_cmd or #lsp_cmd == 0 then
 		err = "ninjection.buffer.start_lsp() warning: Command to execute "
-				.. lang_lsp .. " does not exist. Ensure it is installed and configured."
+			.. lang_lsp
+			.. " does not exist. Ensure it is installed and configured."
 		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
+			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection warning" })
 		end
 		return NJLspStatus.new("unavailable", nil), err
 	end
@@ -538,9 +539,11 @@ M.start_lsp = function(lang, root_dir, bufnr)
 		return vim.fn.executable(lsp_cmd[1])
 	end)
 	if not ok or is_executable ~= 1 then
-		err = "ninjection.buffer.start_lsp() warning: The LSP command: " .. lsp_cmd[1]
-		.. " is not executable. " .. tostring(is_executable)
-		vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
+		err = "ninjection.buffer.start_lsp() warning: The LSP command: "
+			.. lsp_cmd[1]
+			.. " is not executable. "
+			.. tostring(is_executable)
+		vim.notify(err, vim.log.levels.WARN, { title = "Ninjection warning" })
 		return NJLspStatus.new("no-exec", nil), err
 	end
 	---@cast is_executable integer
@@ -548,36 +551,42 @@ M.start_lsp = function(lang, root_dir, bufnr)
 	-- The LSP must support our injected language
 	if not vim.tbl_contains(lsp_def.filetypes, lang) then
 		err = "ninjection.buffer.start_lsp() warning: The configured LSP: "
-				.. lang_lsp
-				.. " does not support "
-				.. lang
-				.. " modify your configuration "
-				.. " to use an appropriate LSP."
+			.. lang_lsp
+			.. " does not support "
+			.. lang
+			.. " modify your configuration "
+			.. " to use an appropriate LSP."
 		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
+			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection warning" })
 		end
 		return NJLspStatus.new("unsupported", nil), err
 	end
 
 	---@type integer?
-	local client_id = vim.api.nvim_buf_call(bufnr, function()
-		return vim.lsp.start({
-			name = lang_lsp,
-			cmd = lsp_cmd,
-			root_dir = root_dir,
-		})
-	end)
-	if not ok or not client_id then
+	local client_id = vim.lsp.start({
+		name = lang_lsp,
+		cmd = lsp_cmd,
+		root_dir = root_dir,
+	})
+
+	-- Attach explicitly to the buffer
+	if client_id then
+		vim.lsp.buf_attach_client(bufnr, client_id)
+	else
 		err = "ninjection.buffer.start_lsp() warning: The LSP: "
-				.. lang_lsp
-				.. " did not return a client_id, check your language client logs "
-				.. "(default ~/.local/state/nvim/lsp.log) for more information."
+			.. lang_lsp
+			.. " did not return a client_id, check your language client logs "
+			.. "(default ~/.local/state/nvim/lsp.log) for more information."
 		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
+			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection warning" })
 		end
 		return NJLspStatus.new("failed_start", nil), err
 	end
 	---@cast client_id integer
+
+	vim.defer_fn(function()
+		vim.notify(vim.inspect(vim.lsp.get_clients({ bufnr = bufnr })), vim.log.levels.INFO)
+	end, 500)
 
 	return NJLspStatus.new("started", client_id), nil
 end
