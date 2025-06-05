@@ -469,7 +469,7 @@ function NJLspStatus:is_attached(bufnr)
 		return false
 	end
 
-	return client.attached_buffers and client.attached_buffers[bufnr] == true
+	return vim.lsp.buf_is_attached(bufnr, self.client_id)
 end
 
 function NJLspStatus.new(status, client_id)

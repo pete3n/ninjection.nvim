@@ -613,17 +613,9 @@ function ninjection.format()
 	local interval_ms = 50
 	local elapsed_ms = 0
 
-	local client = vim.lsp.get_client_by_id(lsp_info.client_id)
-	if client then
-		vim.notify("LSP client found: " .. client.name .. " (id: " .. client.id .. ")", vim.log.levels.DEBUG)
-		if not client.attached_buffers[c_table.bufnr] then
-			vim.notify("Attaching client " .. client.name .. " to bufnr: " .. c_table.bufnr, vim.log.levels.DEBUG)
-			vim.lsp.buf_attach_client(c_table.bufnr, lsp_info.client_id)
-		else
-			vim.notify("Client already attached to bufnr: " .. c_table.bufnr, vim.log.levels.DEBUG)
-		end
-	else
-		vim.notify("No LSP client found for id: " .. tostring(lsp_info.client_id), vim.log.levels.WARN)
+	if not lsp_info:is_attached(c_table.bufnr) then
+		vim.notify("Attaching client to bufnr: " .. c_table.bufnr, vim.log.levels.DEBUG)
+		vim.lsp.buf_attach_client(c_table.bufnr, lsp_info.client_id)
 	end
 
 	while not lsp_info:is_attached(c_table.bufnr) and elapsed_ms < timeout_ms do
