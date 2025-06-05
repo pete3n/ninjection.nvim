@@ -581,7 +581,7 @@ function ninjection.format()
 	vim.notify("Requested LSP start for bufnr: " .. c_table.bufnr)
 	---@type NJLspStatus?
 	local lsp_info
-	ok, lsp_info, err = pcall(buffer.start_lsp, injection.pair.inj_lang, root_dir)
+	ok, lsp_info, err = pcall(buffer.start_lsp, injection.pair.inj_lang, root_dir, c_table.bufnr)
 	if not ok then
 		vim.notify(
 			"start_lsp threw error: " .. tostring(lsp_info) .. tostring(err),
