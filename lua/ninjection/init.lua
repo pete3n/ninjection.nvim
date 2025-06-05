@@ -613,15 +613,15 @@ function ninjection.format()
 	-- local interval_ms = 50
 	-- local elapsed_ms = 0
 
---	if not lsp_info:is_attached(c_table.bufnr) then
---		vim.notify("Attaching client to bufnr: " .. c_table.bufnr, vim.log.levels.DEBUG)
---		vim.lsp.buf_attach_client(c_table.bufnr, lsp_info.client_id)
---	end
---
---	while not lsp_info:is_attached(c_table.bufnr) and elapsed_ms < timeout_ms do
---		vim.wait(interval_ms)
---		elapsed_ms = elapsed_ms + interval_ms
---	end
+	--	if not lsp_info:is_attached(c_table.bufnr) then
+	--		vim.notify("Attaching client to bufnr: " .. c_table.bufnr, vim.log.levels.DEBUG)
+	--		vim.lsp.buf_attach_client(c_table.bufnr, lsp_info.client_id)
+	--	end
+	--
+	--	while not lsp_info:is_attached(c_table.bufnr) and elapsed_ms < timeout_ms do
+	--		vim.wait(interval_ms)
+	--		elapsed_ms = elapsed_ms + interval_ms
+	--	end
 
 	if not lsp_info:is_attached(c_table.bufnr) then
 		vim.notify("LSP did not fully initialize within timeout for bufnr: " .. c_table.bufnr, vim.log.levels.WARN)
@@ -632,23 +632,23 @@ function ninjection.format()
 	require("conform").format({
 		bufnr = c_table.bufnr,
 		async = true,
-		lsp_fallback = false,
+		lsp_fallback = true,
 		timeout_ms = 3000,
 	}, function()
-		-- Safe: formatter is done, now grab buffer contents
+		-- Formatter is done, now grab buffer contents
 		local rep_lines = vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
 		if not rep_lines or #rep_lines == 0 then
 			vim.notify("No formatted output", vim.log.levels.WARN)
-			return
+		else
+			vim.notify("Replacement text: " .. table.concat(rep_lines, "\n"))
+			indent_block(cur_bufnr, injection.range, rep_lines)
 		end
-		vim.notify("Replacement text: " .. table.concat(rep_lines, "\n"))
 
-		indent_block(cur_bufnr, injection.range, rep_lines)
+		-- Safe to delete the formatting buffer now
+		if c_table.bufnr and vim.api.nvim_buf_is_valid(c_table.bufnr) then
+			vim.api.nvim_buf_delete(c_table.bufnr, { force = true })
+		end
 	end)
-
-	if c_table.bufnr and vim.api.nvim_buf_is_valid(c_table.bufnr) then
-		vim.api.nvim_buf_delete(c_table.bufnr, { force = true })
-	end
 
 	return nil
 end
