@@ -473,6 +473,44 @@ local function is_lsp_started(client_id)
 	return false
 end
 
+
+---@tag indent_block()
+---@brief
+--- Re-indents a block of lines and surrounding delimiters ('' and '';
+--- for a given injection range and replacement text.
+---
+--- Parameters ~
+---@param bufnr integer - Buffer handle to operate on
+---@param range NJRange - Injection range { s_row, e_row }
+---@param rep_lines string[] - Formatted injected code
+---
+--- Notes ~
+--- Assumes the line before s_row is the parent indent base.
+local function indent_block(bufnr, range, rep_lines)
+  local s_row = range.s_row
+  local e_row = range.e_row
+
+  -- Get parent indent from the line above the start row
+  local parent_line = vim.api.nvim_buf_get_lines(bufnr, s_row - 1, s_row, false)[1] or ""
+  local parent_indent = parent_line:match("^(%s*)") or ""
+
+  -- Compute indents
+  local delimiter_indent = parent_indent .. string.rep(" ", cfg.format_indent)
+  local child_indent     = delimiter_indent .. string.rep(" ", cfg.format_indent)
+
+  -- Construct replacement lines
+  local formatted_lines = {}
+  table.insert(formatted_lines, delimiter_indent .. "''")
+  for _, line in ipairs(rep_lines) do
+    table.insert(formatted_lines, child_indent .. line)
+  end
+  table.insert(formatted_lines, delimiter_indent .. "'';")
+
+  -- Replace full block (including delimiters)
+  vim.api.nvim_buf_set_lines(bufnr, s_row, e_row + 1, false, formatted_lines)
+end
+
+
 ---@tag ninjection.format()
 ---@brief
 --- Formats the injected code block under cursor using a specified format cmd,
@@ -572,16 +610,24 @@ function ninjection.format()
 	---@cast lsp_info NJLspStatus
 	vim.notify("LSP status is: " .. lsp_info.status)
 
+	--TODO: move to cfg format options
 	local timeout_ms = 5000
 	local interval_ms = 50
 	local elapsed_ms = 0
+	local clients = vim.lsp.get_clients()
+	local lsp_attached = false
 
-	while not is_lsp_started(lsp_info.client_id) and elapsed_ms < timeout_ms do
+	while not lsp_attached and elapsed_ms < timeout_ms do
+		for _, client in ipairs(clients) do
+			if client.id == lsp_info.client_id and client.initialized then
+				lsp_attached = true
+			end
+		end
 		vim.wait(interval_ms)
 		elapsed_ms = elapsed_ms + interval_ms
 	end
 
-	if not is_lsp_started(lsp_info.client_id) then
+	if not lsp_attached then
 		vim.notify("LSP did not fully initialize within timeout", vim.log.levels.WARN)
 	end
 
@@ -606,7 +652,8 @@ function ninjection.format()
 	vim.notify("Current bufnr: " .. vim.inspect(cur_bufnr))
 	vim.notify("Replacement text: " .. table.concat(rep_text, "\n"))
 
-	vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row, false, rep_text)
+	--vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row, false, rep_text)
+	indent_block(cur_bufnr, injection.range, rep_text)
 
 	-- Close child window if it still exists
 	if c_table.win and vim.api.nvim_win_is_valid(c_table.win) then
