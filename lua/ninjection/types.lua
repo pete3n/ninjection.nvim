@@ -9,14 +9,14 @@
 ---@brief
 --- Supported window styles for buffer editor:
 --- `"cur_win" | "floating" | "v_split" | "h_split"`
----
+
 ---@tag Ninjection.Subcommand
 ---@class Ninjection.Subcommand
 ---@brief Implemented by `plugin/ninjection.lua` for user commands.
 ---
 ---@field impl fun()
 ---@field complete? fun(arg_lead: string): string[]
----
+
 ---@tag Ninjection.CmdOpts
 ---@class Ninjection.CmdOpts
 ---@brief Implemented by `plugin/ninjection.lua` for user commands.
@@ -27,7 +27,7 @@
 ---@field line1? number - Starting line number for optional range.
 ---@field line2? number - Ending line number for optional range.
 ---@field count? number - Optional count.
----
+
 ---@tag Ninjection.Config
 ---@class Ninjection.Config
 ---@brief Implemented by `ninjection/config.lua` for default and user configs.
@@ -70,7 +70,7 @@
 --- languages These keys must match the language comment used to identify
 --- injected languages, and the value must match the LSP configured in your
 --- lspconfig.
----
+
 ---@tag NJRange
 ---@class NJRange
 ---@brief Store cursor position coordinates.
@@ -79,21 +79,21 @@
 ---@field s_col integer
 ---@field e_row integer
 ---@field e_col integer
----
+
 ---@tag NJCapturePair
 ---@class NJCapturePair
 ---@brief Store a language string and its associated node.
 ---
 ---@field inj_lang string Language tag extracted from inj_lang capture
 ---@field node TSNode Node associated with the injected code
----
+
 ---@tag NJLangTweak
 ---@class NJLangTweak
 ---@brief Language specific adjustments for tweaking parsing and buffers.
 ---
 ---@field parse_range_offset NJRange
 ---@field buffer_cursor_offset NJRange
----
+
 ---@tag NJNodeTable
 ---@class NJNodeTable
 ---@brief Store an injected language capture pair, its range, its text, and the
@@ -105,7 +105,7 @@
 ---@field text string Injected text
 ---@field text_meta? table<string, boolean> Language specific text modififications
 ---@field cursor_pos integer[] Cursor position during table creation
----
+
 ---@tag NJIndents
 ---@class NJIndents
 ---@brief Store indents for a text buffer.
@@ -114,12 +114,12 @@
 ---@field b_indent number
 ---@field l_indent number
 ---@field tab_indent number
----
+
 ---@tag NJParent
 ---@brief Store associated child bufnrs.
 ---@class NJParent
 ---@field children integer[]
----
+
 ---@tag NJChild
 ---@class NJChild
 ---@brief Store associated parent buffer information
@@ -133,7 +133,7 @@
 ---@field p_text_meta? table<string, boolean> Metadata for language specific
 --- text modifications
 ---@field p_indents? NJIndents Parent indents if preserved
----
+
 ---@tag NJLspStatus
 ---@class NJLspStatus
 ---@brief Store LSP status and associated client ID.
@@ -143,3 +143,21 @@
 --- `"started"`
 ---
 ---@field client_id integer - The client ID of the started LSP, -1 on failure
+local NJLspStatus = {}
+NJLspStatus.__index = NJLspStatus
+
+--- Check if the client is started and initialized
+---@return boolean
+function NJLspStatus:is_ready()
+  if self.status ~= "started" or not self.client_id then
+    return false
+  end
+
+  for _, client in ipairs(vim.lsp.get_clients()) do
+    if client.id == self.client_id and client.initialized then
+      return true
+    end
+  end
+
+  return false
+end
