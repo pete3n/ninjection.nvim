@@ -195,11 +195,11 @@ function ninjection.edit()
 	})
 
 	---@type NJLspStatus?
-	local lsp_status
-	lsp_status, err = buffer.start_lsp(injection.pair.inj_lang, root_dir, c_table.bufnr)
-	if not lsp_status then
+	local lsp_info
+	lsp_info, err = buffer.start_lsp(injection.pair.inj_lang, root_dir, c_table.bufnr)
+	if not lsp_info or not lsp_info:is_attached() then
 		if cfg.debug then
-			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
+			vim.notify("ninjection.edit() warning: starting LSP failed: " .. err, vim.log.levels.WARN)
 			-- Don't return early on LSP failure
 		end
 	end
@@ -604,12 +604,12 @@ function ninjection.format()
 	local interval_ms = 50
 	local elapsed_ms = 0
 
-	while not lsp_info:is_ready() and elapsed_ms < timeout_ms do
+	while not lsp_info:is_attached(c_table.bufnr) and elapsed_ms < timeout_ms do
 		vim.wait(interval_ms)
 		elapsed_ms = elapsed_ms + interval_ms
 	end
 
-	if not lsp_info:is_ready() then
+	if not lsp_info:is_attached(c_table.bufnr) then
 		vim.notify("LSP did not fully initialize within timeout", vim.log.levels.WARN)
 	end
 

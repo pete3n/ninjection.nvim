@@ -448,20 +448,20 @@ end
 local NJLspStatus = {}
 NJLspStatus.__index = NJLspStatus
 
---- Check if the client is started and initialized
+--- Check if the client is attached to the given buffer and initialized
+---@param bufnr integer
 ---@return boolean
-function NJLspStatus:is_ready()
+function NJLspStatus:is_attached(bufnr)
   if self.status ~= "started" or not self.client_id then
     return false
   end
 
-  for _, client in ipairs(vim.lsp.get_clients()) do
-    if client.id == self.client_id and client.initialized then
-      return true
-    end
+  local client = vim.lsp.get_client_by_id(self.client_id)
+  if not client or not client.initialized then
+    return false
   end
 
-  return false
+  return client.attached_buffers and client.attached_buffers[bufnr] == true
 end
 
 function NJLspStatus.new(status, client_id)
