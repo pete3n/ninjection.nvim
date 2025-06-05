@@ -196,7 +196,7 @@ function ninjection.edit()
 
 	---@type NJLspStatus?
 	local lsp_status
-	lsp_status, err = buffer.start_lsp(injection.pair.inj_lang, root_dir)
+	lsp_status, err = buffer.start_lsp(injection.pair.inj_lang, root_dir, c_table.bufnr)
 	if not lsp_status then
 		if cfg.debug then
 			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
@@ -476,29 +476,28 @@ end
 --- Notes ~
 --- Assumes the line before s_row is the parent indent base.
 local function indent_block(bufnr, range, rep_lines)
-  local s_row = range.s_row
-  local e_row = range.e_row
+	local s_row = range.s_row
+	local e_row = range.e_row
 
-  -- Get parent indent from the line above the start row
-  local parent_line = vim.api.nvim_buf_get_lines(bufnr, s_row - 1, s_row, false)[1] or ""
-  local parent_indent = parent_line:match("^(%s*)") or ""
+	-- Get parent indent from the line above the start row
+	local parent_line = vim.api.nvim_buf_get_lines(bufnr, s_row - 1, s_row, false)[1] or ""
+	local parent_indent = parent_line:match("^(%s*)") or ""
 
-  -- Compute indents
-  local delimiter_indent = parent_indent .. string.rep(" ", cfg.format_indent)
-  local child_indent     = delimiter_indent .. string.rep(" ", cfg.format_indent)
+	-- Compute indents
+	local delimiter_indent = parent_indent .. string.rep(" ", cfg.format_indent)
+	local child_indent = delimiter_indent .. string.rep(" ", cfg.format_indent)
 
-  -- Construct replacement lines
-  local formatted_lines = {}
-  table.insert(formatted_lines, delimiter_indent .. "''")
-  for _, line in ipairs(rep_lines) do
-    table.insert(formatted_lines, child_indent .. line)
-  end
-  table.insert(formatted_lines, delimiter_indent .. "'';")
+	-- Construct replacement lines
+	local formatted_lines = {}
+	table.insert(formatted_lines, delimiter_indent .. "''")
+	for _, line in ipairs(rep_lines) do
+		table.insert(formatted_lines, child_indent .. line)
+	end
+	table.insert(formatted_lines, delimiter_indent .. "'';")
 
-  -- Replace full block (including delimiters)
-  vim.api.nvim_buf_set_lines(bufnr, s_row, e_row + 1, false, formatted_lines)
+	-- Replace full block (including delimiters)
+	vim.api.nvim_buf_set_lines(bufnr, s_row, e_row + 1, false, formatted_lines)
 end
-
 
 ---@tag ninjection.format()
 ---@brief
@@ -579,6 +578,7 @@ function ninjection.format()
 	vim.notify("Child bufnr: " .. tostring(c_table.bufnr))
 	vim.notify("Injected text: " .. injection.text)
 
+	vim.notify("Requested LSP start for bufnr: " .. c_table.bufnr)
 	---@type NJLspStatus?
 	local lsp_info
 	ok, lsp_info, err = pcall(buffer.start_lsp, injection.pair.inj_lang, root_dir)
@@ -613,15 +613,16 @@ function ninjection.format()
 		vim.notify("LSP did not fully initialize within timeout", vim.log.levels.WARN)
 	end
 
-	ok, result = pcall(function()
+	---@type string[]?
+	local rep_lines
+	ok, rep_lines = pcall(function()
 		return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
 	end)
 	if not ok or type(result) ~= "table" then
 		error(tostring(result), 2)
 	end
-	---@type string[]
-	local rep_text = result
-	if not rep_text or #rep_text == 0 then
+	---@cast rep_lines string[]
+	if not rep_lines or #rep_lines == 0 then
 		if cfg.debug then
 			vim.notify(
 				"ninjection.replace() warning: No formatted text returned " .. "by vim.api.nvim_buf_get_lines()",
@@ -632,10 +633,13 @@ function ninjection.format()
 	end
 
 	vim.notify("Current bufnr: " .. vim.inspect(cur_bufnr))
-	vim.notify("Replacement text: " .. table.concat(rep_text, "\n"))
+	vim.notify("Replacement text: " .. table.concat(rep_lines, "\n"))
 
-	--vim.api.nvim_buf_set_lines(cur_bufnr, injection.range.s_row + 1, injection.range.e_row, false, rep_text)
-	indent_block(cur_bufnr, injection.range, rep_text)
+	if rep_lines and #rep_lines > 0 and lsp_info:is_ready() then
+		indent_block(cur_bufnr, injection.range, rep_lines)
+	else
+		vim.notify("Skipping indent block: no formatted output or LSP not ready", vim.log.levels.WARN)
+	end
 
 	-- Close child window if it still exists
 	if c_table.win and vim.api.nvim_win_is_valid(c_table.win) then

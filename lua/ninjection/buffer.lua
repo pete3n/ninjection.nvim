@@ -481,10 +481,11 @@ end
 --- Parameters ~
 ---@param lang string - The filetype of the injected language (e.g., "lua", "python").
 ---@param root_dir string - The root directory for the buffer.
+---@param bufnr integer - The bufnr handle to attach the LSP to.
 ---
 ---@return NJLspStatus? result, string? err - The LSP status.
 ---
-M.start_lsp = function(lang, root_dir)
+M.start_lsp = function(lang, root_dir, bufnr)
 	-- The injected language must be mapped to an LSP
 	---@type string?, string?
 	local lang_lsp = cfg.lsp_map[lang]
@@ -559,8 +560,7 @@ M.start_lsp = function(lang, root_dir)
 	end
 
 	---@type integer?
-	local client_id
-	ok, client_id = pcall(function()
+	local client_id = vim.api.nvim_buf_call(bufnr, function()
 		return vim.lsp.start({
 			name = lang_lsp,
 			cmd = lsp_cmd,
