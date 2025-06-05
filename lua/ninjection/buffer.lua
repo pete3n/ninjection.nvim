@@ -302,11 +302,19 @@ M.create_child = function(child, text)
 		error(tostring(result), 2)
 	end
 
-	ok, result = pcall(function()
-		return vim.cmd("file " .. child.p_name .. ":" .. child.ft .. ":" .. c_bufnr)
-	end)
+	--ok, result = pcall(function()
+	--	return vim.cmd("file " .. child.p_name .. ":" .. child.ft .. ":" .. c_bufnr)
+	--end)
+	--if not ok then
+	--	error(tostring(result), 2)
+	--end
+	ok, result =
+		pcall(vim.api.nvim_buf_set_name, c_bufnr, "/tmp/NJ_" .. child.p_name .. "_" .. c_bufnr .. "." .. child.ft)
 	if not ok then
-		error(tostring(result), 2)
+		error(
+			"ninjection.buffer.create_child() error: Failed to set buffer name ... " .. tostring(result),
+			vim.log.levels.ERROR
+		)
 	end
 
 	ok, result = pcall(function()
