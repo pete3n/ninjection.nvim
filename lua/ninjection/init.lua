@@ -175,7 +175,7 @@ function ninjection.edit()
 	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
 	local c_table
 
-	c_table, err = buffer.create_child(new_child, injection.text)
+	c_table, err = buffer.create_child(new_child, injection.text, true)
 	if not c_table.bufnr or not c_table.win then
 		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end
@@ -579,7 +579,7 @@ function ninjection.format()
 	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
 	local c_table
 
-	c_table, err = buffer.create_child(new_child, injection.text)
+	c_table, err = buffer.create_child(new_child, injection.text, false)
 	if not c_table.bufnr or not c_table.win then
 		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
 	end
@@ -609,19 +609,19 @@ function ninjection.format()
 	vim.notify("LSP status is: " .. lsp_info.status)
 
 	--TODO: move to cfg format options
-	local timeout_ms = 5000
-	local interval_ms = 50
-	local elapsed_ms = 0
+	-- local timeout_ms = 5000
+	-- local interval_ms = 50
+	-- local elapsed_ms = 0
 
-	if not lsp_info:is_attached(c_table.bufnr) then
-		vim.notify("Attaching client to bufnr: " .. c_table.bufnr, vim.log.levels.DEBUG)
-		vim.lsp.buf_attach_client(c_table.bufnr, lsp_info.client_id)
-	end
-
-	while not lsp_info:is_attached(c_table.bufnr) and elapsed_ms < timeout_ms do
-		vim.wait(interval_ms)
-		elapsed_ms = elapsed_ms + interval_ms
-	end
+--	if not lsp_info:is_attached(c_table.bufnr) then
+--		vim.notify("Attaching client to bufnr: " .. c_table.bufnr, vim.log.levels.DEBUG)
+--		vim.lsp.buf_attach_client(c_table.bufnr, lsp_info.client_id)
+--	end
+--
+--	while not lsp_info:is_attached(c_table.bufnr) and elapsed_ms < timeout_ms do
+--		vim.wait(interval_ms)
+--		elapsed_ms = elapsed_ms + interval_ms
+--	end
 
 	if not lsp_info:is_attached(c_table.bufnr) then
 		vim.notify("LSP did not fully initialize within timeout for bufnr: " .. c_table.bufnr, vim.log.levels.WARN)

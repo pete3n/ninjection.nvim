@@ -262,12 +262,12 @@ end
 --- Parameters ~
 ---@param child NJChild - Buffer child object.
 ---@param text string - Text to populate the child buffer with.
----
+---@param create_win boolean - Whether to create a child window (edit) or not (format)
 ---@return { bufnr: integer?, win: integer?, indents: NJIndents } c_table, string? err
 -- Returns table containing handles for the child buffer and window, if
 -- available, and parent indents.
 --
-M.create_child = function(child, text)
+M.create_child = function(child, text, create_win)
 	---@type boolean, unknown, string?
 	local ok, result, err
 
@@ -285,14 +285,17 @@ M.create_child = function(child, text)
 		error("ninjection.edit() error: Failed to create a child buffer.", 2)
 	end
 
-	---@type integer
-	local c_win = create_child_win(c_bufnr, cfg.editor_style)
 
-	ok, result = pcall(function()
-		return vim.api.nvim_set_current_buf(c_bufnr)
-	end)
-	if not ok then
-		error(tostring(result), 2)
+	---@type integer
+	local c_win
+	if create_win then
+		c_win = create_child_win(c_bufnr, cfg.editor_style)
+		ok, result = pcall(function()
+			return vim.api.nvim_set_current_buf(c_bufnr)
+		end)
+		if not ok then
+			error(tostring(result), 2)
+		end
 	end
 
 	ok, result = pcall(function()
@@ -302,14 +305,8 @@ M.create_child = function(child, text)
 		error(tostring(result), 2)
 	end
 
-	--ok, result = pcall(function()
-	--	return vim.cmd("file " .. child.p_name .. ":" .. child.ft .. ":" .. c_bufnr)
-	--end)
-	--if not ok then
-	--	error(tostring(result), 2)
-	--end
 	ok, result =
-		pcall(vim.api.nvim_buf_set_name, c_bufnr, "/tmp/NJ_" .. child.p_name .. "_" .. c_bufnr .. "." .. child.ft)
+		pcall(vim.api.nvim_buf_set_name, c_bufnr, child.p_name .. ":" .. c_bufnr .. ":" .. child.ft)
 	if not ok then
 		error(
 			"ninjection.buffer.create_child() error: Failed to set buffer name ... " .. tostring(result),
