@@ -604,7 +604,7 @@ function ninjection.format()
 	local interval_ms = 50
 	local elapsed_ms = 0
 
-	while not lsp_info:is_ready() or elapsed_ms < timeout_ms do
+	while not lsp_info:is_ready() and elapsed_ms < timeout_ms do
 		vim.wait(interval_ms)
 		elapsed_ms = elapsed_ms + interval_ms
 	end
