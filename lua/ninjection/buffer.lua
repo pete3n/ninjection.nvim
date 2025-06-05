@@ -191,31 +191,47 @@ end
 --- Opens a vertically or horizontally split window for the child buffer.
 ---@param split_cmd string v_split or split.
 ---@param bufnr integer child bufnr.
----@return integer winid Handle for new window.
+---@return integer win_id, string? err
+--- Handle for new window or 0 on failure.
 local function open_split_win(split_cmd, bufnr)
-	---@type boolean, unknown, integer|nil
-	local ok, raw_output, winid
-	vim.cmd(split_cmd)
-	ok, winid = pcall(vim.api.nvim_get_current_win)
-	if not ok or not winid then
-		error(
-			"ninjection error: vim.api.nvim_get_current_win() did not return a " .. " window handle." .. tostring(winid),
-			2
-		)
-	end
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_buf(winid, bufnr)
+	---@type string?
+	local err
+	---@type boolean
+	local split_ok = pcall(function()
+		return vim.cmd(split_cmd)
 	end)
-	if not ok then
-		error(
-			"ninjection error: vim.api.nvim_win_set_buf() failed to set buffer "
-				.. "in new window: "
-				.. tostring(raw_output),
-			2
-		)
+	if not split_ok then
+		err = "ninjection.buffer.open_split_win() error: Window split cmd failed ... " .. split_cmd
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return 0, err
 	end
-	---@cast winid integer
-	return winid
+
+	---@type boolean, integer
+	local win_ok, win_id
+	win_ok, win_id = pcall(vim.api.nvim_get_current_win)
+	if not win_ok or win_id == 0 then
+		err = "ninjection.buffer.open_split_win() error: Failed to open child window."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return 0, err
+	end
+
+	---@type boolean
+	local buf_ok = pcall(function()
+		return vim.api.nvim_win_set_buf(win_id, bufnr)
+	end)
+	if not buf_ok then
+		err = "ninjection.buffer.open_split_win() error: Failed to set window buffer."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return 0, err
+	end
+
+	return win_id, nil
 end
 
 ---@nodoc
@@ -223,36 +239,35 @@ end
 --- or h_split styles.
 ---@param bufnr integer The buffer to create a viewport for.
 ---@param style EditorStyle The window style to edit the buffer with.
----@return integer winid Default: 0 (cur_win), child window handle, if created.
+---@return integer win_id, string? err
+--- Default: 0 (cur_win), child window handle, if created.
 local function create_child_win(bufnr, style)
-	---@type boolean, unknown, integer
-	local ok, raw_output, winid
-
+	---@type integer, string?
+	local win_id, err
 	if style == "floating" then
-		ok, raw_output = pcall(function()
+		---@type boolean
+		local win_ok
+		win_ok, win_id = pcall(function()
 			return vim.api.nvim_open_win(bufnr, true, cfg.win_config)
 		end)
-		if not ok then
-			error(tostring(raw_output), 2)
+		if not win_ok or win_id == 0 then
+			err = "ninjection.buffer.create_child_win() error: Failed to open child window."
+			if cfg.debug then
+				vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+			end
+			return 0, err
 		end
-		if type(raw_output) ~= "number" then
-			error("ninjection error: vim.api.nvim_open_win() did not return a window " .. "handle.")
-		end
-		---@cast raw_output integer
-		winid = raw_output
-		return winid
+		return win_id, nil
 	elseif style == "v_split" then
-		winid = open_split_win("vsplit", bufnr)
-		---@cast winid integer
-		return winid
+		win_id, err = open_split_win("vsplit", bufnr)
+		return win_id, err
 	elseif style == "h_split" then
-		winid = open_split_win("split", bufnr)
-		---@cast winid integer
-		return winid
+		win_id, err = open_split_win("split", bufnr)
+		return win_id, err
 	end
 
 	-- Default return of cur_win
-	return 0
+	return 0, nil
 end
 
 ---@tag ninjection.buffer.create_child()
@@ -263,62 +278,104 @@ end
 ---@param child NJChild - Buffer child object.
 ---@param text string - Text to populate the child buffer with.
 ---@param create_win boolean - Whether to create a child window (edit) or not (format)
----@return { bufnr: integer?, win: integer?, indents: NJIndents } c_table, string? err
+---@return { bufnr: integer?, win: integer?, indents: NJIndents? } c_table, string? err
 -- Returns table containing handles for the child buffer and window, if
 -- available, and parent indents.
 --
 M.create_child = function(child, text, create_win)
 	---@type boolean, unknown, string?
-	local ok, result, err
-
-	ok, result = pcall(function()
+	local reg_ok, reg_return, err
+	reg_ok, reg_return = pcall(function()
 		return vim.fn.setreg(cfg.register, text)
 	end)
-	if not ok then
-		error(tostring(result), 2)
+	if not reg_ok then
+		err = "ninjection.buffer.create_child() error: Failed to copy injection text into register "
+			.. cfg.register
+			.. tostring(reg_return)
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		-- Don't return early on failed setreg
 	end
-	vim.notify("ninjection.edit(): Copied injected content text to register: " .. cfg.register, vim.log.levels.INFO)
 
-	---@type integer
-	local c_bufnr = vim.api.nvim_create_buf(true, true)
-	if not c_bufnr then
-		error("ninjection.edit() error: Failed to create a child buffer.", 2)
+	---@type boolean, integer
+	local cbuf_ok, c_bufnr
+	cbuf_ok, c_bufnr = pcall(vim.api.nvim_create_buf, true, true)
+	if not cbuf_ok or c_bufnr == 0 then
+		err = "ninjection.buffer.create_child() error: Failed to create child buffer."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return {}, err
 	end
-
 
 	---@type integer
 	local c_win
 	if create_win then
-		c_win = create_child_win(c_bufnr, cfg.editor_style)
-		ok, result = pcall(function()
-			return vim.api.nvim_set_current_buf(c_bufnr)
-		end)
-		if not ok then
-			error(tostring(result), 2)
+		c_win, err = create_child_win(c_bufnr, cfg.editor_style)
+		if not c_win or err then
+			err = "ninjection.buffer.create_child() error: Failed to create child window."
+			if cfg.debug then
+				vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+			end
+			return {}, err
 		end
 	end
 
-	ok, result = pcall(function()
-		return vim.cmd('normal! "zp')
+	---@type boolean
+	local sbuf_ok = pcall(function()
+		return vim.api.nvim_set_current_buf(c_bufnr)
 	end)
-	if not ok then
-		error(tostring(result), 2)
+	if not sbuf_ok then
+		err = "ninjection.buffer.create_child() error: Failed to set child bufnr."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return {}, err
 	end
 
-	ok, result =
-		pcall(vim.api.nvim_buf_set_name, c_bufnr, child.p_name .. ":" .. c_bufnr .. ":" .. child.ft)
-	if not ok then
-		error(
-			"ninjection.buffer.create_child() error: Failed to set buffer name ... " .. tostring(result),
-			vim.log.levels.ERROR
-		)
+	---@type boolean
+	local sline_ok = pcall(vim.api.nvim_buf_set_lines, c_bufnr, 0, -1, false, text)
+	if not sline_ok then
+		err = "ninjection.buffer.create_child() error: Failed to set set buffer lines."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return {}, err
 	end
 
-	ok, result = pcall(function()
+	---@type boolean
+	local sname_ok = pcall(vim.api.nvim_buf_set_name, c_bufnr, child.p_name .. ":" .. c_bufnr .. ":" .. child.ft)
+	if not sname_ok then
+		err = "ninjection.buffer.create_child() error: Failed to set set buffer name."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return {}, err
+	end
+
+	---@type boolean
+	local sft_ok = pcall(function()
 		return vim.cmd("set filetype=" .. child.ft)
 	end)
-	if not ok then
-		error(tostring(result), 2)
+	if not sft_ok then
+		err = "ninjection.buffer.create_child() error: Failed to set set filetype."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return {}, err
+	end
+
+	---@type boolean
+	local autocmd_ok = pcall(function()
+		return vim.cmd("doautocmd FileType " .. child.ft)
+	end)
+	if not autocmd_ok then
+		err = "ninjection.buffer.create_child() error: Failed to set run FileType autocmd."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return {}, err
 	end
 
 	-- Preserve indentation after creating and pasting buffer contents, before
@@ -330,7 +387,7 @@ M.create_child = function(child, text, create_win)
 		if not p_indents then
 			if cfg.debug then
 				vim.notify(
-					"ninjection.edit() warning: Unable to preserve indentation "
+					"ninjection.buffer.create_child() warning: Unable to preserve indentation "
 						.. "with get_indents(): "
 						.. tostring(err),
 					vim.log.levels.WARN
@@ -347,22 +404,15 @@ M.create_child = function(child, text, create_win)
 	end
 	child.p_indents = p_indents
 
-	ok, result = pcall(function()
-		return vim.cmd("doautocmd FileType " .. child.ft)
-	end)
-	if not ok then
-		error(tostring(result), 2)
-	end
-
 	if cfg.auto_format then
-		ok, result = pcall(function()
+		---@type boolean
+		local fmt_ok = pcall(function()
 			return vim.cmd("lua " .. cfg.format_cmd)
 		end)
-		if not ok then
+		if not fmt_ok then
 			if cfg.debug then
-				err = tostring(result)
 				vim.notify(
-					'ninjection.edit() warning: Calling vim.cmd("lua "' .. cfg.format_cmd .. ")\n" .. err,
+					'ninjection.buffer.create_child() warning: Calling vim.cmd("lua "' .. cfg.format_cmd .. ")\n",
 					vim.log.levels.WARN
 				)
 				-- Don't return early on auto-format error
@@ -371,14 +421,19 @@ M.create_child = function(child, text, create_win)
 	end
 
 	-- Save the child information to the buffer's ninjection table
-	ok, result = pcall(function()
+	---@type boolean
+	local nj_update_ok = pcall(function()
 		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child)
 	end)
-	if not ok then
-		error(tostring(result), 2)
+	if not nj_update_ok then
+		err = "ninjection.buffer.create_child() error: Failed to update ninjection table with child."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR, { title = "Ninjection error" })
+		end
+		return {}, err
 	end
 
-	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
+	return { bufnr = c_bufnr, win = c_win, indents = p_indents }, nil
 end
 
 ---@class NJChildCursor -- Options to calculate child window cursor position

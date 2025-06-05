@@ -172,7 +172,7 @@ function ninjection.edit()
 		p_text_meta = injection.text_meta, -- Metadata of modifications made to original text
 	}
 
-	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
+	---@type {bufnr: integer?, win: integer?, indents: NJIndents?}
 	local c_table
 
 	c_table, err = buffer.create_child(new_child, injection.text, true)
@@ -576,12 +576,12 @@ function ninjection.format()
 		p_text_meta = injection.text_meta, -- Metadata of modifications made to original text
 	}
 
-	---@type {bufnr: integer?, win: integer?, indents: NJIndents}
+	---@type {bufnr: integer?, win: integer?, indents: NJIndents?}
 	local c_table
 
 	c_table, err = buffer.create_child(new_child, injection.text, false)
-	if not c_table.bufnr or not c_table.win then
-		error("ninjection.edit() error: Could not create child buffer and window: " .. tostring(err), 2)
+	if not c_table.bufnr then
+		error("ninjection.edit() error: Could not create child buffer: " .. tostring(err), 2)
 	end
 
 	vim.notify("Child bufnr: " .. tostring(c_table.bufnr))
