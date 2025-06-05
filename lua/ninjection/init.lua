@@ -463,6 +463,16 @@ function ninjection.replace()
 	end
 end
 
+local function is_lsp_started(client_id)
+	local clients = vim.lsp.get_clients()
+	for _, client in ipairs(clients) do
+		if client.id == client_id and client.initialized then
+			return true
+		end
+	end
+	return false
+end
+
 ---@tag ninjection.format()
 ---@brief
 --- Formats the injected code block under cursor using a specified format cmd,
@@ -543,33 +553,36 @@ function ninjection.format()
 	vim.notify("Injected text: " .. injection.text)
 
 	---@type NJLspStatus?
-	local lsp_status
-	ok, lsp_status, err = pcall(buffer.start_lsp, injection.pair.inj_lang, root_dir)
+	local lsp_info
+	ok, lsp_info, err = pcall(buffer.start_lsp, injection.pair.inj_lang, root_dir)
 	if not ok then
-		vim.notify("start_lsp threw error: " .. tostring(lsp_status)
-		.. tostring(err), vim.log.levels.ERROR, {title = "Ninjection error"})
+		vim.notify(
+			"start_lsp threw error: " .. tostring(lsp_info) .. tostring(err),
+			vim.log.levels.ERROR,
+			{ title = "Ninjection error" }
+		)
 		return nil
 	end
-	if not lsp_status or lsp_status.status then
+	if lsp_info and lsp_info.status ~= "started" then
 		if cfg.debug then
 			vim.notify("ninjection.edit() warning: starting LSP " .. err, vim.log.levels.WARN)
 			-- Don't return early on LSP failure
 		end
 	end
-	---@cast lsp_status NJLspStatus
-	vim.notify("LSP status is: " .. lsp_status.status)
+	---@cast lsp_info NJLspStatus
+	vim.notify("LSP status is: " .. lsp_info.status)
 
 	local timeout_ms = 5000
 	local interval_ms = 50
 	local elapsed_ms = 0
 
-	while (not lsp_status or lsp_status.status ~= "started") and elapsed_ms < timeout_ms do
+	while not is_lsp_started(lsp_info.client_id) and elapsed_ms < timeout_ms do
 		vim.wait(interval_ms)
 		elapsed_ms = elapsed_ms + interval_ms
 	end
 
-	if lsp_status.status ~= "started" then
-		vim.notify("LSP did not start within timeout", vim.log.levels.WARN)
+	if not is_lsp_started(lsp_info.client_id) then
+		vim.notify("LSP did not fully initialize within timeout", vim.log.levels.WARN)
 	end
 
 	ok, result = pcall(function()
