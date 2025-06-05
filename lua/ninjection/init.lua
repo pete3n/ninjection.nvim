@@ -463,17 +463,6 @@ function ninjection.replace()
 	end
 end
 
-local function is_lsp_started(client_id)
-	local clients = vim.lsp.get_clients()
-	for _, client in ipairs(clients) do
-		if client.id == client_id and client.initialized then
-			return true
-		end
-	end
-	return false
-end
-
-
 ---@tag indent_block()
 ---@brief
 --- Re-indents a block of lines and surrounding delimiters ('' and '';
@@ -614,20 +603,13 @@ function ninjection.format()
 	local timeout_ms = 5000
 	local interval_ms = 50
 	local elapsed_ms = 0
-	local clients = vim.lsp.get_clients()
-	local lsp_attached = false
 
-	while not lsp_attached and elapsed_ms < timeout_ms do
-		for _, client in ipairs(clients) do
-			if client.id == lsp_info.client_id and client.initialized then
-				lsp_attached = true
-			end
-		end
+	while not lsp_info:is_ready() or elapsed_ms < timeout_ms do
 		vim.wait(interval_ms)
 		elapsed_ms = elapsed_ms + interval_ms
 	end
 
-	if not lsp_attached then
+	if not lsp_info:is_ready() then
 		vim.notify("LSP did not fully initialize within timeout", vim.log.levels.WARN)
 	end
 
