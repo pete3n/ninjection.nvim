@@ -614,10 +614,12 @@ function ninjection.format()
 			indent_block(cur_bufnr, injection.range, rep_lines)
 		end
 
-		-- Safe to delete the formatting buffer now
-		if c_table.bufnr and vim.api.nvim_buf_is_valid(c_table.bufnr) then
-			vim.api.nvim_buf_delete(c_table.bufnr, { force = true })
-		end
+		-- Defer deletion to allow LSP background operations to finish
+		vim.defer_fn(function()
+			if c_table.bufnr and vim.api.nvim_buf_is_valid(c_table.bufnr) then
+				vim.api.nvim_buf_delete(c_table.bufnr, { force = true })
+			end
+		end, 150) -- ~150ms delay to avoid race with semantic token requests
 	end)
 
 	return nil

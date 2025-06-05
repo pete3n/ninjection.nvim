@@ -200,7 +200,7 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 
 					if not inj_text_node.range and cfg.debug then
 						vim.notify(
-							"ninjection: inj_text_node is not a valid TSNode (missing `range()` method)\n"
+							"ninjection.parse.get_capture_pair() warning:  inj_text_node is not a valid TSNode (missing `range()` method)\n"
 								.. vim.inspect(inj_text_node),
 							vim.log.levels.WARN
 						)
@@ -218,7 +218,9 @@ local function get_capture_pair(bufnr, cursor_pos, ft, root, query)
 						else
 							if not inj_text_node.range and cfg.debug then
 								vim.notify(
-									("inj_text_node %s is missing range()"):format(inj_text_node:type()),
+									("injection.parse.get_capture_pair() warning: inj_text_node %s is missing range()"):format(
+										inj_text_node:type()
+									),
 									vim.log.levels.WARN
 								)
 							end
@@ -324,9 +326,9 @@ M.get_injection = function(bufnr)
 	local parsed_query, qry_err = get_query(ft)
 	if not parsed_query then
 		---@type string
-		local err = "ninjection.parse.get_injection() error: failed to get parsed query ... " .. tostring(qry_err)
+		local err = "ninjection.parse.get_injection() warning: failed to get parsed query ... " .. tostring(qry_err)
 		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
+			vim.notify(err, vim.log.levels.WARN)
 		end
 		return nil, err
 	end
