@@ -197,7 +197,7 @@ function ninjection.edit()
 	---@type NJLspStatus?
 	local lsp_info
 	lsp_info, err = buffer.start_lsp(injection.pair.inj_lang, root_dir, c_table.bufnr)
-	if not lsp_info or not lsp_info:is_attached() then
+	if not lsp_info or not lsp_info:is_attached(c_table.bufnr) then
 		if cfg.debug then
 			vim.notify("ninjection.edit() warning: starting LSP failed: " .. err, vim.log.levels.WARN)
 			-- Don't return early on LSP failure
@@ -618,8 +618,11 @@ function ninjection.format()
 	ok, rep_lines = pcall(function()
 		return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
 	end)
-	if not ok or type(result) ~= "table" then
-		error(tostring(result), 2)
+	if not ok or type(rep_lines) ~= "table" then
+		vim.notify(
+			"ninjection.format() error: No lines captured from formatting buffer ... " .. tostring(rep_lines),
+			vim.log.levels.ERROR
+		)
 	end
 	---@cast rep_lines string[]
 	if not rep_lines or #rep_lines == 0 then
@@ -635,7 +638,7 @@ function ninjection.format()
 	vim.notify("Current bufnr: " .. vim.inspect(cur_bufnr))
 	vim.notify("Replacement text: " .. table.concat(rep_lines, "\n"))
 
-	if rep_lines and #rep_lines > 0 and lsp_info:is_ready() then
+	if rep_lines and #rep_lines > 0 and lsp_info:is_attached(c_table.bufnr) then
 		indent_block(cur_bufnr, injection.range, rep_lines)
 	else
 		vim.notify("Skipping indent block: no formatted output or LSP not ready", vim.log.levels.WARN)

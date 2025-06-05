@@ -269,13 +269,13 @@ end
 --
 M.create_child = function(child, text)
 	---@type boolean, unknown, string?
-	local ok, raw_output, err
+	local ok, result, err
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.fn.setreg(cfg.register, text)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 	vim.notify("ninjection.edit(): Copied injected content text to register: " .. cfg.register, vim.log.levels.INFO)
 
@@ -288,32 +288,32 @@ M.create_child = function(child, text)
 	---@type integer
 	local c_win = create_child_win(c_bufnr, cfg.editor_style)
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_set_current_buf(c_bufnr)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.cmd('normal! "zp')
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.cmd("file " .. child.p_name .. ":" .. child.ft .. ":" .. c_bufnr)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.cmd("set filetype=" .. child.ft)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
 	-- Preserve indentation after creating and pasting buffer contents, before
@@ -342,20 +342,20 @@ M.create_child = function(child, text)
 	end
 	child.p_indents = p_indents
 
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.cmd("doautocmd FileType " .. child.ft)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
 	if cfg.auto_format then
-		ok, raw_output = pcall(function()
+		ok, result = pcall(function()
 			return vim.cmd("lua " .. cfg.format_cmd)
 		end)
 		if not ok then
 			if cfg.debug then
-				err = tostring(raw_output)
+				err = tostring(result)
 				vim.notify(
 					'ninjection.edit() warning: Calling vim.cmd("lua "' .. cfg.format_cmd .. ")\n" .. err,
 					vim.log.levels.WARN
@@ -366,11 +366,11 @@ M.create_child = function(child, text)
 	end
 
 	-- Save the child information to the buffer's ninjection table
-	ok, raw_output = pcall(function()
+	ok, result = pcall(function()
 		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child)
 	end)
 	if not ok then
-		error(tostring(raw_output), 2)
+		error(tostring(result), 2)
 	end
 
 	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
