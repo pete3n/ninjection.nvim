@@ -375,8 +375,6 @@ function ninjection.replace()
 	end
 
 	if cfg.debug then
-		vim.notify("Debug: Checking conditions for inj_text_restorers...", vim.log.levels.INFO)
-
 		if not cfg.inj_text_restorers then
 			vim.notify("cfg.inj_text_restorers is nil", vim.log.levels.WARN)
 		elseif not cfg.inj_text_restorers[nj_child_b.p_ft] then
@@ -384,7 +382,6 @@ function ninjection.replace()
 		elseif not nj_child_b.p_text_meta then
 			vim.notify("text_meta is nil for current injection", vim.log.levels.WARN)
 		else
-			vim.notify("Calling restorer for: " .. nj_child_b.p_ft, vim.log.levels.WARN)
 			---@type string
 			local rep_lines = table.concat(rep_text, "\n")
 			ok, result =
@@ -393,7 +390,6 @@ function ninjection.replace()
 			if not ok then
 				vim.notify("Error calling restorer: " .. tostring(result), vim.log.levels.ERROR)
 			else
-				vim.notify("Restorer executed successfully", vim.log.levels.INFO)
 				rep_text = result
 			end
 		end
