@@ -437,6 +437,40 @@ function M.set_child_cur(opts)
 	return nil
 end
 
+---@tag NJLspStatus
+---@class NJLspStatus
+---@brief Store LSP status and associated client ID.
+---
+---@field status string - The LSP startup status. Possible values: `"unmapped"`,
+--- `"unconfigured"`, `"unavailable"`, `"no-exec"`, `"unsupported"`, `"failed_start"`,
+--- `"started"`
+---@field client_id integer? - The client ID of the started LSP, -1 on failure
+local NJLspStatus = {}
+NJLspStatus.__index = NJLspStatus
+
+--- Check if the client is started and initialized
+---@return boolean
+function NJLspStatus:is_ready()
+  if self.status ~= "started" or not self.client_id then
+    return false
+  end
+
+  for _, client in ipairs(vim.lsp.get_clients()) do
+    if client.id == self.client_id and client.initialized then
+      return true
+    end
+  end
+
+  return false
+end
+
+function NJLspStatus.new(status, client_id)
+  return setmetatable({
+    status = status,
+    client_id = client_id or -1,
+  }, NJLspStatus)
+end
+
 -- Autocommands don't trigger properly when creating and arbitrarily assigning
 -- filetypes to buffers, so we need a function to start the appropriate LSP.
 
@@ -463,7 +497,7 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection debug" })
 		end
-		return { status = "unmapped", client_id = -1 }, err
+		return NJLspStatus.new("unmapped", nil), err
 	end
 	---@cast lang_lsp string
 
@@ -477,7 +511,7 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, { title = "Ninjection warning" })
 		end
-		return { status = "unconfigured", client_id = -1 }, err
+		return NJLspStatus.new("unconfigured", nil), err
 	end
 	---@cast lsp_def lspconfig.Config
 
@@ -491,7 +525,7 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
 		end
-		return { status = "unavailable", client_id = -1 }, err
+		return NJLspStatus.new("unavailable", nil), err
 	end
 	---@cast lsp_cmd string[]
 
@@ -506,7 +540,7 @@ M.start_lsp = function(lang, root_dir)
 		err = "ninjection.buffer.start_lsp() warning: The LSP command: " .. lsp_cmd[1]
 		.. " is not executable. " .. tostring(is_executable)
 		vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
-		return { status = "no-exec", client_id = -1 }, err
+		return NJLspStatus.new("no-exec", nil), err
 	end
 	---@cast is_executable integer
 
@@ -521,7 +555,7 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
 		end
-		return { status = "unsupported", client_id = -1 }, err
+		return NJLspStatus.new("unsupported", nil), err
 	end
 
 	---@type integer?
@@ -541,11 +575,11 @@ M.start_lsp = function(lang, root_dir)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN, {title = "Ninjection warning"})
 		end
-		return { status = "failed_start", client_id = -1 }, err
+		return NJLspStatus.new("failed_start", nil), err
 	end
 	---@cast client_id integer
 
-	return { status = "started", client_id = client_id }, nil
+	return NJLspStatus.new("started", client_id), nil
 end
 
 return M
