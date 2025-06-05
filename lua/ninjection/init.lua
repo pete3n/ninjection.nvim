@@ -247,8 +247,6 @@ function ninjection.edit()
 	return nil
 end
 
--- NOTE: Child buffer should not close on error
-
 ---@tag ninjection.replace()
 ---@brief
 --- Replaces the original injected language text in the parent buffer
@@ -446,29 +444,35 @@ function ninjection.replace()
 		error(tostring(result), 2)
 	end
 
-	-- Reset the cursor to the same relative position in the parent buffer
-	---@type integer[]
-	local pos
-	if cfg.preserve_indents then
-		pos = {
-			this_cursor[1] + nj_child_b.p_range.s_row,
-			this_cursor[2] + nj_child_b.p_indents.l_indent,
-		}
-	else
-		pos = { this_cursor[1] + nj_child_b.p_range.s_row, this_cursor[2] }
+	-- Calculate tentative row and col based on config
+	---@type integer, integer
+	local row = this_cursor[1] + nj_child_b.p_range.s_row
+	local col = this_cursor[2]
+
+	if cfg.preserve_indents and nj_child_b.p_indents then
+		col = col + nj_child_b.p_indents.l_indent
 	end
 
-	ok, result = pcall(function()
-		return vim.api.nvim_win_set_cursor(0, pos)
+	-- Clamp the row to the last line of the buffer
+	---@type integer
+	local max_row = vim.api.nvim_buf_line_count(nj_child_b.p_bufnr)
+	row = math.max(0, math.min(row, max_row - 1))
+
+	-- Clamp the col to the length of the target line
+	---@type string
+	local line_text = vim.api.nvim_buf_get_lines(nj_child_b.p_bufnr, row, row + 1, false)[1] or ""
+	col = math.max(0, math.min(col, #line_text))
+
+	-- Restore cursor position safely
+	---@type boolean
+	local cur_ok = pcall(function()
+		return vim.api.nvim_win_set_cursor(0, { row + 1, col }) -- +1 since Lua index is 1-based
 	end)
-	if not ok then
-		err = tostring(result)
-		if cfg.debug then
-			vim.notify(
-				"ninjection.replace() warning: could not restore cursor position in the parent buffer." .. err,
-				vim.log.levels.WARN
-			)
-		end
+	if not cur_ok and cfg.debug then
+		vim.notify(
+			"ninjection.replace() warning: could not restore cursor position in the parent buffer." .. err,
+			vim.log.levels.WARN
+		)
 	end
 end
 
@@ -559,9 +563,7 @@ function ninjection.format()
 	---@type string
 	local buf_name = result
 
-	-- Apply filetype specific text modification functions
 	if cfg.inj_text_modifiers and cfg.inj_text_modifiers[injection.ft] then
-		vim.notify("Calling injection_text modifier for: " .. injection.ft)
 		injection.text, injection.text_meta = cfg.inj_text_modifiers[injection.ft](injection.text)
 	end
 
@@ -584,10 +586,6 @@ function ninjection.format()
 		error("ninjection.edit() error: Could not create child buffer: " .. tostring(err), 2)
 	end
 
-	vim.notify("Child bufnr: " .. tostring(c_table.bufnr))
-	vim.notify("Injected text: " .. injection.text)
-	vim.notify("Requested LSP start for bufnr: " .. c_table.bufnr)
-
 	---@type NJLspStatus?
 	local lsp_info
 	ok, lsp_info, err = pcall(buffer.start_lsp, injection.pair.inj_lang, root_dir, c_table.bufnr)
@@ -606,28 +604,6 @@ function ninjection.format()
 		end
 	end
 	---@cast lsp_info NJLspStatus
-	vim.notify("LSP status is: " .. lsp_info.status)
-
-	--TODO: move to cfg format options
-	-- local timeout_ms = 5000
-	-- local interval_ms = 50
-	-- local elapsed_ms = 0
-
-	--	if not lsp_info:is_attached(c_table.bufnr) then
-	--		vim.notify("Attaching client to bufnr: " .. c_table.bufnr, vim.log.levels.DEBUG)
-	--		vim.lsp.buf_attach_client(c_table.bufnr, lsp_info.client_id)
-	--	end
-	--
-	--	while not lsp_info:is_attached(c_table.bufnr) and elapsed_ms < timeout_ms do
-	--		vim.wait(interval_ms)
-	--		elapsed_ms = elapsed_ms + interval_ms
-	--	end
-
-	if not lsp_info:is_attached(c_table.bufnr) then
-		vim.notify("LSP did not fully initialize within timeout for bufnr: " .. c_table.bufnr, vim.log.levels.WARN)
-	else
-		vim.notify("LSP successfully attached to bufnr: " .. c_table.bufnr, vim.log.levels.INFO)
-	end
 
 	require("conform").format({
 		bufnr = c_table.bufnr,
@@ -635,12 +611,10 @@ function ninjection.format()
 		lsp_fallback = true,
 		timeout_ms = 3000,
 	}, function()
-		-- Formatter is done, now grab buffer contents
 		local rep_lines = vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
 		if not rep_lines or #rep_lines == 0 then
 			vim.notify("No formatted output", vim.log.levels.WARN)
 		else
-			vim.notify("Replacement text: " .. table.concat(rep_lines, "\n"))
 			indent_block(cur_bufnr, injection.range, rep_lines)
 		end
 
