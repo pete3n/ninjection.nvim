@@ -629,36 +629,38 @@ function ninjection.format()
 		vim.notify("LSP successfully attached to bufnr: " .. c_table.bufnr, vim.log.levels.INFO)
 	end
 
-	---@type string[]?
-	local rep_lines
-	ok, rep_lines = pcall(function()
-		return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
-	end)
-	if not ok or type(rep_lines) ~= "table" then
-		vim.notify(
-			"ninjection.format() error: No lines captured from formatting buffer ... " .. tostring(rep_lines),
-			vim.log.levels.ERROR
-		)
-	end
-	---@cast rep_lines string[]
-	if not rep_lines or #rep_lines == 0 then
-		if cfg.debug then
+	vim.defer_fn(function()
+		local get_ok, rep_lines = pcall(function()
+			return vim.api.nvim_buf_get_lines(c_table.bufnr, 0, -1, false)
+		end)
+
+		if not get_ok or type(rep_lines) ~= "table" then
 			vim.notify(
-				"ninjection.replace() warning: No formatted text returned " .. "by vim.api.nvim_buf_get_lines()",
-				vim.log.levels.WARN
+				"ninjection.format() error: No lines captured from formatting buffer ... " .. tostring(rep_lines),
+				vim.log.levels.ERROR
 			)
+			return
 		end
-		return nil
-	end
 
-	vim.notify("Current bufnr: " .. vim.inspect(cur_bufnr))
-	vim.notify("Replacement text: " .. table.concat(rep_lines, "\n"))
+		if #rep_lines == 0 then
+			if cfg.debug then
+				vim.notify(
+					"ninjection.replace() warning: No formatted text returned by vim.api.nvim_buf_get_lines()",
+					vim.log.levels.WARN
+				)
+			end
+			return
+		end
 
-	if rep_lines and #rep_lines > 0 and lsp_info:is_attached(c_table.bufnr) then
-		indent_block(cur_bufnr, injection.range, rep_lines)
-	else
-		vim.notify("Skipping indent block: no formatted output or LSP not ready", vim.log.levels.WARN)
-	end
+		vim.notify("Current bufnr: " .. vim.inspect(cur_bufnr))
+		vim.notify("Replacement text: " .. table.concat(rep_lines, "\n"))
+
+		if lsp_info:is_attached(c_table.bufnr) then
+			indent_block(cur_bufnr, injection.range, rep_lines)
+		else
+			vim.notify("Skipping indent block: LSP not ready", vim.log.levels.WARN)
+		end
+	end, 1000)
 
 	-- Close child window if it still exists
 	--	if c_table.win and vim.api.nvim_win_is_valid(c_table.win) then

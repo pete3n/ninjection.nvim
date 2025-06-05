@@ -600,10 +600,6 @@ M.start_lsp = function(lang, root_dir, bufnr)
 	end
 	---@cast client_id integer
 
-	vim.defer_fn(function()
-		vim.notify(vim.inspect(vim.lsp.get_clients({ bufnr = bufnr })), vim.log.levels.INFO)
-	end, 500)
-
 	return NJLspStatus.new("started", client_id), nil
 end
 
