@@ -334,8 +334,10 @@ M.create_child = function(child, text, create_win)
 		return {}, err
 	end
 
+	---@type string[]
+	local text_lines = vim.split(text, "\n", { plain = true })
 	---@type boolean
-	local sline_ok = pcall(vim.api.nvim_buf_set_lines, c_bufnr, 0, -1, false, text)
+	local sline_ok = pcall(vim.api.nvim_buf_set_lines, c_bufnr, 0, -1, false, text_lines)
 	if not sline_ok then
 		err = "ninjection.buffer.create_child() error: Failed to set set buffer lines."
 		if cfg.debug then
@@ -421,7 +423,6 @@ M.create_child = function(child, text, create_win)
 	end
 
 	-- Save the child information to the buffer's ninjection table
-	---@type boolean
 	local nj_update_ok = pcall(function()
 		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child)
 	end)
@@ -433,7 +434,7 @@ M.create_child = function(child, text, create_win)
 		return {}, err
 	end
 
-	return { bufnr = c_bufnr, win = c_win, indents = p_indents }, nil
+	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
 end
 
 ---@class NJChildCursor -- Options to calculate child window cursor position
