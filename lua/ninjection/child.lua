@@ -53,6 +53,9 @@ function NJChild.new(opts)
 		c_win = opts.c_win,
 	}, NJChild)
 
+	-- Bypass __newindex to set immutable type
+	rawset(self, "type", "NJChild")
+
 	return self
 end
 

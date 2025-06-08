@@ -42,6 +42,9 @@ function NJParent.new(opts)
 		children = opts.children,
 	}, NJParent)
 
+	-- Bypass __newindex to set immutable type
+	rawset(self, "type", "NJChild")
+
 	return self
 end
 
