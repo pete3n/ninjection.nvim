@@ -6,8 +6,9 @@
 ---@nodoc
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
-local buffer = require("ninjection.buffer")
-local NJParent = require("ninjection.parent")
+local create_child_win = require("ninjection.buffer").create_child_win
+local get_indents = require("ninjection.buffer").get_indents
+local is_parent = require("ninjection.parent").is_parent
 
 ---@tag NJChild
 ---@class NJChild
@@ -98,7 +99,7 @@ function NJChild:init_buf(opts)
 	if opts.create_win then
 		---@type integer, string?
 		local c_win, cwin_err
-		c_win, cwin_err = buffer.create_child_win(c_bufnr, cfg.editor_style)
+		c_win, cwin_err = create_child_win(c_bufnr, cfg.editor_style)
 		if not c_win or cwin_err then
 			---@type string
 			local err = "ninjection.child:init_buf() error: Failed to create child window... " .. tostring(cwin_err)
@@ -177,7 +178,7 @@ function NJChild:init_buf(opts)
 	-- autoformatting, or they will be lost.
 	if cfg.preserve_indents then
 		---@type NJIndents?, string?
-		local p_indents, ind_err = buffer.get_indents(0)
+		local p_indents, ind_err = get_indents(0)
 		if not p_indents then
 			-- Initialized to 0 if unset
 			p_indents = { t_indent = 0, b_indent = 0, l_indent = 0, tab_indent = 0 }
@@ -281,7 +282,7 @@ function NJChild:get_parent()
 			vim.notify(err, vim.log.levels.ERROR)
 		end
 		return nil, err
-	elseif not get_njp_return or not NJParent.is_parent(get_njp_return) then
+	elseif not get_njp_return or not is_parent(get_njp_return) then
 		local err = "ninjection.child.NJChild:get_parent() error: This buffer appears to be an orphan: The child buffer "
 			.. self.c_bufnr
 			.. " has the parent buffer "
