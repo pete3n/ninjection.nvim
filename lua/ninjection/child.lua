@@ -220,6 +220,12 @@ function NJChild:init_buf(opts)
 		end
 	end
 
+	---@type boolean, string?
+	local set_ok, set_nj_err = self:set_nj_table()
+	if not set_ok then
+		return false, tostring(set_nj_err)
+	end
+
 	return true, nil
 end
 
