@@ -28,7 +28,8 @@ end
 local cfg = require("ninjection.config").values
 local buffer = require("ninjection.buffer")
 local parse = require("ninjection.parse")
-local Child = require("ninjection.child")
+local NJChild = require("ninjection.child")
+local NJParent = require("ninjection.parent")
 local lsp = require("ninjection.lsp")
 
 if vim.fn.exists(":checkhealth") == 2 then
@@ -154,7 +155,7 @@ function ninjection.edit()
 	end
 	---@cast buf_name string
 
-	local nj_child = Child.NJChild.new({
+	local nj_child = NJChild.new({
 		c_ft = injection.pair.inj_lang, -- The injected language becomes the child ft
 		c_root_dir = root_dir, -- Child inherits the root directory of the parent
 		p_bufnr = cur_bufnr, -- The parent buffer will be the current buffer
@@ -247,14 +248,14 @@ function ninjection.replace()
 
 	---@type NJChild?, string?
 	local nj_child, child_err = buffer.get_buf_child(cur_bufnr)
-	if not nj_child or type(nj_child) ~= "table" or nj_child.type ~= "NJChild" then
+	if not NJChild.is_child(nj_child) then
 		return false, tostring(child_err)
 	end
 	---@cast nj_child NJChild
 
 	---@type NJParent?, string?
 	local nj_parent, parent_err = nj_child:get_parent()
-	if not nj_parent or type(nj_parent) ~= "table" or nj_parent.type ~= "NJParent" then
+	if not NJParent.is_parent(nj_parent) then
 		return false, tostring(parent_err)
 	end
 	---@cast nj_parent NJParent
@@ -494,7 +495,7 @@ function ninjection.format()
 	end
 
 	---@type NJChild
-	local nj_child = Child.NJChild.new({
+	local nj_child = NJChild.new({
 		c_ft = injection.pair.inj_lang, -- The injected language becomes the child ft
 		c_root_dir = root_dir, -- Child inherits the root directory of the parent
 		p_bufnr = cur_bufnr, -- The parent buffer will be the current buffer

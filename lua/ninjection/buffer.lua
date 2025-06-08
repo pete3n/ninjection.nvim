@@ -7,7 +7,8 @@ local M = {}
 ---@nodoc
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
-local Parent = require("ninjection.parent")
+local NJParent = require("ninjection.parent")
+local NJChild = require("ninjection.child")
 
 ---@nodoc
 --- Opens a vertically or horizontally split window for the child buffer.
@@ -100,7 +101,7 @@ end
 ---@return boolean success, string? err
 M.reg_child_buf = function(p_bufnr, c_bufnr)
 	---@type NJParent
-	local nj_parent = Parent.NJParent.new({ children = {} })
+	local nj_parent = NJParent.new({ children = {} })
 
 	if not vim.api.nvim_buf_is_valid(p_bufnr) then
 		---@type string
@@ -116,13 +117,13 @@ M.reg_child_buf = function(p_bufnr, c_bufnr)
 
 	--- If the buffer already has a ninjection table, then we want to update the
 	--- table by appending new children to it.
-	if get_nj_ok and get_nj_return and get_nj_return.type == "NJParent" then
+	if get_nj_ok and NJParent.is_parent(get_nj_return) then
 		---@cast get_nj_return NJParent
 		nj_parent = get_nj_return
 	end
 
 	--- Existing ninjection child buffers cannot also be parents (grandparents)
-	if get_nj_ok and get_nj_return and get_nj_return.type == "NJChild" then
+	if get_nj_ok and NJChild.is_child(get_nj_return) then
 		---@type string
 		local err = "buffer.reg_child_buf() error: The buffer, "
 			.. p_bufnr
@@ -175,7 +176,7 @@ M.get_buf_child = function (c_bufnr)
 		return nil, err
 	end
 
-	if not get_cnj_return or type(get_cnj_return) ~= "table" or get_cnj_return.type ~= "NJChild" then
+	if not get_cnj_return or not NJChild.is_child(get_cnj_return) then
 		---@type string
 		local err = "ninjection.buffer.get_buf_parent() error: No child ninjection table for buffer: " .. c_bufnr
 		if cfg.debug then
@@ -184,10 +185,9 @@ M.get_buf_child = function (c_bufnr)
 		return nil, err
 	end
 	---@cast get_cnj_return NJChild
-	---@type NJChild
-	local nj_child = get_cnj_return
 
-	return nj_child, nil
+	setmetatable(get_cnj_return, NJChild)
+	return get_cnj_return, nil
 end
 
 

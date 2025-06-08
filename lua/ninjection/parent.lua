@@ -3,7 +3,6 @@
 --- The buffer module contains the ninjection parent object class.
 ---
 
-local M = {}
 ---@nodoc
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
@@ -12,18 +11,14 @@ local cfg = require("ninjection.config").values
 ---@brief Stores associated child bufnrs.
 ---
 ---@class NJParent
----@field type "NJParent"
 ---@field children integer[]
 local NJParent = {}
 NJParent.__index = NJParent
 
--- Type should be immutable
-function NJParent.__newindex(table, key, value)
-	if key == "type" then
-		error("Cannot modify field 'type' of NJChild")
-	else
-		rawset(table, key, value)
-	end
+---@param obj any
+---@return boolean
+function NJParent.is_parent(obj)
+	return type(obj) == "table" and getmetatable(obj) == NJParent
 end
 
 ---@param opts {
@@ -86,6 +81,5 @@ function NJParent:del_child(c_bufnr)
 	end
 	return false, err
 end
-M.NJParent = NJParent
 
-return M
+return NJParent

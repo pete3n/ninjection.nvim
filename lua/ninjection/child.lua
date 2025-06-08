@@ -3,7 +3,6 @@
 --- The buffer module contains the ninjection child object class.
 ---
 
-local M = {}
 ---@nodoc
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
@@ -13,7 +12,6 @@ local buffer = require("ninjection.buffer")
 ---@class NJChild
 ---@brief Ninjection child object, stores child information and associated parent info.
 ---
----@field type "NJChild"
 ---@field c_ft string Filetype in use for the child
 ---@field c_root_dir string Root directory associated with the child
 ---@field c_bufnr integer? Child bufnr - once initialized
@@ -27,15 +25,6 @@ local buffer = require("ninjection.buffer")
 ---@field p_indents? NJIndents Parent indents if preserved
 local NJChild = {}
 NJChild.__index = NJChild
-
--- Type should be immutable
-function NJChild.__newindex(table, key, value)
-	if key == "type" then
-		error("Cannot modify field 'type' of NJChild")
-	else
-		rawset(table, key, value)
-	end
-end
 
 ---@param opts {
 ---  c_ft: string,
@@ -66,6 +55,12 @@ function NJChild.new(opts)
 	}, NJChild)
 
 	return self
+end
+
+---@param obj any
+---@return boolean
+function NJChild.is_child(obj)
+	return type(obj) == "table" and getmetatable(obj) == NJChild
 end
 
 ---@param opts {
@@ -314,6 +309,5 @@ function NJChild:get_parent()
 
 	return nj_parent, nil
 end
-M.NJChild = NJChild
 
-return M
+return NJChild
