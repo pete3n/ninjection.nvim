@@ -196,14 +196,14 @@ end
 M.get_buf_parent = function(c_bufnr)
 	---@type NJChild?, string?
 	local nj_child, child_err = get_buf_child(c_bufnr)
-		if not nj_child and cfg.debug then
+		if not nj_child or type(nj_child) ~= "table" or nj_child.type ~= "NJChild" then
 			return nil, tostring(child_err)
 		end
 		---@cast nj_child NJChild
 
 	---@type NJParent?, string?
 	local nj_parent, parent_err = nj_child:get_parent()
-		if not nj_parent and cfg.debug then
+		if not nj_parent or type(nj_parent) ~= "table" or nj_parent.type ~= "NJParent" then
 			return nil, tostring(parent_err)
 		end
 		---@cast nj_parent NJParent
