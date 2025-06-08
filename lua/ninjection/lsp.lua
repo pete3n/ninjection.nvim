@@ -106,7 +106,7 @@ M.start_lsp = function(lang, root_dir, bufnr)
 	-- The LSP must have an available configuration
 	---@type boolean, lspconfig.Config?
 	local ok, lsp_def = pcall(function()
-		return lspconfig[lang_lsp]
+		return lspconfig[lang_lsp] and lspconfig[lang_lsp].document_config
 	end)
 	if not ok or not lsp_def then
 		err = "Ninjection.buffer.start_lsp() error: no LSP configuration for: " .. lang_lsp .. " " .. tostring(lsp_def)
