@@ -323,6 +323,7 @@ function NJChild:get_parent()
 		return nil, err
 	end
 
+	setmetatable(nj_parent, require("ninjection.parent"))
 	return nj_parent, nil
 end
 
