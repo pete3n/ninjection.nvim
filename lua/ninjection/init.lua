@@ -245,31 +245,17 @@ function ninjection.replace()
 	end
 	---@cast cur_bufnr integer
 
-	---@type boolean, NJChild?
-	local get_nj_ok, get_nj_return = pcall(vim.api.nvim_buf_get_var, cur_bufnr, "ninjection")
-	if not get_nj_ok or not get_nj_return or get_nj_return.type ~= "NJChild" then
-		---@type string
-		local err = "ninjection.replace() error: No ninjection table found in current buffer: " .. cur_bufnr
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN)
-		end
-		return false, err
+	---@type NJChild?, string?
+	local nj_child, child_err = buffer.get_buf_child(cur_bufnr)
+	if not nj_child or type(nj_child) ~= "table" or nj_child.type ~= "NJChild" then
+		return false, tostring(child_err)
 	end
-	---@cast get_nj_return NJChild
-	---@type NJChild
-	local nj_child = get_nj_return
+	---@cast nj_child NJChild
 
 	---@type NJParent?, string?
-	local nj_parent, get_p_err = buffer.get_buf_parent(cur_bufnr)
+	local nj_parent, parent_err = nj_child:get_parent()
 	if not nj_parent or type(nj_parent) ~= "table" or nj_parent.type ~= "NJParent" then
-		---@type string
-		local err = "ninjection.replace() error: Unabled to get parent buffer for buffer: "
-			.. cur_bufnr
-			.. tostring(get_p_err)
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN)
-		end
-		return false, err
+		return false, tostring(parent_err)
 	end
 	---@cast nj_parent NJParent
 

@@ -151,7 +151,7 @@ end
 
 ---@param c_bufnr integer
 ---@return NJChild? nj_child, string? err
-local function get_buf_child(c_bufnr)
+M.get_buf_child = function (c_bufnr)
 
 	if not vim.api.nvim_buf_is_valid(c_bufnr) then
 		---@type string
@@ -188,27 +188,6 @@ local function get_buf_child(c_bufnr)
 	local nj_child = get_cnj_return
 
 	return nj_child, nil
-end
-
-
----@param c_bufnr integer -- Buffer number of child buffer
----@return NJParent? nj_parent, string? err
-M.get_buf_parent = function(c_bufnr)
-	---@type NJChild?, string?
-	local nj_child, child_err = get_buf_child(c_bufnr)
-		if not nj_child or type(nj_child) ~= "table" or nj_child.type ~= "NJChild" then
-			return nil, tostring(child_err)
-		end
-		---@cast nj_child NJChild
-
-	---@type NJParent?, string?
-	local nj_parent, parent_err = nj_child:get_parent()
-		if not nj_parent or type(nj_parent) ~= "table" or nj_parent.type ~= "NJParent" then
-			return nil, tostring(parent_err)
-		end
-		---@cast nj_parent NJParent
-
-		return nj_parent, nil
 end
 
 
