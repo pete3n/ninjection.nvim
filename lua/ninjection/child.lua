@@ -11,6 +11,7 @@ local cfg = require("ninjection.config").values
 ---@class NJChild
 ---@brief Ninjection child object, stores child information and associated parent info.
 ---
+---@field type "NJChild"
 ---@field c_ft string Filetype in use for the child
 ---@field c_root_dir string Root directory associated with the child
 ---@field c_bufnr integer? Child bufnr - once initialized
@@ -40,7 +41,6 @@ NJChild.__index = NJChild
 ---@return NJChild
 function NJChild.new(opts)
 	local self = setmetatable({
-		type = "NJChild",
 		c_ft = opts.c_ft,
 		c_root_dir = opts.c_root_dir,
 		p_bufnr = opts.p_bufnr,
@@ -56,10 +56,21 @@ function NJChild.new(opts)
 	return self
 end
 
+
+-- Make 'type' field immutable
+function NJChild.__newindex(t, k, v)
+  if k == "type" then
+    error("Cannot modify field 'type' of NJChild")
+  else
+    rawset(t, k, v)
+  end
+end
+
+
 ---@param obj any
 ---@return boolean
 function NJChild.is_child(obj)
-	return type(obj) == "table" and getmetatable(obj) == NJChild
+	return type(obj) == "table" and obj.type and obj.type == "NJChild"
 end
 
 ---@param opts {

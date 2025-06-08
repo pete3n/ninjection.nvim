@@ -11,14 +11,26 @@ local cfg = require("ninjection.config").values
 ---@brief Stores associated child bufnrs.
 ---
 ---@class NJParent
+---@field type "NJParent"
 ---@field children integer[]
 local NJParent = {}
 NJParent.__index = NJParent
 
+
+-- Make 'type' field immutable
+function NJParent.__newindex(t, k, v)
+  if k == "type" then
+    error("Cannot modify field 'type' of NJChild")
+  else
+    rawset(t, k, v)
+  end
+end
+
+
 ---@param obj any
 ---@return boolean
 function NJParent.is_parent(obj)
-	return type(obj) == "table" and getmetatable(obj) == NJParent
+	return type(obj) == "table" and obj.type and obj.type == "NJParent"
 end
 
 ---@param opts {
@@ -27,7 +39,6 @@ end
 ---@return NJParent
 function NJParent.new(opts)
 	local self = setmetatable({
-		type = "NJParent",
 		children = opts.children,
 	}, NJParent)
 
