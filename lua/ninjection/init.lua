@@ -316,9 +316,9 @@ function ninjection.replace()
 			---@type string
 			local rep_text = table.concat(rep_lines, "\n")
 			---@type boolean, string[]?
-			local restored_text =
+			local restored_ok, restored_text =
 				pcall(cfg.inj_text_restorers[nj_child.p_ft], rep_text, nj_child.p_text_meta, nj_child.p_indents)
-			if not restored_text or type(restored_text) ~= "table" then
+			if not restored_ok or not restored_text or type(restored_text) ~= "table" then
 				---@type string
 				local err = "ninjection.replace() error: Text restorer function for "
 					.. nj_child.p_ft

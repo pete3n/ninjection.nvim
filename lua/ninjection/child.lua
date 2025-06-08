@@ -284,6 +284,7 @@ function NJChild:get_parent()
 	local get_njp_ok, get_njp_return = pcall(function()
 		return vim.api.nvim_buf_get_var(self.p_bufnr, "ninjection")
 	end)
+
 	if not get_njp_ok then
 		---@type string
 		local err = "ninjection.child.NJChild:get_parent() error: The buffer "
@@ -293,6 +294,7 @@ function NJChild:get_parent()
 			vim.notify(err, vim.log.levels.ERROR)
 		end
 		return nil, err
+
 	elseif not get_njp_return or not require("ninjection.parent").is_parent(get_njp_return) then
 		local err = "ninjection.child.NJChild:get_parent() error: This buffer appears to be an orphan: The child buffer "
 			.. self.c_bufnr
@@ -305,6 +307,7 @@ function NJChild:get_parent()
 		return nil, err
 	end
 	---@cast get_njp_return NJParent
+
 	---@type NJParent
 	local nj_parent = get_njp_return
 	if not vim.tbl_contains(nj_parent.children, self.c_bufnr) then
