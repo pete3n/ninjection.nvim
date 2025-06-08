@@ -20,7 +20,7 @@ NJParent.__index = NJParent
 -- Make 'type' field immutable
 function NJParent.__newindex(t, k, v)
   if k == "type" then
-    error("Cannot modify field 'type' of NJChild")
+    error("Cannot modify field 'type' of NJParent")
   else
     rawset(t, k, v)
   end
@@ -43,7 +43,7 @@ function NJParent.new(opts)
 	}, NJParent)
 
 	-- Bypass __newindex to set immutable type
-	rawset(self, "type", "NJChild")
+	rawset(self, "type", "NJParent")
 
 	return self
 end
