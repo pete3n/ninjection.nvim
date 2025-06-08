@@ -13,7 +13,12 @@ if not has_lspconfig then
 	return
 end
 
----@alias NJLspStatusResponseType
+--- find a reference to: `vim.api.keyset.create_user_command.command_args`
+---@tag lspconfig.Config
+---@class lspconfig.Config : vim.lsp.ClientConfig
+---@brief Annotation for lspconfig from `nvim-lspconfig/lua/lspconfig/configs.lua`
+
+---@alias NJLspStatusMsg
 ---| "unmapped"
 ---| "unconfigured"
 ---| "unavailable"
@@ -21,15 +26,6 @@ end
 ---| "unsupported"
 ---| "failed_start"
 ---| "started"
-
----@class NJLspStatusMsg
----@field UNMAPPED "unmapped"
----@field UNCONFIGURED "unconfigured"
----@field UNAVAILABLE "unavailable"
----@field NO_EXEC "no-exec"
----@field UNSUPPORTED "unsupported"
----@field FAILED_START "failed_start"
----@field STARTED "started"
 
 ---@type NJLspStatusMsg
 local LspStatusMsg = {
@@ -47,7 +43,7 @@ M.LspStatusMsg = LspStatusMsg
 ---@class NJLspStatus
 ---@brief Store LSP status and associated client ID.
 ---
----@field status NJLspStatusResponseType - The LSP startup status.
+---@field status NJLspStatusMsg - The LSP startup status.
 ---@field client_id integer? - The client ID of the started LSP, nil on failure
 local NJLspStatus = {}
 NJLspStatus.__index = NJLspStatus
@@ -68,13 +64,9 @@ function NJLspStatus:is_attached(bufnr)
 	return vim.lsp.buf_is_attached(bufnr, self.client_id)
 end
 
----@param status NJLspStatusResponseType
+---@param status NJLspStatusMsg
 ---@param client_id? integer
 function NJLspStatus.new(status, client_id)
-	assert(
-		LspStatusMsg[status:upper()],
-		"ninjection.buffer.NJLspStatus.new() error: Invalid LSP status: " .. tostring(status)
-	)
 	return setmetatable({
 		status = status,
 		client_id = client_id,
