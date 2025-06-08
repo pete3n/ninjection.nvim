@@ -5,7 +5,7 @@
 
 ---@nodoc
 ---@type Ninjection.Config
-local cfg = require("ninjection.config").values
+local cfg = require('ninjection.config').values
 
 ---@tag NJParent
 ---@brief Stores associated child bufnrs.
@@ -16,21 +16,19 @@ local cfg = require("ninjection.config").values
 local NJParent = {}
 NJParent.__index = NJParent
 
-
 -- Make 'type' field immutable
 function NJParent.__newindex(t, k, v)
-  if k == "type" then
+  if k == 'type' then
     error("Cannot modify field 'type' of NJParent")
   else
     rawset(t, k, v)
   end
 end
 
-
 ---@param obj any
 ---@return boolean
 function NJParent.is_parent(obj)
-	return type(obj) == "table" and obj.type and obj.type == "NJParent"
+  return type(obj) == 'table' and obj.type and obj.type == 'NJParent'
 end
 
 ---@param opts {
@@ -38,14 +36,14 @@ end
 ---
 ---@return NJParent
 function NJParent.new(opts)
-	local self = setmetatable({
-		children = opts.children,
-	}, NJParent)
+  local self = setmetatable({
+    children = opts.children,
+  }, NJParent)
 
-	-- Bypass __newindex to set immutable type
-	rawset(self, "type", "NJParent")
+  -- Bypass __newindex to set immutable type
+  rawset(self, 'type', 'NJParent')
 
-	return self
+  return self
 end
 
 -- This overwrites the ninjection table for the buffer if it exists.
@@ -54,46 +52,47 @@ end
 ---@param p_bufnr integer
 ---@return boolean success, string? err
 function NJParent:set_nj_table(p_bufnr)
-	-- Save the child information to the buffer's ninjection table
-	if not vim.api.nvim_buf_is_valid(p_bufnr) then
-		local err = "ninjection.buffer.init_child() error: Child buffer is invalid."
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return false, err
-	end
+  -- Save the child information to the buffer's ninjection table
+  if not vim.api.nvim_buf_is_valid(p_bufnr) then
+    local err = 'ninjection.buffer.init_child() error: Child buffer is invalid.'
+    if cfg.debug then
+      vim.notify(err, vim.log.levels.ERROR)
+    end
+    return false, err
+  end
 
-	local set_nj_ok = pcall(function()
-		return vim.api.nvim_buf_set_var(p_bufnr, "ninjection", self)
-	end)
-	if not set_nj_ok then
-		---@type string
-		local err = "ninjection.buffer.init_child() error: Failed to update ninjection table with child object."
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return false, err
-	end
+  local set_nj_ok = pcall(function()
+    return vim.api.nvim_buf_set_var(p_bufnr, 'ninjection', self)
+  end)
+  if not set_nj_ok then
+    ---@type string
+    local err =
+      'ninjection.buffer.init_child() error: Failed to update ninjection table with child object.'
+    if cfg.debug then
+      vim.notify(err, vim.log.levels.ERROR)
+    end
+    return false, err
+  end
 
-	return true, nil
+  return true, nil
 end
 
 ---@param c_bufnr integer
 ---@return boolean success, string? err
 function NJParent:del_child(c_bufnr)
-	---@type integer, integer
-	for i, bufnr in ipairs(self.children) do
-		if bufnr == c_bufnr then
-			table.remove(self.children, i)
-			return true, nil
-		end
-	end
-	---@type string
-	local err = "ninjection.parent:del_child(): bufnr " .. c_bufnr .. " not found in parent."
-	if cfg.debug then
-		vim.notify(err, vim.error.levels.ERROR)
-	end
-	return false, err
+  ---@type integer, integer
+  for i, bufnr in ipairs(self.children) do
+    if bufnr == c_bufnr then
+      table.remove(self.children, i)
+      return true, nil
+    end
+  end
+  ---@type string
+  local err = 'ninjection.parent:del_child(): bufnr ' .. c_bufnr .. ' not found in parent.'
+  if cfg.debug then
+    vim.notify(err, vim.error.levels.ERROR)
+  end
+  return false, err
 end
 
 return NJParent

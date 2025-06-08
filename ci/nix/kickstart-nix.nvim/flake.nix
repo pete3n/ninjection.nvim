@@ -2,7 +2,7 @@
   description = "Neovim derivation";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     flake-utils.url = "github:numtide/flake-utils";
     gen-luarc.url = "github:mrcjkb/nix-gen-luarc-json";
 
@@ -52,27 +52,27 @@
             nvim-dev
           ];
           shellHook = # sh
-							''
-            								# symlink the .luarc.json generated in the overlay
-            								ln -fs ${pkgs.nvim-luarc-json} .luarc.json
-            								# allow quick iteration of lua configs
-            								ln -Tfns $PWD/ci/nix/kickstart-nix.nvim/nvim ~/.config/nvim-dev
-            								# Make packpath available for testing
-              nvimDevPath=$(which nvim-dev)
-              echo "nvim-dev path: $nvimDevPath"
+						''
+							# symlink the .luarc.json generated in the overlay
+							ln -fs ${pkgs.nvim-luarc-json} .luarc.json
+							# allow quick iteration of lua configs
+							ln -Tfns $PWD/ci/nix/kickstart-nix.nvim/nvim ~/.config/nvim-dev
+							# Make packpath available for testing
+							nvimDevPath=$(which nvim-dev)
+							echo "nvim-dev path: $nvimDevPath"
 
-              # Use sed to extract the value following "set packpath^=" and before the closing quote.
-              PACKPATH_VALUE=$(sed -n 's/.*set packpath\^=\([^"]*\)".*/\1/p' "$nvimDevPath")
-              RTP_VALUE=$(sed -n 's/.*set rtp\^=\([^"]*\)".*/\1/p' "$nvimDevPath")
+							# Use sed to extract the value following "set packpath^=" and before the closing quote.
+							PACKPATH_VALUE=$(sed -n 's/.*set packpath\^=\([^"]*\)".*/\1/p' "$nvimDevPath")
+							RTP_VALUE=$(sed -n 's/.*set rtp\^=\([^"]*\)".*/\1/p' "$nvimDevPath")
 							export NVIM_PACKPATH="$PACKPATH_VALUE"
-              export NVIM_RTP="$RTP_VALUE"
-              export VIMRUNTIME="${pkgs.nvim-dev}/share/nvim/runtime"
+							export NVIM_RTP="$RTP_VALUE"
+							export VIMRUNTIME="${pkgs.nvim-dev}/share/nvim/runtime"
 							export LUA_PATH="$PWD/lua/?.lua;$PWD/lua/?/init.lua;$PWD/plugin/?.lua;$PWD/plugin/?/init.lua;$LUA_PATH"
 							echo "LUA_PATH set to: $LUA_PATH"
-              echo "NVIM_PACKPATH set to: $NVIM_PACKPATH"
-              echo "NVIM_RTP set to: $NVIM_RTP"
-              echo "VIMRUNTIME set to: $VIMRUNTIME"
-          '';
+							echo "NVIM_PACKPATH set to: $NVIM_PACKPATH"
+							echo "NVIM_RTP set to: $NVIM_RTP"
+							echo "VIMRUNTIME set to: $VIMRUNTIME"
+					'';
         };
       in
       {
