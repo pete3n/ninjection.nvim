@@ -181,7 +181,7 @@ function NJChild:init_buf(opts)
 	-- autoformatting, or they will be lost.
 	if cfg.preserve_indents then
 		---@type NJIndents?, string?
-		local p_indents, ind_err = M.get_indents(0)
+		local p_indents, ind_err = buffer.get_indents(0)
 		if not p_indents then
 			-- Initialized to 0 if unset
 			p_indents = { t_indent = 0, b_indent = 0, l_indent = 0, tab_indent = 0 }
