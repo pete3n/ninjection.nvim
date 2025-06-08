@@ -7,6 +7,7 @@
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
 local buffer = require("ninjection.buffer")
+local NJParent = require("ninjection.parent")
 
 ---@tag NJChild
 ---@class NJChild
@@ -280,7 +281,7 @@ function NJChild:get_parent()
 			vim.notify(err, vim.log.levels.ERROR)
 		end
 		return nil, err
-	elseif not get_njp_return or type(get_njp_return) ~= "table" or get_njp_return.type ~= "NJParent" then
+	elseif not get_njp_return or not NJParent.is_parent(get_njp_return) then
 		local err = "ninjection.child.NJChild:get_parent() error: This buffer appears to be an orphan: The child buffer "
 			.. self.c_bufnr
 			.. " has the parent buffer "
