@@ -6,6 +6,26 @@ local nj = require("ninjection")
 
 print(vim.inspect(vim.opt.rtp:get()))
 
+describe("ninjection.format integration test #e2e #edit", function()
+	it("validates injected content after formatting buffer", function()
+		vim.cmd("edit tests/ft/nix/lua.nix")
+		local buf_content = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+		print("Buffer content:", vim.inspect(buf_content))
+		vim.api.nvim_win_set_cursor(0, { 5, 7 })
+		nj.format()
+		vim.wait(500) -- TODO: Replace with appropriate configuration timing
+		local buf = vim.api.nvim_get_current_buf()
+		buf_content = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+		local expected = {
+			"      local lua_content",
+			"      local more_lua_content",
+		}
+		print("Buffer content: " .. vim.inspect(buf_content))
+
+		eq(expected, buf_content)
+	end)
+end)
+
 describe("ninjection.edit integration test #e2e #edit", function()
 	it("validates injected content in edit buffer", function()
 		vim.cmd("edit tests/ft/nix/lua.nix")
