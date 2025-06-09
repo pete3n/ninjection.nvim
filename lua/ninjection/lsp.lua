@@ -13,20 +13,12 @@ if not has_lspconfig then
 	return
 end
 
----@tag NJLspConfig
----@class NJLspConfig : vim.lsp.ClientConfig
+--- find a reference to: `vim.api.keyset.create_user_command.command_args`
+---@tag lspconfig.Config
+---@class lspconfig.Config : vim.lsp.ClientConfig
 ---@brief Annotation for lspconfig from `nvim-lspconfig/lua/lspconfig/configs.lua`
----@field enabled? boolean
----@field single_file_support? boolean
----@field silent? boolean
----@field filetypes? string[]
----@field filetype? string
----@field on_new_config? fun(new_config: lspconfig.Config?, new_root_dir: string)
----@field autostart? boolean
----@field package _on_attach? fun(client: vim.lsp.Client, bufnr: integer)
----@field root_dir? string|fun(filename: string, bufnr: number)
----@field commands? table<string, lspconfig.Config.command>
-
+---@type badType
+local test_var
 ---@alias NJLspStatusMsg
 ---| "unmapped"
 ---| "unconfigured"
@@ -113,9 +105,9 @@ M.start_lsp = function(lang, root_dir, bufnr)
 	---@cast lang_lsp string
 
 	-- The LSP must have an available configuration
-	---@type boolean, NJLspConfig?
+	---@type boolean, lspconfig.Config?
 	local ok, lsp_def = pcall(function()
-		return lspconfig[lang_lsp] and lspconfig[lang_lsp].document_config
+		return lspconfig[lang_lsp]
 	end)
 	if not ok or not lsp_def then
 		err = "Ninjection.buffer.start_lsp() error: no LSP configuration for: " .. lang_lsp .. " " .. tostring(lsp_def)
@@ -124,7 +116,7 @@ M.start_lsp = function(lang, root_dir, bufnr)
 		end
 		return NJLspStatus.new(LspStatusMsg.UNCONFIGURED, nil), err
 	end
-	---@cast lsp_def NJLspConfig
+	---@cast lsp_def lspconfig.Config
 
 	-- The LSP binary path must exist
 	-- RPC function support is not implemented
