@@ -2,7 +2,6 @@
 ---@brief
 --- The types module contains all ninjection specific type definitions.
 ---
-
 ---@meta
 ---@tag EditorStyle
 ---@alias EditorStyle "cur_win" | "floating" | "v_split" | "h_split"
