@@ -51,7 +51,7 @@ jobs:
           key: ${{ inputs.lua_ls_version || '3.14.0' }}
       - name: Clone nvim-lspconfig
         run: |
-          mk dir -p .ci/vendor
+          mkdir -p .ci/vendor
           git clone --depth 1 https://github.com/neovim/nvim-lspconfig .ci/vendor/nvim-lspconfig
       - name: Prepare Neovim and Lua LS
         run: |
