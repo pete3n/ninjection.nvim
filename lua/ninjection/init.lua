@@ -540,12 +540,14 @@ function ninjection.format()
 			indent_block(cur_bufnr, injection.range, rep_lines)
 		end
 
+		vim.api.nvim_win_hide(nj_child.c_win)
+
 		vim.defer_fn(function()
 			-- Defer deletion to allow LSP background operations to finish
 			if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
 				vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
 			end
-		end, 50)
+		end, 100)
 	end)
 
 	return true, nil
