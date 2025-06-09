@@ -15,12 +15,8 @@ end
 
 --- find a reference to: `vim.api.keyset.create_user_command.command_args`
 ---@tag lspconfig.Config
----@class lspconfig.Config : vim.lsp.ClientConfig
+--- @alias NJLspConfig lspconfig.Config
 ---@brief Annotation for lspconfig from `nvim-lspconfig/lua/lspconfig/configs.lua`
-
----@class LspDocumentConfig
----@field filetypes string[]
----@field cmd string[]
 
 ---@alias NJLspStatusMsg
 ---| "unmapped"
@@ -108,7 +104,7 @@ M.start_lsp = function(lang, root_dir, bufnr)
 	---@cast lang_lsp string
 
 	-- The LSP must have an available configuration
-	---@type boolean, lspconfig.Config?
+	---@type boolean, NJLspConfig?
 	local ok, lsp_def = pcall(function()
 		return lspconfig[lang_lsp] and lspconfig[lang_lsp].document_config
 	end)
