@@ -13,9 +13,6 @@ if not has_lspconfig then
 	return
 end
 
----@type badType
-local newTest
-
 ---@alias NJLspStatusMsg
 ---| "unmapped"
 ---| "unconfigured"
