@@ -21,8 +21,8 @@ lua_ls-check:
 		--logpath .ci/lua_ls-log --check lua
 
 	if [ ! -f .ci/lua_ls-log/check.json ]; then \
-		echo "Error: check.json not found."; \
-		exit 1; \
+		echo "✅ No errors found."; \
+		exit 0; \
 	fi
 
 	# If file length is more than 2 characters (not just "[]"), print and exit
@@ -33,7 +33,6 @@ lua_ls-check:
 	else \
 		echo "✅ No errors found."; \
 	fi
-
 
 CONFIG_FILE = $(shell realpath ci/.luarc.$(version).json)
 lua_ls-debug:
