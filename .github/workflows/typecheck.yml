@@ -51,7 +51,7 @@ jobs:
           key: ${{ inputs.lua_ls_version || '3.14.0' }}
       - name: Clone nvim-lspconfig
         run: |
-          mkdir -p .ci/vendor
+          mk dir -p .ci/vendor
           git clone --depth 1 https://github.com/neovim/nvim-lspconfig .ci/vendor/nvim-lspconfig
       - name: Prepare Neovim and Lua LS
         run: |
@@ -81,4 +81,4 @@ jobs:
           export PATH="${PWD}/.ci/lua-ls/bin:${PATH}"
           export VIMRUNTIME="${PWD}/.ci/neovim/share/nvim/runtime"
           nvim --version
-          make -f ci/Makefile lua_ls-check version=${{ matrix.rev == 'stable' }}
+          make -f ci/Makefile lua_ls-check version=${{ matrix.rev == 'nightly' && 'nightly' || 'stable' }}
