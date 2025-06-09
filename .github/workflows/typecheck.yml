@@ -52,7 +52,9 @@ jobs:
       - name: Clone nvim-lspconfig
         run: |
           mkdir -p .ci/vendor
-          git clone --depth 1 https://github.com/neovim/nvim-lspconfig .ci/vendor/nvim-lspconfig
+          if [ ! -d .ci/vendor/nvim-lspconfig/.git ]; then
+            git clone --depth=1 https://github.com/neovim/nvim-lspconfig .ci/vendor/nvim-lspconfig
+          fi
       - name: Prepare Neovim and Lua LS
         run: |
           test -d .ci/neovim || {
