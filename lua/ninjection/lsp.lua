@@ -18,6 +18,10 @@ end
 ---@class lspconfig.Config : vim.lsp.ClientConfig
 ---@brief Annotation for lspconfig from `nvim-lspconfig/lua/lspconfig/configs.lua`
 
+---@class LspDocumentConfig
+---@field filetypes string[]
+---@field cmd string[]
+
 ---@alias NJLspStatusMsg
 ---| "unmapped"
 ---| "unconfigured"
