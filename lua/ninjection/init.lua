@@ -514,7 +514,7 @@ function ninjection.format()
 	})
 
 	---@type boolean, string?
-	local init_ok, init_err = nj_child:init_buf({ text = injection.text, create_win = false })
+	local init_ok, init_err = nj_child:init_buf({ text = injection.text, create_win = true })
 	if not init_ok then
 		return false, tostring(init_err)
 	end
