@@ -437,16 +437,14 @@ local function indent_block(bufnr, range, rep_lines)
 	vim.api.nvim_buf_set_lines(bufnr, s_row, e_row + 1, false, formatted_lines)
 end
 
-
 local function is_buf_visible(bufnr)
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == bufnr then
-      return true
-    end
-  end
-  return false
+	for _, win in ipairs(vim.api.nvim_list_wins()) do
+		if vim.api.nvim_win_get_buf(win) == bufnr then
+			return true
+		end
+	end
+	return false
 end
-
 
 ---@tag ninjection.format()
 ---@brief
@@ -557,11 +555,9 @@ function ninjection.format()
 		end
 
 		vim.defer_fn(function()
-				-- Defer deletion to allow LSP background operations to finish
+			-- Defer deletion to allow LSP background operations to finish
 			if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
-					if not is_buf_visible(nj_child.c_bufnr) then
-						vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
-					end
+				vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
 			end
 		end, 150) -- ~150ms delay to avoid race with semantic token requests
 	end)
