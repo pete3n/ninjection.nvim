@@ -25,8 +25,7 @@ lua_ls-check:
 		exit 0; \
 	fi
 
-	# If file length is more than 2 characters (not just "[]"), print and exit
-	if [ `wc -m < .ci/lua_ls-log/check.json` -gt 2 ]; then \
+	@if [ -s .ci/lua_ls-log/check.json ]; then \
 		echo "❌ Diagnostics found:"; \
 		cat .ci/lua_ls-log/check.json; \
 		exit 1; \
