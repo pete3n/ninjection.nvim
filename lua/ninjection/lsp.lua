@@ -13,12 +13,6 @@ if not has_lspconfig then
 	return
 end
 
---- find a reference to: `vim.api.keyset.create_user_command.command_args`
----@tag lspconfig.Config
----@class lspconfig.Config : vim.lsp.ClientConfig
----@brief Annotation for lspconfig from `nvim-lspconfig/lua/lspconfig/configs.lua`
----@type badType
-local test_var
 ---@alias NJLspStatusMsg
 ---| "unmapped"
 ---| "unconfigured"
