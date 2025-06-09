@@ -9,6 +9,7 @@
   },
   "workspace.library": [
     "/home/runner/work/ninjection.nvim/ninjection.nvim/.ci/neovim/share/nvim/runtime",
+    "/home/runner/work/ninjection.nvim/ninjection.nvim/.ci/vendor/nvim-lspconfig",
 		"lua"
   ],
   "workspace.checkThirdParty": false

@@ -17,6 +17,8 @@ local default_config = {
 	auto_format = true,
 	---@type string
 	format_cmd = 'require("conform").format { async = true, lsp_format = "fallback" }',
+	---@type integer
+	format_indent = 2,
 	---@type string
 	register = "z",
 	---@type boolean
@@ -122,7 +124,7 @@ local default_config = {
 			end
 
 			return lines
-		end
+		end,
 	},
 
 	---@type table<string, NJLangTweak>

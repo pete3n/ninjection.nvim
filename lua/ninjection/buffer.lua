@@ -7,15 +7,220 @@ local M = {}
 ---@nodoc
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
-local has_lspconfig, lspconfig = pcall(require, "lspconfig")
-if not has_lspconfig then
-	vim.notify("ninjection.nvim requires 'lspconfig' plugin for LSP features", vim.log.levels.ERROR)
-	return
+local NJParent = require("ninjection.parent")
+local NJChild = require("ninjection.child")
+
+---@nodoc
+--- Opens a vertically or horizontally split window for the child buffer.
+---@param split_cmd string v_split or split.
+---@param bufnr integer child bufnr.
+---@return integer win_id, string? err
+--- Handle for new window or 0 on failure.
+local function open_split_win(split_cmd, bufnr)
+	---@type string?
+	local err
+	---@type boolean
+	local split_ok = pcall(function()
+		return vim.cmd(split_cmd)
+	end)
+	if not split_ok then
+		err = "ninjection.buffer.open_split_win() error: Window split cmd failed ... " .. split_cmd
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return 0, err
+	end
+
+	---@type boolean, integer
+	local win_ok, win_id
+	win_ok, win_id = pcall(vim.api.nvim_get_current_win)
+	if not win_ok or win_id == 0 then
+		err = "ninjection.buffer.open_split_win() error: Failed to open child window."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return 0, err
+	end
+
+	---@type boolean
+	local buf_ok = pcall(function()
+		return vim.api.nvim_win_set_buf(win_id, bufnr)
+	end)
+	if not buf_ok then
+		err = "ninjection.buffer.open_split_win() error: Failed to set window buffer."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return 0, err
+	end
+
+	return win_id, nil
 end
 
--- We need to provide a way of recording and restoring whitespace from the parent
--- buffer to allow easily formatting the buffer without worrying about its
--- relative placement in the parent buffer.
+---@nodoc
+--- Creates a window for the provided child buffer with either floating, v_split
+--- or h_split styles.
+---@param bufnr integer The buffer to create a viewport for.
+---@param style EditorStyle The window style to edit the buffer with.
+---@return integer win_id, string? err
+--- Default: 0 (cur_win), child window handle, if created.
+M.create_child_win = function(bufnr, style)
+	---@type integer, string?
+	local win_id, err
+	if style == "floating" then
+		---@type boolean
+		local win_ok
+		win_ok, win_id = pcall(function()
+			return vim.api.nvim_open_win(bufnr, true, cfg.win_config)
+		end)
+		if not win_ok or win_id == 0 then
+			err = "ninjection.buffer.create_child_win() error: Failed to open child window."
+			if cfg.debug then
+				vim.notify(err, vim.log.levels.ERROR)
+			end
+			return 0, err
+		end
+		return win_id, nil
+	elseif style == "v_split" then
+		win_id, err = open_split_win("vsplit", bufnr)
+		return win_id, err
+	elseif style == "h_split" then
+		win_id, err = open_split_win("split", bufnr)
+		return win_id, err
+	end
+
+	-- Default return of cur_win
+	return 0, nil
+end
+
+-- Track parent, child buffer relations, in the event multiple child buffers
+-- are opened for the same injected content.
+-- Retrieve the existing ninjection table or initialize a new one
+---@param p_bufnr integer
+---@param c_bufnr integer
+---@return boolean success, string? err
+M.reg_child_buf = function(p_bufnr, c_bufnr)
+	---@type NJParent
+	local nj_parent = NJParent.new({ children = {} })
+
+	if not vim.api.nvim_buf_is_valid(p_bufnr) then
+		---@type string
+		local err = "buffer.reg_child_buf() error: The buffer, " .. p_bufnr .. " is invalid."
+		if cfg.debug then
+			vim.notify(err, vim.log.level.ERROR)
+		end
+		return false, err
+	end
+
+	---@type boolean, NJParent?
+	local get_nj_ok, get_nj_return = pcall(vim.api.nvim_buf_get_var, p_bufnr, "ninjection")
+
+	--- If the buffer already has a ninjection table, then we want to update the
+	--- table by appending new children to it.
+	if get_nj_ok and NJParent.is_parent(get_nj_return) then
+		---@cast get_nj_return NJParent
+		nj_parent = get_nj_return
+	end
+
+	--- Existing ninjection child buffers cannot also be parents (grandparents)
+	if get_nj_ok and NJChild.is_child(get_nj_return) then
+		---@type string
+		local err = "buffer.reg_child_buf() error: The buffer, "
+			.. p_bufnr
+			.. " is a ninjection child buffer already. It cannot be a parent, "
+			.. " gandparents are not supported."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.WARN)
+		end
+		return false, err
+	end
+	table.insert(nj_parent.children, c_bufnr)
+
+	---@type boolean
+	local svar_ok = pcall(vim.api.nvim_buf_set_var, p_bufnr, "ninjection", nj_parent)
+	if not svar_ok then
+		---@type string
+		local err = "buffer.reg_child_buf() error: Failed to set ninjection table var in parent bufnr: " .. p_bufnr
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return false, err
+	end
+
+	return true, nil
+end
+
+---@param c_bufnr integer
+---@return NJChild? nj_child, string? err
+M.get_buf_child = function(c_bufnr)
+	if not vim.api.nvim_buf_is_valid(c_bufnr) then
+		---@type string
+		local err = "buffer.reg_child_buf() error: The buffer, " .. c_bufnr .. " is invalid."
+		if cfg.debug then
+			vim.notify(err, vim.log.level.ERROR)
+		end
+		return nil, err
+	end
+
+	---@type boolean, NJChild?
+	local get_cnj_ok, get_cnj_return = pcall(vim.api.nvim_buf_get_var, c_bufnr, "ninjection")
+	-- Assuming that a vailed get_var call for ninjection on a valid bufnr means that
+	-- the table doesn't exist.
+	if not get_cnj_ok then
+		---@type string
+		local err = "ninjection.buffer.get_buf_parent() error: Error retrieving ninjection table for buffer " .. c_bufnr
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return nil, err
+	end
+
+	if not get_cnj_return or not NJChild.is_child(get_cnj_return) then
+		---@type string
+		local err = "ninjection.buffer.get_buf_parent() error: No child ninjection table for buffer: " .. c_bufnr
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return nil, err
+	end
+	---@cast get_cnj_return NJChild
+
+	setmetatable(get_cnj_return, NJChild)
+	return get_cnj_return, nil
+end
+
+---@tag ninjection.buffer.get_root_dir()
+---@brief
+--- Provides a root directory for attaching an LSP to a buffer.
+--- Tries to retrieve workspace folders first, then falls back to cwd.
+---
+---@return string? root_dir, string? err
+--- Root directory for new buffer.
+M.get_root_dir = function()
+	-- Try getting the workspace folders list first
+	---@type boolean, string[]?
+	local wks_ok, folders = pcall(vim.lsp.buf.list_workspace_folders)
+	if wks_ok and type(folders) == "table" and type(folders[1]) == "string" and folders[1] ~= "" then
+		---@cast folders string[]
+		return folders[1], nil
+	end
+
+	-- Fallback to the current working directory
+	---@type boolean, string?
+	local cwd_ok, cwd = pcall(vim.fn.getcwd)
+	if cwd_ok and type(cwd) == "string" and cwd ~= "" then
+		---@cast cwd string
+		return cwd, nil
+	end
+
+	---@type string
+	local err = "ninjection.init.get_root_dir() error: Could not determine root dir."
+	if cfg.debug then
+		vim.notify(err, vim.log.levels.ERROR)
+	end
+
+	return nil, err
+end
 
 ---@tag ninjection.buffer.get_indents()
 ---@brief
@@ -31,29 +236,18 @@ end
 ---  - `l_indent`: minimum number of leading spaces on nonempty lines.
 ---
 M.get_indents = function(bufnr)
-	---@type boolean, unknown, string[]
-	local ok, raw_output, lines
-
-	ok, raw_output = pcall(function()
+	---@type boolean, string[]?
+	local line_ok, lines
+	line_ok, lines = pcall(function()
 		return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	if type(raw_output) ~= "table" then
-		error("ninjection error: Expected vim.api.nvim_buf_get_lines() to return a table.", 2)
-	end
-	---@cast raw_output string[]
-	lines = raw_output
-
-	if #lines == 0 then
+	if not line_ok or not lines or #lines == 0 then
+		---@type string
+		local err = "ninjection.buffer.get_indents() error: Unable to retrieve lines from bufnr " .. bufnr
 		if cfg.debug then
-			vim.notify(
-				"ninjection.buffer.get_indents() warning: No lines returned "
-					.. "from calling vim.api.nvim_buf_get_lines()",
-				vim.log.levels.WARN
-			)
+			vim.notify(err, vim.log.levels.ERROR)
 		end
+		return nil, err
 	end
 	---@cast lines string[]
 
@@ -122,36 +316,34 @@ end
 --- Lines with the indents restored.
 ---
 M.restore_indents = function(text, indents)
-	---@type boolean, unknown, string[]?
-	local ok, raw_output, lines
-
+	---@type string[]?
+	local lines
 	if type(text) == "string" then
-		ok, raw_output = pcall(function()
+		---@type boolean
+		local split_ok
+		split_ok, lines = pcall(function()
 			return vim.split(text, "\n")
 		end)
-		if not ok then
-			error(tostring(raw_output), 2)
-		end
-		if type(raw_output) ~= "table" then
-			error("ninjection error: Expected a table returned from vim.split()", 2)
-		end
-		---@cast raw_output string[]
-		lines = raw_output
-		if #lines == 0 then
+		if not split_ok or not lines or #lines == 0 then
+			---@type string err
+			local err = "ninjection.buffer.restore_indents() error: Unable to split text lines."
 			if cfg.debug then
-				vim.notify(
-					"ninjection.buffer.restore_indents() warning: No lines " .. "returned from calling vim.split()",
-					vim.log.levels.WARN
-				)
+				vim.notify(err, vim.log.levels.ERROR)
 			end
-			return nil
+			return nil, err
 		end
+	---@cast lines string[]
 	elseif type(text) == "table" then
 		lines = text
-	else
-		error("ninjection.buffer.restore_indents() error: Text must be a string or " .. "a table of lines", 2)
-	end
 	---@cast lines string[]
+	else
+		local err = "ninjection.buffer.restore_indents() error: Text must be a string or a table of lines."
+		---@type string err
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return nil, err
+	end
 
 	-- Create the left indentation string.
 	---@type string
@@ -175,8 +367,10 @@ M.restore_indents = function(text, indents)
 	for _ = 1, (indents.b_indent or 0) do
 		if cfg.preserve_indents then
 			-- Compute the left indent string, subtracting one tab size.
+			---@type integer
 			local tab_size = vim.o.tabstop or 8
 			-- Ensure the resulting indent length is not negative.
+			---@type string
 			local adjusted_indent = string.rep(" ", math.max(0, (indents.l_indent or 0) - tab_size))
 			table.insert(lines, adjusted_indent)
 		else
@@ -185,195 +379,6 @@ M.restore_indents = function(text, indents)
 	end
 
 	return lines
-end
-
----@nodoc
---- Opens a vertically or horizontally split window for the child buffer.
----@param split_cmd string v_split or split.
----@param bufnr integer child bufnr.
----@return integer winid Handle for new window.
-local function open_split_win(split_cmd, bufnr)
-	---@type boolean, unknown, integer|nil
-	local ok, raw_output, winid
-	vim.cmd(split_cmd)
-	ok, winid = pcall(vim.api.nvim_get_current_win)
-	if not ok or not winid then
-		error(
-			"ninjection error: vim.api.nvim_get_current_win() did not return a " .. " window handle." .. tostring(winid),
-			2
-		)
-	end
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_buf(winid, bufnr)
-	end)
-	if not ok then
-		error(
-			"ninjection error: vim.api.nvim_win_set_buf() failed to set buffer "
-				.. "in new window: "
-				.. tostring(raw_output),
-			2
-		)
-	end
-	---@cast winid integer
-	return winid
-end
-
----@nodoc
---- Creates a window for the provided child buffer with either floating, v_split
---- or h_split styles.
----@param bufnr integer The buffer to create a viewport for.
----@param style EditorStyle The window style to edit the buffer with.
----@return integer winid Default: 0 (cur_win), child window handle, if created.
-local function create_child_win(bufnr, style)
-	---@type boolean, unknown, integer
-	local ok, raw_output, winid
-
-	if style == "floating" then
-		ok, raw_output = pcall(function()
-			return vim.api.nvim_open_win(bufnr, true, cfg.win_config)
-		end)
-		if not ok then
-			error(tostring(raw_output), 2)
-		end
-		if type(raw_output) ~= "number" then
-			error("ninjection error: vim.api.nvim_open_win() did not return a window " .. "handle.")
-		end
-		---@cast raw_output integer
-		winid = raw_output
-		return winid
-	elseif style == "v_split" then
-		winid = open_split_win("vsplit", bufnr)
-		---@cast winid integer
-		return winid
-	elseif style == "h_split" then
-		winid = open_split_win("split", bufnr)
-		---@cast winid integer
-		return winid
-	end
-
-	-- Default return of cur_win
-	return 0
-end
-
----@tag ninjection.buffer.create_child()
----@brief
---- Creates a child buffer to edit injected language text.
----
---- Parameters ~
----@param child NJChild - Buffer child object.
----@param text string - Text to populate the child buffer with.
----
----@return { bufnr: integer?, win: integer?, indents: NJIndents } c_table, string? err
--- Returns table containing handles for the child buffer and window, if
--- available, and parent indents.
---
-M.create_child = function(child, text)
-	---@type boolean, unknown, string?
-	local ok, raw_output, err
-
-	ok, raw_output = pcall(function()
-		return vim.fn.setreg(cfg.register, text)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	vim.notify("ninjection.edit(): Copied injected content text to register: " .. cfg.register, vim.log.levels.INFO)
-
-	---@type integer
-	local c_bufnr = vim.api.nvim_create_buf(true, true)
-	if not c_bufnr then
-		error("ninjection.edit() error: Failed to create a child buffer.", 2)
-	end
-
-	---@type integer
-	local c_win = create_child_win(c_bufnr, cfg.editor_style)
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_set_current_buf(c_bufnr)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	ok, raw_output = pcall(function()
-		return vim.cmd('normal! "zp')
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	ok, raw_output = pcall(function()
-		return vim.cmd("file " .. child.p_name .. ":" .. child.ft .. ":" .. c_bufnr)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	ok, raw_output = pcall(function()
-		return vim.cmd("set filetype=" .. child.ft)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	-- Preserve indentation after creating and pasting buffer contents, before
-	-- autoformatting, or they will be lost.
-	---@type NJIndents?
-	local p_indents
-	if cfg.preserve_indents then
-		p_indents, err = M.get_indents(0)
-		if not p_indents then
-			if cfg.debug then
-				vim.notify(
-					"ninjection.edit() warning: Unable to preserve indentation "
-						.. "with get_indents(): "
-						.. tostring(err),
-					vim.log.levels.WARN
-				)
-			end
-			-- Don't return early on indentation errors
-		end
-		---@cast p_indents NJIndents
-	end
-	-- Initialized to 0 if unset
-	if not p_indents then
-		p_indents = { t_indent = 0, b_indent = 0, l_indent = 0, tab_indent = 0 }
-		---@cast p_indents NJIndents
-	end
-	child.p_indents = p_indents
-
-	ok, raw_output = pcall(function()
-		return vim.cmd("doautocmd FileType " .. child.ft)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	if cfg.auto_format then
-		ok, raw_output = pcall(function()
-			return vim.cmd("lua " .. cfg.format_cmd)
-		end)
-		if not ok then
-			if cfg.debug then
-				err = tostring(raw_output)
-				vim.notify(
-					'ninjection.edit() warning: Calling vim.cmd("lua "' .. cfg.format_cmd .. ")\n" .. err,
-					vim.log.levels.WARN
-				)
-				-- Don't return early on auto-format error
-			end
-		end
-	end
-
-	-- Save the child information to the buffer's ninjection table
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_buf_set_var(c_bufnr, "ninjection", child)
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-
-	return { bufnr = c_bufnr, win = c_win, indents = p_indents }
 end
 
 ---@class NJChildCursor -- Options to calculate child window cursor position
@@ -435,131 +440,6 @@ function M.set_child_cur(opts)
 	end
 
 	return nil
-end
-
--- Autocommands don't trigger properly when creating and arbitrarily assigning
--- filetypes to buffers, so we need a function to start the appropriate LSP.
-
----@tag ninjection.buffer.start_lsp()
----@brief
---- Starts an appropriate LSP for the provided language.
----
---- Parameters ~
----@param lang string - The filetype of the injected language (e.g., "lua", "python").
----@param root_dir string - The root directory for the buffer.
----
----@return NJLspStatus? result, string? err - The LSP status.
----
-M.start_lsp = function(lang, root_dir)
-	---@type boolean, unknown, string?
-	local ok, raw_output, lang_lsp
-
-	-- The injected language must be mapped to an LSP
-	lang_lsp = cfg.lsp_map[lang]
-	if not lang_lsp then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: No LSP mapped to "
-				.. "language: "
-				.. lang
-				.. " check your configuration.",
-			vim.log.levels.WARN
-		)
-		return { "unmapped", -1 }
-	end
-	---@cast lang_lsp string
-
-	-- The LSP must have an available configuration
-	ok, raw_output = pcall(function()
-		return lspconfig[lang_lsp]
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	---@type lspconfig.Config?
-	local lsp_def = raw_output
-	if not lsp_def then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: Could not find "
-				.. "default_config for "
-				.. lang_lsp
-				.. ". Ensure it is installed and "
-				.. "properly configured for lspconfig.",
-			vim.log.levels.WARN
-		)
-		return { "unconfigured", -1 }
-	end
-	---@cast lsp_def lspconfig.Config
-
-	-- The LSP binary path must exist
-	-- RPC function support is not implemented
-	---@type string[]|fun(dispatchers: vim.lsp.rpc.Dispatchers): vim.lsp.rpc.PublicClient?
-	local lsp_cmd = lsp_def.cmd
-	if not lsp_cmd or #lsp_cmd == 0 then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: Command to execute "
-				.. lang_lsp
-				.. " does not exist. Ensure it is installed and configured.",
-			vim.log.levels.WARN
-		)
-		return { "unavailable", -1 }
-	end
-	---@cast lsp_cmd string[]
-
-	-- The LSP binary path must be executable
-	-- The command must be the first element
-	ok, raw_output = pcall(function()
-		return vim.fn.executable(lsp_cmd[1])
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	if raw_output ~= 1 then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: The LSP command: " .. lsp_cmd[1] .. " is not executable.",
-			vim.log.levels.WARN
-		)
-		return { "no-exec", -1 }
-	end
-
-	-- The LSP must support our injected language
-	if not vim.tbl_contains(lsp_def.filetypes, lang) then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: The configured LSP: "
-				.. lang_lsp
-				.. " does not support "
-				.. lang
-				.. " modify your configuration "
-				.. " to use an appropriate LSP.",
-			vim.log.levels.WARN
-		)
-		return { "unsupported", -1 }
-	end
-
-	ok, raw_output = pcall(function()
-		return vim.lsp.start({
-			name = lang_lsp,
-			cmd = lsp_cmd,
-			root_dir = root_dir,
-		})
-	end)
-	if not ok then
-		error(tostring(raw_output), 2)
-	end
-	---@type integer?
-	local client_id = raw_output
-	if client_id == nil then
-		vim.notify(
-			"ninjection.buffer.start_lsp() warning: The LSP: "
-				.. lang_lsp
-				.. " did not return a client_id, check your language client logs "
-				.. "(default ~/.local/state/nvim/lsp.log) for more information.",
-			vim.log.levels.WARN
-		)
-		return { "failed_start", -1 }
-	end
-	---@cast client_id integer
-
-	return { "started", client_id }
 end
 
 return M

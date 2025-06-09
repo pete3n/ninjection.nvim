@@ -9,19 +9,14 @@
 ---@brief
 --- Supported window styles for buffer editor:
 --- `"cur_win" | "floating" | "v_split" | "h_split"`
----
----@alias lspconfig.Config.command {[1]:string|vim.api.keyset.user_command}
----@brief
---- Modified from `nvim-lspconfig/lua/lspconfig/configs.lua` because I can't
---- find a reference to: `vim.api.keyset.create_user_command.command_args`
----
+
 ---@tag Ninjection.Subcommand
 ---@class Ninjection.Subcommand
 ---@brief Implemented by `plugin/ninjection.lua` for user commands.
 ---
 ---@field impl fun()
 ---@field complete? fun(arg_lead: string): string[]
----
+
 ---@tag Ninjection.CmdOpts
 ---@class Ninjection.CmdOpts
 ---@brief Implemented by `plugin/ninjection.lua` for user commands.
@@ -32,7 +27,7 @@
 ---@field line1? number - Starting line number for optional range.
 ---@field line2? number - Ending line number for optional range.
 ---@field count? number - Optional count.
----
+
 ---@tag Ninjection.Config
 ---@class Ninjection.Config
 ---@brief Implemented by `ninjection/config.lua` for default and user configs.
@@ -44,6 +39,7 @@
 ---
 ---@field auto_format? boolean - Auto format the new child buffer.
 ---@field format_cmd? string - Command for `auto_format`.
+---@field format_indent? integer - Additional spaces to indent injected text blocks.
 ---@field register? string - Register to use to copy injected content.
 ---@field debug? boolean - Output debug messages.
 ---
@@ -74,7 +70,7 @@
 --- languages These keys must match the language comment used to identify
 --- injected languages, and the value must match the LSP configured in your
 --- lspconfig.
----
+
 ---@tag NJRange
 ---@class NJRange
 ---@brief Store cursor position coordinates.
@@ -83,21 +79,21 @@
 ---@field s_col integer
 ---@field e_row integer
 ---@field e_col integer
----
+
 ---@tag NJCapturePair
 ---@class NJCapturePair
 ---@brief Store a language string and its associated node.
 ---
 ---@field inj_lang string Language tag extracted from inj_lang capture
 ---@field node TSNode Node associated with the injected code
----
+
 ---@tag NJLangTweak
 ---@class NJLangTweak
 ---@brief Language specific adjustments for tweaking parsing and buffers.
 ---
 ---@field parse_range_offset NJRange
 ---@field buffer_cursor_offset NJRange
----
+
 ---@tag NJNodeTable
 ---@class NJNodeTable
 ---@brief Store an injected language capture pair, its range, its text, and the
@@ -109,7 +105,7 @@
 ---@field text string Injected text
 ---@field text_meta? table<string, boolean> Language specific text modififications
 ---@field cursor_pos integer[] Cursor position during table creation
----
+
 ---@tag NJIndents
 ---@class NJIndents
 ---@brief Store indents for a text buffer.
@@ -118,47 +114,3 @@
 ---@field b_indent number
 ---@field l_indent number
 ---@field tab_indent number
----
----@tag NJParent
----@brief Store associated child bufnrs.
----@class NJParent
----@field children integer[]
----
----@tag NJChild
----@class NJChild
----@brief Store associated parent buffer information
----
----@field ft string Filetype in use for the child
----@field root_dir string Root directory associated with the child
----@field p_bufnr integer Parent bufnr the child belongs to
----@field p_ft string Parent filetype
----@field p_name string Parent buffer name
----@field p_range NJRange Parent text range the child is created from
----@field p_text_meta? table<string, boolean> Metadata for language specific
---- text modifications
----@field p_indents? NJIndents Parent indents if preserved
----
----@tag NJLspStatus
----@class NJLspStatus
----@brief Store LSP status and associated client ID.
----
----@field status string - The LSP startup status. Possible values: `"unmapped"`,
---- `"unconfigured"`, `"unavailable"`, `"no-exec"`, `"unsupported"`, `"failed_start"`,
---- `"started"`
----
----@field client_id integer - The client ID of the started LSP, -1 on failure
----
----@tag lspconfig.Config
----@class lspconfig.Config : vim.lsp.ClientConfig
----@brief Annotation for lspconfig from `nvim-lspconfig/lua/lspconfig/configs.lua`
----
----@field enabled? boolean
----@field single_file_support? boolean
----@field silent? boolean
----@field filetypes? string[]
----@field filetype? string
----@field on_new_config? fun(new_config: lspconfig.Config?, new_root_dir: string)
----@field autostart? boolean
----@field package _on_attach? fun(client: vim.lsp.Client, bufnr: integer)
----@field root_dir? string|fun(filename: string, bufnr: number)
----@field commands? table<string, lspconfig.Config.command>
