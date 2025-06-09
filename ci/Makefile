@@ -30,7 +30,7 @@ lua_ls-check:
 		cat .ci/lua_ls-log/check.json; \
 		exit 1; \
 	else \
-		echo "✅ No errors found."; \
+		echo "No check.json output."; \
 	fi
 
 CONFIG_FILE = $(shell realpath ci/.luarc.$(version).json)
