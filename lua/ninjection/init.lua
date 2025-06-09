@@ -547,7 +547,7 @@ function ninjection.format()
 			if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
 				vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
 			end
-		end, 100)
+		end, 500)
 	end)
 
 	return true, nil
