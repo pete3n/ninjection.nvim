@@ -8,7 +8,7 @@ print(vim.inspect(vim.opt.rtp:get()))
 
 describe("ninjection.checkhealth integration test #e2e #edit", function()
 	it("validates checkhealth requirements", function()
-		vim.cmd("checkhealth ninjection")
+		nj.health.check()
 		local buf_content = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 		local expected = {
 			"==============================================================================",
