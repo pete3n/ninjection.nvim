@@ -3,7 +3,7 @@ require("helpers.init")
 
 local eq = assert.are.same
 local ninjection = require("ninjection")
-local njhealth = require("health")
+local njhealth = require("ninjection.health")
 
 print(vim.inspect(vim.opt.rtp:get()))
 
