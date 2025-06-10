@@ -41,7 +41,7 @@ end
 local required_plugins = {
 	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
 	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
-	{ lib = "conform.nvim", optional = false, info = "Required for injected language formatting" },
+	{ lib = "conform", optional = false, info = "Required for injected language formatting" },
 }
 
 local function lualib_installed(lib_name)
