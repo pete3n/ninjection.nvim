@@ -2,7 +2,8 @@ package.path = vim.fn.getcwd() .. "/tests/e2e/?.lua;" .. package.path
 require("helpers.init")
 
 local eq = assert.are.same
-local njhealth = require("ninjection.health")
+local ninjection = require("ninjection")
+local njhealth = require("health")
 
 print(vim.inspect(vim.opt.rtp:get()))
 
