@@ -24,10 +24,10 @@ describe("stylua manual format test #e2e #stylua", function()
 			},
 		})
 
-		-- Confirm stylua is found
-		vim.notify("stylua path: " .. vim.fn.exepath("stylua"))
-		vim.notify("stylua version: " .. vim.fn.system("stylua --version"))
-		vim.notify("Detected formatters: " .. vim.inspect(conform.list_formatters_for_buffer(buf)))
+		local f = io.open("/tmp/debug_log.txt", "a")
+		f:write("stylua path: ", vim.fn.exepath("stylua"), "\n")
+		f:write("stylua version: ", vim.fn.system("stylua --version"), "\n")
+		f:close()
 
 		conform.format({
 			bufnr = buf,
