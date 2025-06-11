@@ -1,5 +1,5 @@
-require("helpers.init")
 package.path = vim.fn.getcwd() .. "/tests/e2e/?.lua;" .. package.path
+require("helpers.init")
 
 print(vim.inspect(vim.opt.rtp:get()))
 
