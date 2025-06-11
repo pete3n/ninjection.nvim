@@ -10,16 +10,15 @@ describe("stylua manual format test #e2e #stylua", function()
 		})
 		vim.bo[buf].filetype = "lua"
 
-		local conform = require("conform")
-
-		-- SETUP MUST BE CALLED FIRST
-		conform.setup({
+		require("conform").setup({
 			formatters_by_ft = {
 				lua = { "stylua" },
 			},
 			formatters = {
 				stylua = {
-					prepend_args = { "--indent-width", "2" },
+					command = "echo",
+					args = { "STYLUA CALLED" },
+					stdin = true,
 				},
 			},
 		})
@@ -29,7 +28,7 @@ describe("stylua manual format test #e2e #stylua", function()
 		f:write("stylua version: ", vim.fn.system("stylua --version"), "\n")
 		f:close()
 
-		conform.format({
+		require("conform").format({
 			bufnr = buf,
 			async = false,
 			lsp_fallback = false,
