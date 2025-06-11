@@ -16,7 +16,8 @@ jobs:
           docker build -f ci/Dockerfile -t ninjection-test .
 
       - name: Run End-to-End Tests in Container
-        run: docker run --rm ninjection-test
-
-      - name: Dump debug log
-        run: cat /tmp/debug_log.txt || echo "No debug log written"
+        run: |
+          mkdir -p debug
+          docker run --rm \
+            -v ${{ github.workspace }}/debug:/debug \
+            ninjection-test

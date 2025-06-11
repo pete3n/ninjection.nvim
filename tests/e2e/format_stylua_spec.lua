@@ -24,7 +24,7 @@ describe("stylua manual format test #e2e #stylua", function()
 			},
 		})
 
-		local f = io.open("/tmp/debug_log.txt", "a")
+		local f = io.open("/debug/debug_log.txt", "a")
 		f:write("stylua path: ", vim.fn.exepath("stylua"), "\n")
 		f:write("stylua version: ", vim.fn.system("stylua --version"), "\n")
 		f:close()
