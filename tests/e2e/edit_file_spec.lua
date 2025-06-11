@@ -4,8 +4,6 @@ require("helpers.init")
 local eq = assert.are.same
 local nj = require("ninjection")
 
-print(vim.inspect(vim.opt.rtp:get()))
-
 describe("ninjection.edit integration test #e2e #edit", function()
 	it("validates injected content in edit buffer", function()
 		vim.cmd("edit tests/ft/nix/lua.nix")
