@@ -10,6 +10,18 @@ describe("stylua manual format test #e2e #stylua", function()
 		})
 		vim.bo[buf].filetype = "lua"
 
+		local conform = require("conform")
+		print("Detected formatters:", vim.inspect(conform.list_formatters_for_buffer(buf)))
+
+		print("stylua path:", vim.fn.exepath("stylua"))
+		print("stylua version:", vim.fn.system("stylua --version"))
+
+		require("conform").setup({
+			formatters_by_ft = {
+				lua = { "stylua" },
+			},
+		})
+
 		require("conform").format({
 			bufnr = buf,
 			async = false,
