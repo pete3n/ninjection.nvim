@@ -13,14 +13,15 @@ describe("ninjection.format integration test #e2e #edit", function()
 		print("Buffer content:", vim.inspect(buf_content))
 		vim.api.nvim_win_set_cursor(0, { 11, 7 })
 		nj.format()
-		vim.wait(5000) -- TODO: Replace with appropriate configuration timing
+		vim.wait(500) -- TODO: Replace with appropriate configuration timing
 		local buf = vim.api.nvim_get_current_buf()
 		buf_content = vim.api.nvim_buf_get_lines(buf, 9, 13, false)
 		local expected = {
-			"    ''",
-			"      local lua_content",
-			"      local more_lua_content",
-			"    '';"
+			"		''",
+			"			local lua_content",
+			"			local more_lua_content",
+			"			local final_lue_conent",
+			"		'';"
 		}
 		print("Buffer content: " .. vim.inspect(buf_content))
 
