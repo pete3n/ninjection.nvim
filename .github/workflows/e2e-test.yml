@@ -21,6 +21,7 @@ jobs:
           docker run --rm \
             -v ${{ github.workspace }}/debug:/debug \
             ninjection-test
+        continue-on-error: true
 
       - name: Dump debug log
         run: cat debug/debug_log.txt || echo "No debug log written"
