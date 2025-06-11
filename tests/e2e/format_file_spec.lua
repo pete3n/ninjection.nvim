@@ -20,7 +20,6 @@ describe("ninjection.format integration test #e2e #edit", function()
 			"		''",
 			"			local lua_content",
 			"			local more_lua_content",
-			"			local final_lue_conent",
 			"		'';"
 		}
 		print("Buffer content: " .. vim.inspect(buf_content))
