@@ -5,8 +5,10 @@ describe("stylua manual format test #e2e #stylua", function()
 	it("formats Lua with stylua", function()
 		local buf = vim.api.nvim_create_buf(false, true)
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+			"do",
 			"local lua_content",
 			"  local more_lua_content",
+			"end",
 		})
 		vim.bo[buf].filetype = "lua"
 
@@ -16,9 +18,7 @@ describe("stylua manual format test #e2e #stylua", function()
 			},
 			formatters = {
 				stylua = {
-					command = "echo",
-					args = { "STYLUA CALLED" },
-					stdin = true,
+					prepend_args = { "--indent-width", "2" },
 				},
 			},
 		})
