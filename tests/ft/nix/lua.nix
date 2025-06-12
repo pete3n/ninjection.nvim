@@ -12,5 +12,5 @@
  local lua_content
     local more_lua_content
         end 
-	'';
+ '';
 }
