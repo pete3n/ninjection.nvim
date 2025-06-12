@@ -16,8 +16,10 @@ describe("ninjection.format integration test #e2e #edit", function()
 		buf_content = vim.api.nvim_buf_get_lines(buf, 9, 13, false)
 		local expected = {
 			"		''",
-			"			local lua_content",
-			"			local more_lua_content",
+			"			do",
+			"				local lua_content",
+			"				local more_lua_content",
+			"			end",
 			"		'';"
 		}
 		print("Buffer content: " .. vim.inspect(buf_content))

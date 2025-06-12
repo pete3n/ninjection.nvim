@@ -8,7 +8,9 @@
 
   injected_content_format = # lua
             ''
-      local lua_content
+			do
+		local lua_content
   local more_lua_content
+				end
  '';
 }
