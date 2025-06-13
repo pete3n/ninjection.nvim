@@ -527,6 +527,7 @@ function ninjection.format()
 	end
 	---@cast lsp_status NJLspStatus
 
+	vim.wait(3000)
 	if lsp_status:is_attached(nj_child.c_bufnr) then
 		vim.notify("lsp is attached to " .. tostring(nj_child.c_bufnr), vim.log.levels.WARN)
 	else
