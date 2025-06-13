@@ -534,9 +534,7 @@ function ninjection.format()
 	end, 50)
 
 	if not lsp_attach_ok and cfg.debug then
-		vim.notify("ninjeciton.format() warning: Timeout waiting for LSP to attach.",
-			vim.log.levels.WARN
-		)
+		vim.notify("ninjeciton.format() warning: Timeout waiting for LSP to attach.", vim.log.levels.WARN)
 	end
 
 	--require("conform").format({
