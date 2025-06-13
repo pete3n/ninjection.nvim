@@ -402,25 +402,29 @@ function ninjection.replace()
 end
 
 local function get_min_indent(lines)
-	local min = nil
-	for _, line in ipairs(lines) do
-		if line:find("%S") then
-			local indent = line:match("^(%s*)")
-			local len = #indent
-			if min == nil or len < min then
-				min = len
-			end
-		end
-	end
-	return min or 0
+  local min = nil
+  for _, line in ipairs(lines) do
+    if line:find("%S") then
+      local indent = line:match("^(%s*)")
+      local len = #indent
+      if min == nil or len < min then
+        min = len
+      end
+    end
+  end
+  return min or 0
 end
 
 local function strip_indent_by(lines, count)
-	local stripped = {}
-	for _, line in ipairs(lines) do
-		table.insert(stripped, line:gsub("^%s{0," .. count .. "}", ""))
-	end
-	return stripped
+  local stripped = {}
+  for _, line in ipairs(lines) do
+    local trimmed = line
+    if #line >= count then
+      trimmed = line:sub(count + 1)
+    end
+    table.insert(stripped, trimmed)
+  end
+  return stripped
 end
 
 ---@tag indent_block()
