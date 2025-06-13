@@ -147,7 +147,8 @@ function NJChild:init_buf(opts)
 	end
 
 	---@type boolean
-	local sname_ok = pcall(vim.api.nvim_buf_set_name, c_bufnr, self.p_name .. ":" .. c_bufnr .. ":" .. self.c_ft)
+	--local sname_ok = pcall(vim.api.nvim_buf_set_name, c_bufnr, self.p_name .. ":" .. c_bufnr .. ":" .. self.c_ft)
+	local sname_ok = pcall(vim.api.nvim_buf_set_name, c_bufnr, "/ninjection/tests/fake.lua")
 	if not sname_ok then
 		---@type string
 		local err = "ninjection.child:init_buf() error: Failed to set buffer name."
