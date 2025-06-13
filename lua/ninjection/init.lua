@@ -536,6 +536,7 @@ function ninjection.format()
 	local log_path = "/debug/debug_log.txt"
 	local ok, f = pcall(io.open, log_path, "a")
 	if ok and f then
+		f:write(string.format("[LSP Attach Check] root_dir=%s\n", tostring(nj_child.c_root_dir)))
 		f:write(string.format("[LSP Attach Check] success=%s\n", tostring(success)))
 		f:write(string.format("[LSP Attach Check] status=%s\n", tostring(lsp_status.status)))
 		f:write(string.format("[LSP Attach Check] client_id=%s\n", tostring(lsp_status.client_id)))
