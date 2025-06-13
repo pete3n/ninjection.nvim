@@ -98,12 +98,26 @@ M.start_lsp = function(lang, root_dir, bufnr)
 	end
 	---@cast lang_lsp string
 
+	-- Try to require lspconfig
+	local status, lspconfig_or_err = pcall(require, "lspconfig")
+	vim.log("[LSP DEBUG] require('lspconfig') success: " .. tostring(status))
+	if not status then
+		vim.log("[LSP DEBUG] require('lspconfig') error: " .. tostring(lspconfig_or_err))
+		return NJLspStatus.new(LspStatusMsg.UNAVAILABLE, nil), "require('lspconfig') failed"
+	end
+
+	-- Log available servers in CI
+	for k, _ in pairs(lspconfig_or_err) do
+		vim.log("[LSP DEBUG] lspconfig[" .. k .. "] is available")
+	end
+
 	-- The LSP must have an available configuration
 	---@type boolean, lspconfig.Config?
 	local ok, lsp_def = pcall(function()
 		return lspconfig[lang_lsp]
 	end)
 	if not ok or not lsp_def then
+		vim.log("[LSP DEBUG] lsp_def is nil: " .. tostring(lsp_def == nil))
 		err = "Ninjection.buffer.start_lsp() error: no LSP configuration for: " .. lang_lsp .. " " .. tostring(lsp_def)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN)
