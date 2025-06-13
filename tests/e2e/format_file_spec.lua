@@ -4,7 +4,7 @@ require("helpers.init")
 local eq = assert.are.same
 local nj = require("ninjection")
 
-describe("ninjection.format integration test #e2e #edit", function()
+describe("ninjection.format integration test #e2e #format", function()
 	it("validates injected content after formatting buffer", function()
 		vim.cmd("edit tests/ft/nix/lua.nix")
 		local buf_content = vim.api.nvim_buf_get_lines(0, 9, 15, false)
