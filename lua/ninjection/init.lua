@@ -505,7 +505,7 @@ function ninjection.format()
 	})
 
 	---@type boolean, string?
-	local init_ok, init_err = nj_child:init_buf({ text = injection.text, create_win = false })
+	local init_ok, init_err = nj_child:init_buf({ text = injection.text, create_win = true })
 	if not init_ok then
 		return false, tostring(init_err)
 	end
@@ -555,7 +555,7 @@ function ninjection.format()
 	vim.lsp.buf.format({
 		bufnr = nj_child.c_bufnr,
 		async = true,
-		timeout_ms = 3000,
+		timeout_ms = 1000,
 	})
 
 	vim.defer_fn(function()
@@ -566,7 +566,7 @@ function ninjection.format()
 			indent_block(cur_bufnr, injection.range, rep_lines)
 		end
 
-		--vim.api.nvim_win_hide(nj_child.c_win)
+		vim.api.nvim_win_hide(nj_child.c_win)
 
 		vim.defer_fn(function()
 			if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
