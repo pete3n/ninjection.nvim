@@ -527,9 +527,23 @@ function ninjection.format()
 	end
 	---@cast lsp_status NJLspStatus
 
-	vim.wait(3000, function()
+	-- Wait for LSP to attach
+	local success = vim.wait(3000, function()
 		return lsp_status:is_attached(nj_child.c_bufnr)
 	end, 50)
+
+	-- Open log file for appending (create if missing)
+	local log_path = "/debug/debug_log.txt"
+	local ok, f = pcall(io.open, log_path, "a")
+	if ok and f then
+		f:write(string.format("[LSP Attach Check] success=%s\n", tostring(success)))
+		f:write(string.format("[LSP Attach Check] status=%s\n", tostring(lsp_status.status)))
+		f:write(string.format("[LSP Attach Check] client_id=%s\n", tostring(lsp_status.client_id)))
+		f:write(string.format("[LSP Attach Check] bufnr=%d\n", nj_child.c_bufnr))
+		f:close()
+	else
+		vim.notify("Could not write to debug log: " .. tostring(f), vim.log.levels.WARN)
+	end
 
 	--require("conform").format({
 	--	bufnr = nj_child.c_bufnr,
