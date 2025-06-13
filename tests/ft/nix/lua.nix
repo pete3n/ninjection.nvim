@@ -2,7 +2,7 @@
 {
   injected_content_edit = # lua
     ''
-      local lua_content
+      	local lua_content
       local more_lua_content
     '';
 

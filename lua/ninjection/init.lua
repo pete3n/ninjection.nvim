@@ -401,32 +401,6 @@ function ninjection.replace()
 	return true, nil
 end
 
-local function get_min_indent(lines)
-  local min = nil
-  for _, line in ipairs(lines) do
-    if line:find("%S") then
-      local indent = line:match("^(%s*)")
-      local len = #indent
-      if min == nil or len < min then
-        min = len
-      end
-    end
-  end
-  return min or 0
-end
-
-local function strip_indent_by(lines, count)
-  local stripped = {}
-  for _, line in ipairs(lines) do
-    local trimmed = line
-    if #line >= count then
-      trimmed = line:sub(count + 1)
-    end
-    table.insert(stripped, trimmed)
-  end
-  return stripped
-end
-
 ---@tag indent_block()
 ---@brief
 --- Re-indents a block of lines and surrounding delimiters ('' and '';
@@ -563,8 +537,6 @@ function ninjection.format()
 		if not rep_lines or #rep_lines == 0 then
 			vim.notify("No formatted output", vim.log.levels.WARN)
 		else
-			local min_indent = get_min_indent(rep_lines)
-			rep_lines = strip_indent_by(rep_lines, min_indent)
 			indent_block(cur_bufnr, injection.range, rep_lines)
 		end
 
