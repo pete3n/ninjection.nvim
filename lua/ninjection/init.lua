@@ -401,6 +401,39 @@ function ninjection.replace()
 	return true, nil
 end
 
+--- Find the common leading whitespace prefix of all lines
+local function find_common_indent(lines)
+  local indent
+  for _, line in ipairs(lines) do
+    local leading = line:match("^(%s*)%S")
+    if leading then
+      if not indent then
+        indent = leading
+      else
+        while not line:find("^" .. indent) do
+          indent = indent:sub(1, -2)
+          if indent == "" then break end
+        end
+      end
+    end
+  end
+  return indent or ""
+end
+
+--- Strip `n` leading spaces from all lines
+local function strip_indent(lines, indent)
+  local len = #indent
+  local stripped = {}
+  for _, line in ipairs(lines) do
+    if line:sub(1, len) == indent then
+      table.insert(stripped, line:sub(len + 1))
+    else
+      table.insert(stripped, line)
+    end
+  end
+  return stripped
+end
+
 ---@tag indent_block()
 ---@brief
 --- Re-indents a block of lines and surrounding delimiters ('' and '';
@@ -537,6 +570,10 @@ function ninjection.format()
 		if not rep_lines or #rep_lines == 0 then
 			vim.notify("No formatted output", vim.log.levels.WARN)
 		else
+			-- Normalize stylua result
+			local common = find_common_indent(rep_lines)
+			rep_lines = strip_indent(rep_lines, common)
+
 			indent_block(cur_bufnr, injection.range, rep_lines)
 		end
 
