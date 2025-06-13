@@ -22,3 +22,28 @@ if packpath and packpath ~= "" then
 	vim.opt.packpath = { packpath }
 	print("Packpath set to:", vim.inspect(vim.opt.packpath:get()))
 end
+
+for name, config in pairs(lspconfig) do
+	if type(config) == "table" and config.cmd then
+		table.insert(servers, {
+			name = name,
+			cmd = config.cmd,
+		})
+	end
+end
+
+-- Ensure the debug directory exists
+vim.fn.mkdir("debug", "p")
+
+local f, err = io.open("debug/debug_log.txt", "a")
+if not f then
+  print("Failed to open debug log file:", err)
+else
+  f:write("[LSPConfig Dump] Registered servers:\n")
+  for _, server in ipairs(servers) do
+    f:write(string.format("- %s → cmd: %s\n", server.name, vim.inspect(server.cmd)))
+  end
+  f:write("\n")
+  f:close()
+end
+

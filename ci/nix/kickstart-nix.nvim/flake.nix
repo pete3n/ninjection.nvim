@@ -56,7 +56,7 @@
 							# symlink the .luarc.json generated in the overlay
 							ln -fs ${pkgs.nvim-luarc-json} .luarc.json
 							# allow quick iteration of lua configs
-							mkdir -p ~/.config
+							#mkdir -p ~/.config
 							ln -Tfns $PWD/ci/nix/kickstart-nix.nvim/nvim ~/.config/nvim-dev
 							# Make packpath available for testing
 							nvimDevPath=$(which nvim-dev)
