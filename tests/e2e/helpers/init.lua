@@ -3,18 +3,6 @@ local rtp = vim.env.NVIM_RTP
 local vimruntime = vim.env.VIMRUNTIME
 
 local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
-local servers = {}
-
-if lspconfig_ok then
-	for name, config in pairs(lspconfig) do
-		if type(config) == "table" and config.cmd then
-			table.insert(servers, {
-				name = name,
-				cmd = config.cmd,
-			})
-		end
-	end
-end
 
 --local f = io.open("/debug/debug_log.txt", "a")
 --if f then
@@ -23,6 +11,21 @@ end
 --end
 
 local f = io.open("/debug/debug_log.txt", "a")
+
+-- Register the server explicitly if it hasn't been already
+if not lspconfig.lua_ls then
+  local ok, configs = pcall(require, "lspconfig.configs")
+  if ok and not configs.lua_ls then
+    configs.lua_ls = {
+      default_config = {
+        cmd = { "lua-language-server" },
+        filetypes = { "lua" },
+        root_dir = lspconfig.util.root_pattern(".git", "."),
+        settings = {},
+      },
+    }
+  end
+end
 
 if f then
   f:write("[DEBUG INIT] Checking lua_ls config...\n")
