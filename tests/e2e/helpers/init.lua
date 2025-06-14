@@ -2,37 +2,31 @@ local packpath = vim.env.NVIM_PACKPATH
 local rtp = vim.env.NVIM_RTP
 local vimruntime = vim.env.VIMRUNTIME
 
-local _, lspconfig = pcall(require, "lspconfig")
-
 local f = io.open("/debug/debug_log.txt", "a")
 if f then
   f:write("init.lua called\n")
-  f:close()
-end
 
-
--- Register the server explicitly if it hasn't been already
-if not lspconfig.lua_ls then
-  local ok, configs = pcall(require, "lspconfig.configs")
-  if ok and not configs.lua_ls then
-    configs.lua_ls = {
-      default_config = {
-        cmd = { "lua-language-server" },
-        filetypes = { "lua" },
-        root_dir = lspconfig.util.root_pattern(".git", "."),
-        settings = {},
-      },
-    }
+  -- Register the server explicitly if it hasn't been already
+  local _, lspconfig = pcall(require, "lspconfig")
+  if not lspconfig.lua_ls then
+    local ok, configs = pcall(require, "lspconfig.configs")
+    if ok and not configs.lua_ls then
+      configs.lua_ls = {
+        default_config = {
+          cmd = { "lua-language-server" },
+          filetypes = { "lua" },
+          root_dir = lspconfig.util.root_pattern(".git", "."),
+          settings = {},
+        },
+      }
+    end
   end
-end
 
-if lspconfig.lua_ls then 
-	lspconfig.lua_ls.setup({})
-end
+  if lspconfig.lua_ls then
+    lspconfig.lua_ls.setup({})
+  end
 
-if f then
   f:write("[DEBUG INIT] Checking lua_ls config...\n")
-
   if lspconfig and lspconfig.lua_ls then
     f:write("lua_ls config exists!\n")
     f:write("lua_ls.cmd = " .. vim.inspect(lspconfig.lua_ls.cmd) .. "\n")
