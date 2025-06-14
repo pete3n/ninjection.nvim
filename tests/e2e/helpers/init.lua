@@ -16,9 +16,30 @@ if lspconfig_ok then
 	end
 end
 
-local f = io.open("/debug/debug_log.txt", "a")
+--local f = io.open("/debug/debug_log.txt", "a")
+--if f then
+--  f:write("This ran!\n")
+--  f:close()
+--end
+
+local f = io.open(debug_file, "a")
+
 if f then
-  f:write("This ran!\n")
+  f:write("[DEBUG INIT] Checking lua_ls config...\n")
+
+  if lspconfig.lua_ls then
+    f:write("lua_ls config exists!\n")
+    f:write("lua_ls.cmd = " .. vim.inspect(lspconfig.lua_ls.cmd) .. "\n")
+
+    local handle = io.popen("which lua-language-server 2>/dev/null")
+    local path = handle and handle:read("*a") or "not found"
+    if handle then handle:close() end
+
+    f:write("which lua-language-server: " .. path .. "\n")
+  else
+    f:write("lua_ls is NOT defined in lspconfig.\n")
+  end
+
   f:close()
 end
 
