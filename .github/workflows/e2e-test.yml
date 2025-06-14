@@ -17,8 +17,8 @@ jobs:
 
       - name: Run End-to-End Tests in Container
         run: |
-          mkdir -p /debug
-          touch /debug/debug_log.txt
+          mkdir -p debug
+          touch debug/debug_log.txt
           docker run --rm \
             -v ${{ github.workspace }}/debug:/debug \
             ninjection-test
