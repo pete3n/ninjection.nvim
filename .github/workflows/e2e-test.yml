@@ -21,7 +21,7 @@ jobs:
           touch debug/debug_log.txt
           docker run --name ninjection-test-container \
             -v ${{ github.workspace }}/debug:/debug \
-            ninjection-test
+            ninjection-test-container
         continue-on-error: true
 
       - name: Check for lua_ls.lua in running container
