@@ -27,7 +27,6 @@ ENV NVIM_RTP="/ninjection/share/nvim/runtime"
 CMD nix develop ./ci/nix/kickstart-nix.nvim \
   --extra-experimental-features "nix-command flakes" \
   --command bash -c '
-    mkdir -p /debug
     nvim-dev --headless \
       -c "PlenaryBustedDirectory tests/e2e" \
       -c "qa" 2>&1 | tee /debug/test_output.log
