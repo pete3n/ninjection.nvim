@@ -26,6 +26,7 @@ if not lspconfig.lua_ls then
     }
   end
 end
+lspconfig.lua_ls.setup({})
 
 if f then
   f:write("[DEBUG INIT] Checking lua_ls config...\n")
