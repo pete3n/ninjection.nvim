@@ -16,20 +16,21 @@ if lspconfig_ok then
 	end
 end
 
-if vim.fn and vim.fn.mkdir then
-	vim.fn.mkdir("debug", "p")
-else
-	os.execute("mkdir -p debug")
-end
+local debug_dir = vim.fn.getcwd() .. "/debug"
+vim.fn.mkdir(debug_dir, "p")
 
-local f = io.open("debug/debug_log.txt", "a")
+local debug_file = debug_dir .. "/debug_log.txt"
+local f = io.open(debug_file, "a")
 if f then
+	f:write("[DEBUG INIT] Writing from: " .. debug_file .. "\n")
 	f:write("[LSPConfig Dump] Registered servers:\n")
 	for _, server in ipairs(servers) do
 		f:write(string.format("- %s → cmd: %s\n", server.name, vim.inspect(server.cmd)))
 	end
 	f:write("\n")
 	f:close()
+else
+	print("Failed to open " .. debug_file .. " for writing")
 end
 
 if rtp and rtp ~= "" then
