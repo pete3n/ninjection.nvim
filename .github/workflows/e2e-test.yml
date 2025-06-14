@@ -19,13 +19,17 @@ jobs:
         run: |
           mkdir -p debug
           touch debug/debug_log.txt
-          docker run --rm \
+          docker run --name ninjection-test-container \
             -v ${{ github.workspace }}/debug:/debug \
             ninjection-test
         continue-on-error: true
 
-      - name: Find lua_ls.lua
-        run: find /nix/store -type f -name "lua_ls.lua"
+      - name: Check for lua_ls.lua in running container
+        run: |
+          docker exec ninjection-test-container find /nix/store -type f -name "lua_ls.lua" || echo "Not found"
+
+      - name: Remove test container
+        run: docker rm ninjection-test-container
 
       - name: Dump debug log
         run: cat debug/debug_log.txt || echo "No debug log written"
