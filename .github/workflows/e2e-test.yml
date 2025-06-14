@@ -24,5 +24,8 @@ jobs:
             ninjection-test
         continue-on-error: true
 
+      - name: Find lua_ls.lua
+        run: find /nix/store -type f -name "lua_ls.lua"
+
       - name: Dump debug log
         run: cat debug/debug_log.txt || echo "No debug log written"
