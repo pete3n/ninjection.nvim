@@ -2,15 +2,14 @@ local packpath = vim.env.NVIM_PACKPATH
 local rtp = vim.env.NVIM_RTP
 local vimruntime = vim.env.VIMRUNTIME
 
-local lspconfig_ok, lspconfig = pcall(require, "lspconfig")
-
---local f = io.open("/debug/debug_log.txt", "a")
---if f then
---  f:write("This ran!\n")
---  f:close()
---end
+local _, lspconfig = pcall(require, "lspconfig")
 
 local f = io.open("/debug/debug_log.txt", "a")
+if f then
+  f:write("init.lua called\n")
+  f:close()
+end
+
 
 -- Register the server explicitly if it hasn't been already
 if not lspconfig.lua_ls then
@@ -26,7 +25,10 @@ if not lspconfig.lua_ls then
     }
   end
 end
-lspconfig.lua_ls.setup({})
+
+if lspconfig.lua_ls then 
+	lspconfig.lua_ls.setup({})
+end
 
 if f then
   f:write("[DEBUG INIT] Checking lua_ls config...\n")
