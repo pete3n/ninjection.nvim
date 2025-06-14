@@ -23,5 +23,8 @@ jobs:
             ninjection-test
         continue-on-error: true
 
+      - name: Find debug log
+        run: find . -name debug_log.txt || echo "Not found"
+
       - name: Dump debug log
         run: cat debug/debug_log.txt || echo "No debug log written"
