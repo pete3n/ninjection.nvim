@@ -16,6 +16,12 @@ if lspconfig_ok then
 	end
 end
 
+if vim.fn and vim.fn.mkdir then
+	vim.fn.mkdir("debug", "p")
+else
+	os.execute("mkdir -p debug")
+end
+
 local f = io.open("debug/debug_log.txt", "a")
 if f then
 	f:write("[LSPConfig Dump] Registered servers:\n")
