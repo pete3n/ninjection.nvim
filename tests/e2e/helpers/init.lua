@@ -22,12 +22,12 @@ end
 --  f:close()
 --end
 
-local f = io.open(debug_file, "a")
+local f = io.open("/debug/debug_log.txt", "a")
 
 if f then
   f:write("[DEBUG INIT] Checking lua_ls config...\n")
 
-  if lspconfig.lua_ls then
+  if lspconfig and lspconfig.lua_ls then
     f:write("lua_ls config exists!\n")
     f:write("lua_ls.cmd = " .. vim.inspect(lspconfig.lua_ls.cmd) .. "\n")
 
