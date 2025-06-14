@@ -17,19 +17,15 @@ jobs:
 
       - name: Run End-to-End Tests in Container
         run: |
-          mkdir -p debug
-          touch debug/debug_log.txt
-          docker run --name ninjection-test-container \
+          mkdir -p /debug
+          touch /debug/debug_log.txt
+          docker run --rm \
             -v ${{ github.workspace }}/debug:/debug \
-            ninjection-test-container
+            ninjection-test
         continue-on-error: true
 
-      - name: Check for lua_ls.lua in running container
-        run: |
-          docker exec ninjection-test-container find /nix/store -type f -name "lua_ls.lua" || echo "Not found"
-
-      - name: Remove test container
-        run: docker rm ninjection-test-container
+      - name: Dump test output
+        run: cat debug/test_output.log || echo "No test log found"
 
       - name: Dump debug log
         run: cat debug/debug_log.txt || echo "No debug log written"

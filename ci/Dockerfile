@@ -20,14 +20,15 @@ WORKDIR /ninjection
 COPY --from=builder /tmp/nix-store-closure /nix/store
 COPY --from=builder /tmp/build/kickstart-nix.nvim/result /ninjection
 
-COPY ../ci/nix /ninjection/ci/nix
-COPY ../lua /ninjection/lua
-COPY ../plugin /ninjection/plugin
-COPY ../tests /ninjection/tests
-
-ENV VIMRUNTIME="/ninjection/share/nvim/runtime"
-ENV NVIM_PACKPATH="/ninjection/pack/myNeovimPackages/start/*"
+COPY ../ci/nix /ninjection/ci/nix COPY ../lua /ninjection/lua COPY ../plugin /ninjection/plugin COPY ../tests /ninjection/tests ENV VIMRUNTIME="/ninjection/share/nvim/runtime" ENV NVIM_PACKPATH="/ninjection/pack/myNeovimPackages/st
 ENV NVIM_RTP="/ninjection/share/nvim/runtime"
 # (Note: the devShell should already have set LUA_PATH correctly.)
 
-CMD ["nix", "develop", "./ci/nix/kickstart-nix.nvim", "--extra-experimental-features", "nix-command flakes", "--command", "nvim-dev", "--headless", "-c", "PlenaryBustedDirectory tests/e2e", "-c", "qa"]
+CMD nix develop ./ci/nix/kickstart-nix.nvim \
+  --extra-experimental-features "nix-command flakes" \
+  --command bash -c '
+    mkdir -p /debug
+    nvim-dev --headless \
+      -c "PlenaryBustedDirectory tests/e2e" \
+      -c "qa" 2>&1 | tee /debug/test_output.log
+  '
