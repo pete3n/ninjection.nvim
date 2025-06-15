@@ -206,24 +206,6 @@ function NJChild:init_buf(opts)
 		self.p_indents = p_indents
 	end
 
-	--TODO: Replace with format function with Conform/LSP support
-	-- Detect Conform and gracefully fallback to LSP if not present, with warning
-	if cfg.auto_format then
-		---@type boolean
-		local fmt_ok = pcall(function()
-			return vim.cmd("lua " .. cfg.format_cmd)
-		end)
-		if not fmt_ok then
-			if cfg.debug then
-				vim.notify(
-					'ninjection.child:init_buf() warning: Calling vim.cmd("lua "' .. tostring(cfg.format_cmd) .. ")\n",
-					vim.log.levels.WARN
-				)
-				-- Don't return early on auto-format error
-			end
-		end
-	end
-
 	---@type boolean, string?
 	local set_ok, set_nj_err = self:set_nj_table()
 	if not set_ok then

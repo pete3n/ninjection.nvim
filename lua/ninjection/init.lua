@@ -205,6 +205,22 @@ function ninjection.edit()
 		end
 	end
 
+	-- Wait for LSP to attach
+	---@type boolean
+	local lsp_attach_ok = vim.wait(3000, function()
+		return c_lsp:is_attached(nj_child.c_bufnr)
+	end, 50)
+
+	if not lsp_attach_ok and cfg.debug then
+		vim.notify("ninjeciton.format() warning: Timeout waiting for LSP to attach.", vim.log.levels.WARN)
+	end
+
+	vim.lsp.buf.format({
+		bufnr = nj_child.c_bufnr,
+		async = true,
+		timeout_ms = 1000,
+	})
+
 	-- Track parent, child buffer relations, in the event multiple child buffers
 	-- are opened for the same injected content.
 	-- Retrieve the existing ninjection table or initialize a new one

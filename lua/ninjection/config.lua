@@ -15,8 +15,6 @@ local default_config = {
 	preserve_indents = true,
 	---@type  boolean
 	auto_format = true,
-	---@type string
-	format_cmd = 'require("conform").format { async = true, lsp_format = "fallback" }',
 	---@type integer
 	format_indent = 2,
 	---@type string
