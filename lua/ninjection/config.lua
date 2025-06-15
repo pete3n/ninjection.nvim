@@ -137,20 +137,20 @@ local default_config = {
 			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0 },
 		},
 	},
-	---@type table<string,string>
+	---@type table<string, { name: string, cmd: string[] }>
 	lsp_map = {
-		bash = "bashls",
-		c = "clangd",
-		cpp = "clangd",
-		javascript = "ts_ls",
-		json = "jsonls",
-		lua = "lua_ls",
-		python = "ruff",
-		rust = "rust_analyzer",
-		sh = "bashls",
-		typescript = "ts_ls",
-		yaml = "yamlls",
-		zig = "zls",
+		bash = { name = "bashls", cmd = { "bash-language-server" } },
+		c = { name = "clangd", cmd = { "clangd" } },
+		cpp = { name = "clangd", cmd = { "clangd" } },
+		javascript = { name = "ts_ls", cmd = { "typescript-language-server", "--stdio" } },
+		json = { name = "jsonls", cmd = { "vscode-json-language-server", "--stdio" } },
+		lua = { name = "lua_ls", cmd = { "lua-language-server" } },
+		python = { name = "ruff", cmd = { "ruff", "server" } },
+		rust = { name = "rust_analyzer", cmd = { "cargo", "metadata", "--no-deps", "--format-version", "1" } },
+		sh = { name = "bashls", cmd = { "bash-language-server" } },
+		typescript = { name = "ts_ls", cmd = { "typescript-language-server", "--stdio" } },
+		yaml = { name = "yamlls", cmd = { "yaml-language-server", "--stdio" } },
+		zig = { name = "zls", cmd = { "zls" } },
 	},
 }
 
@@ -162,7 +162,7 @@ M.get_default = function()
 end
 
 --- NOTE: width/height col/row default values are dynamically set to:
---- 80% of vim.o.columns/vim.o.rows and offset for a centered window.
+--- 80% of jvim.o.columns/vim.o.rows and offset for a centered window.
 ---@eval return (function()
 ---  local s = vim.inspect(require("ninjection.config").get_default())
 ---  s = s:gsub("\\t", "  ")

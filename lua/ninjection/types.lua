@@ -65,9 +65,9 @@
 --- language functions to workaround limitations in Treesitter queries and post-process
 --- injected content selections.
 ---
----@field lsp_map? table<string,string> - LSP associated with the injected
---- languages These keys must match the language comment used to identify
---- injected languages, and the value must match the LSP configured in your
+---@field lsp_map? table<string, { name: string, cmd: string[] }> - LSP associated
+--- with the injected languages These keys must match the language comment used to
+--- identify injected languages, and the value must match the LSP configured in your
 --- lspconfig.
 
 ---@tag NJRange
