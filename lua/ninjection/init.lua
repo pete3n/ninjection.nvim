@@ -193,33 +193,23 @@ function ninjection.edit()
 			vim.notify(err, vim.log.levels.WARN)
 		end
 		-- Don't return early on LSP failure
-	end
-	---@cast c_lsp NJLspStatus
-	if c_lsp and not c_lsp:is_attached(nj_child.c_bufnr) then
-		if cfg.debug then
-			vim.notify(
-				"ninjection.edit() warning: LSP failed to attach to buffer: " .. nj_child.c_bufnr,
-				vim.log.levels.WARN
-			)
-			-- Don't return early on LSP failure
+	else
+		-- Wait for LSP to attach
+		---@type boolean
+		local lsp_attach_ok = vim.wait(3000, function()
+			return c_lsp:is_attached(nj_child.c_bufnr)
+		end, 50)
+
+		if not lsp_attach_ok and cfg.debug then
+			vim.notify("ninjection.edit() warning: Timeout waiting for LSP to attach.", vim.log.levels.WARN)
 		end
+
+		vim.lsp.buf.format({
+			bufnr = nj_child.c_bufnr,
+			async = true,
+			timeout_ms = 1000,
+		})
 	end
-
-	-- Wait for LSP to attach
-	---@type boolean
-	local lsp_attach_ok = vim.wait(3000, function()
-		return c_lsp:is_attached(nj_child.c_bufnr)
-	end, 50)
-
-	if not lsp_attach_ok and cfg.debug then
-		vim.notify("ninjeciton.format() warning: Timeout waiting for LSP to attach.", vim.log.levels.WARN)
-	end
-
-	vim.lsp.buf.format({
-		bufnr = nj_child.c_bufnr,
-		async = true,
-		timeout_ms = 1000,
-	})
 
 	-- Track parent, child buffer relations, in the event multiple child buffers
 	-- are opened for the same injected content.
