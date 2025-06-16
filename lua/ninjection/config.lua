@@ -18,9 +18,9 @@ local default_config = {
 	---@type integer
 	format_indent = 2,
 	---@type integer
-	format_timeout = 500,
+	format_timeout = 250,
 	---@type integer
-	lsp_timeout = 1000,
+	lsp_timeout = 500,
 	---@type string
 	register = "z",
 	---@type boolean

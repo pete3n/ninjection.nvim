@@ -492,8 +492,8 @@ function ninjection.format()
 	if lsp_status.status ~= lsp.LspStatusMsg.STARTED then
 		if cfg.debug then
 			---@type string
-			local err = "ninjection.format() warning: starting LSP failed... " .. tostring(lsp_err)
-			vim.notify(err, vim.log.levels.WARN)
+			local err = "ninjection.format() error: starting LSP failed... " .. tostring(lsp_err)
+			vim.notify(err, vim.log.levels.ERROR)
 			-- Don't return early on LSP start failure
 		end
 	end
@@ -505,8 +505,8 @@ function ninjection.format()
 		return lsp_status:is_attached(nj_child.c_bufnr)
 	end, 50)
 
-	if not lsp_attach_ok and cfg.debug then
-		vim.notify("ninjeciton.format() warning: Timeout waiting for LSP to attach.", vim.log.levels.WARN)
+	if not lsp_attach_ok then
+		vim.notify("ninjeciton.format() error: Timeout waiting for LSP to attach.", vim.log.levels.ERROR)
 	end
 
 	vim.lsp.buf.format({

@@ -40,9 +40,9 @@
 ---@field format_cmd? string - Command used for formatting.
 ---@field format_indent? integer - Additional spaces to indent injected text blocks.
 ---@field format_timeout? integer - Timeout in ms to wait for buffer formatting:
---- default (500)
+--- default (250)
 ---@field lsp_timeout? integer - Timeout in ms to wait for LSP to start:
---- default (1000)
+--- default (500)
 ---@field register? string - Register to use to copy injected content.
 ---@field debug? boolean - Output debug messages.
 ---
