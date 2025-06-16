@@ -198,7 +198,7 @@ function ninjection.edit()
 	else
 		-- Wait for LSP to attach
 		---@type boolean
-		local lsp_attach_ok = vim.wait(3000, function()
+		local lsp_attach_ok = vim.wait(cfg.lsp_timeout, function()
 			return c_lsp:is_attached(nj_child.c_bufnr)
 		end, 50)
 
@@ -208,7 +208,7 @@ function ninjection.edit()
 
 		vim.lsp.buf.format({
 			bufnr = nj_child.c_bufnr,
-			timeout_ms = 1000,
+			timeout_ms = cfg.format_timeout,
 		})
 	end
 
@@ -505,7 +505,7 @@ function ninjection.format()
 	end, 50)
 
 	if not lsp_attach_ok then
-		vim.notify("ninjeciton.format() error: Timeout waiting for LSP to attach.", vim.log.levels.ERROR)
+		vim.notify("ninjection.format() error: Timeout waiting for LSP to attach.", vim.log.levels.ERROR)
 	end
 
 	vim.lsp.buf.format({
@@ -513,22 +513,18 @@ function ninjection.format()
 		timeout_ms = cfg.format_timeout,
 	})
 
-	--	vim.defer_fn(function()
 	local rep_lines = vim.api.nvim_buf_get_lines(nj_child.c_bufnr, 0, -1, false)
 	if not rep_lines or #rep_lines == 0 then
-		vim.notify("No formatted output", vim.log.levels.WARN)
+		vim.notify("ninjection.format() warning: No formatted output", vim.log.levels.WARN)
 	else
 		buffer.indent_block(cur_bufnr, injection.range, rep_lines)
 	end
 
 	vim.api.nvim_win_hide(nj_child.c_win)
 
-	--		vim.defer_fn(function()
 	if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
 		vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
 	end
-	--		end, 500)
-	--	end, 500) -- allow LSP formatting to complete
 
 	return true, nil
 end

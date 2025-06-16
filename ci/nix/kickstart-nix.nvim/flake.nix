@@ -45,6 +45,7 @@
           name = "nvim-devShell";
           buildInputs = with pkgs; [
             lua-language-server
+						nixd
             nil
             stylua
             luajitPackages.luacheck

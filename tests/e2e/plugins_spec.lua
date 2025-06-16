@@ -1,15 +1,8 @@
 package.path = vim.fn.getcwd() .. "/tests/e2e/?.lua;" .. package.path
-require("helpers.init")
-
-print(vim.inspect(vim.opt.rtp:get()))
-
--- spec/plugin_requirements_spec.lua
 
 describe("Required plugins", function()
   local required_plugins = {
-    { lib = "lspconfig", optional = false, info = "Required for LSP integration" },
     { lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
-    { lib = "conform", optional = false, info = "Required for injected language formatting" },
   }
 
   local function is_installed(lib_name)

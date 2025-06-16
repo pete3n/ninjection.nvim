@@ -3,6 +3,26 @@ local fn = vim.fn
 local opt = vim.o
 local g = vim.g
 
+-- Set runtime and package paths
+local packpath = vim.env.NVIM_PACKPATH
+if packpath and packpath ~= "" then
+  vim.opt.packpath:prepend(packpath)
+end
+
+-- Disable swapfile in CI environment
+opt.swapfile = false
+
+require("lspconfig").lua_ls.setup({cmd = { "lua-language-server" }})
+require("lspconfig").nixd.setup({
+    settings = {
+        nixd = {
+            formatting = {
+                command = { "nixfmt" },
+            },
+        },
+    },
+})
+
 -- <leader> key. Defaults to `\`. Some people prefer space.
 -- g.mapleader = ' '
 -- g.maplocalleader = ' '
