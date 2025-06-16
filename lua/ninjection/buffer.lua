@@ -64,7 +64,7 @@ end
 ---@param style EditorStyle The window style to edit the buffer with.
 ---@return integer win_id, string? err
 --- Default: 0 (cur_win), child window handle, if created.
-M.create_child_win = function(bufnr, style)
+function M.create_child_win(bufnr, style)
 	---@type integer, string?
 	local win_id, err
 	if style == "floating" then
@@ -99,7 +99,7 @@ end
 ---@param p_bufnr integer
 ---@param c_bufnr integer
 ---@return boolean success, string? err
-M.reg_child_buf = function(p_bufnr, c_bufnr)
+function M.reg_child_buf(p_bufnr, c_bufnr)
 	---@type NJParent
 	local nj_parent = NJParent.new({ children = {} })
 
@@ -152,7 +152,7 @@ end
 
 ---@param c_bufnr integer
 ---@return NJChild? nj_child, string? err
-M.get_buf_child = function(c_bufnr)
+function M.get_buf_child(c_bufnr)
 	if not vim.api.nvim_buf_is_valid(c_bufnr) then
 		---@type string
 		local err = "buffer.reg_child_buf() error: The buffer, " .. c_bufnr .. " is invalid."
@@ -196,7 +196,7 @@ end
 ---
 ---@return string? root_dir, string? err
 --- Root directory for new buffer.
-M.get_root_dir = function()
+function M.get_root_dir()
 	-- Try getting the workspace folders list first
 	---@type boolean, string[]?
 	local wks_ok, folders = pcall(vim.lsp.buf.list_workspace_folders)
@@ -235,7 +235,7 @@ end
 ---  - `b_indent`: number of blank lines at the bottom.
 ---  - `l_indent`: minimum number of leading spaces on nonempty lines.
 ---
-M.get_indents = function(bufnr)
+function M.get_indents(bufnr)
 	---@type boolean, string[]?
 	local line_ok, lines
 	line_ok, lines = pcall(function()
@@ -315,7 +315,7 @@ end
 ---@return string[]? restored_lines, string? err
 --- Lines with the indents restored.
 ---
-M.restore_indents = function(text, indents)
+function M.restore_indents(text, indents)
 	---@type string[]?
 	local lines
 	if type(text) == "string" then
@@ -393,7 +393,7 @@ end
 ---
 --- Notes ~
 --- Assumes the line before s_row is the parent indent base.
-M.indent_block = function(bufnr, range, rep_lines)
+function M.indent_block(bufnr, range, rep_lines)
 	local s_row = range.s_row
 	local e_row = range.e_row
 

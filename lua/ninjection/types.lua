@@ -37,12 +37,12 @@
 --- indents, then enabling this will increas the original indenation.
 ---
 ---@field auto_format? boolean - Auto format the new child buffer: default (true).
----@field format_cmd? string - Command used for formatting.
+---@field format_cmd? string - Command used for formatting (default uses lsp.format).
 ---@field format_indent? integer - Additional spaces to indent injected text blocks.
 ---@field format_timeout? integer - Timeout in ms to wait for buffer formatting:
---- default (250)
----@field lsp_timeout? integer - Timeout in ms to wait for LSP to start:
 --- default (500)
+---@field lsp_timeout? integer - Timeout in ms to wait for LSP to start:
+--- default (1000)
 ---@field register? string - Register to use to copy injected content.
 ---@field debug? boolean - Output debug messages.
 ---

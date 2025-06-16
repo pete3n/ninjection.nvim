@@ -302,4 +302,37 @@ function NJChild:get_parent()
 	return nj_parent, nil
 end
 
+---@return boolean success, string? err
+function NJChild:format()
+	local timeout = cfg.format_timeout or 500
+
+	---@private
+	local function fallback()
+		local fmt_ok, err = pcall(vim.lsp.buf.format, {
+			bufnr = self.c_bufnr,
+			timeout_ms = timeout,
+		})
+		if not fmt_ok and cfg.debug then
+			vim.notify("ninjection.child:format() fallback format error: " .. tostring(err), vim.log.levels.WARN)
+		end
+		return fmt_ok, err
+	end
+
+	if cfg.format_cmd then
+		---@type boolean, function?
+		local cmd_ok, fmt_fn = pcall(vim.fn.get, _G, vim.split(cfg.format_cmd, ".", { plain = true }))
+		if cmd_ok and type(fmt_fn) == "function" then
+			local fmt_ok, fmt_err = pcall(fmt_fn)
+			return fmt_ok, fmt_err
+		else
+			if cfg.debug then
+				vim.notify("ninjection.child:format() Invalid format_cmd: " .. cfg.format_cmd, vim.log.levels.WARN)
+			end
+			return fallback()
+		end
+	end
+
+	return fallback()
+end
+
 return NJChild

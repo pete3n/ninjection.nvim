@@ -15,12 +15,14 @@ local default_config = {
 	preserve_indents = true,
 	---@type  boolean
 	auto_format = true,
+	---@type string
+	format_cmd = "format_with_conform",
 	---@type integer
 	format_indent = 2,
 	---@type integer
-	format_timeout = 250,
+	format_timeout = 500,
 	---@type integer
-	lsp_timeout = 500,
+	lsp_timeout = 1000,
 	---@type string
 	register = "z",
 	---@type boolean

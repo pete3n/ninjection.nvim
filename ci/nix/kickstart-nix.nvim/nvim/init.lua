@@ -3,6 +3,9 @@ local fn = vim.fn
 local opt = vim.o
 local g = vim.g
 
+local debug_flag = vim.env.DEBUG_TEST
+_G.test_debug = debug_flag == "1" or debug_flag == "true"
+
 -- Set runtime and package paths
 local packpath = vim.env.NVIM_PACKPATH
 if packpath and packpath ~= "" then
@@ -12,6 +15,7 @@ end
 -- Disable swapfile in CI environment
 opt.swapfile = false
 
+-- Configure LSPs
 require("lspconfig").lua_ls.setup({cmd = { "lua-language-server" }})
 require("lspconfig").nixd.setup({
     settings = {
@@ -22,6 +26,8 @@ require("lspconfig").nixd.setup({
         },
     },
 })
+
+-- Configure Conform
 
 -- <leader> key. Defaults to `\`. Some people prefer space.
 -- g.mapleader = ' '

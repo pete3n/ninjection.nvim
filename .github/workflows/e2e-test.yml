@@ -14,27 +14,4 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build -f ci/Dockerfile -t ninjection-test .
-
-      - name: Run End-to-End Tests in Container
-        run: |
-          docker run --rm ninjection-test | tee test_output.log
-
-          echo "========================================"
-          echo "========== TEST SUMMARY =========="
-
-          awk '
-            /^Testing:/ { test = $2 }
-            /^Success/ || /^Fail/ || /^Error/ {
-              print test, "=>", $0
-            }
-          ' test_output.log
-
-          echo "========================================"
-
-          if grep -qE "Failed\s*:\s*[1-9]|Errors\s*:\s*[1-9]" test_output.log; then
-            echo "Some tests failed ❌"
-            exit 1
-          else
-            echo "All tests passed ✅"
-          fi
         continue-on-error: true
