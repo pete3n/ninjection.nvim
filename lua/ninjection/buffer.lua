@@ -381,7 +381,6 @@ M.restore_indents = function(text, indents)
 	return lines
 end
 
-
 ---@tag indent_block()
 ---@brief
 --- Re-indents a block of lines and surrounding delimiters ('' and '';
