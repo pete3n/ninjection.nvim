@@ -408,7 +408,6 @@ function ninjection.replace()
 	return true, nil
 end
 
-
 ---@tag ninjection.format()
 ---@brief
 --- Formats the injected code block under cursor using a specified format cmd,
@@ -514,22 +513,22 @@ function ninjection.format()
 		timeout_ms = cfg.format_timeout,
 	})
 
-	vim.defer_fn(function()
-		local rep_lines = vim.api.nvim_buf_get_lines(nj_child.c_bufnr, 0, -1, false)
-		if not rep_lines or #rep_lines == 0 then
-			vim.notify("No formatted output", vim.log.levels.WARN)
-		else
-			buffer.indent_block(cur_bufnr, injection.range, rep_lines)
-		end
+	--	vim.defer_fn(function()
+	local rep_lines = vim.api.nvim_buf_get_lines(nj_child.c_bufnr, 0, -1, false)
+	if not rep_lines or #rep_lines == 0 then
+		vim.notify("No formatted output", vim.log.levels.WARN)
+	else
+		buffer.indent_block(cur_bufnr, injection.range, rep_lines)
+	end
 
-		vim.api.nvim_win_hide(nj_child.c_win)
+	vim.api.nvim_win_hide(nj_child.c_win)
 
-		vim.defer_fn(function()
-			if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
-				vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
-			end
-		end, 500)
-	end, 500) -- allow LSP formatting to complete
+	--		vim.defer_fn(function()
+	if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
+		vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
+	end
+	--		end, 500)
+	--	end, 500) -- allow LSP formatting to complete
 
 	return true, nil
 end
