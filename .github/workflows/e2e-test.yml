@@ -1,3 +1,10 @@
+name: End-to-End Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
 jobs:
   e2e-tests:
     runs-on: ubuntu-22.04
