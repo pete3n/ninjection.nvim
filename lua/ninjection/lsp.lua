@@ -121,7 +121,6 @@ M.start_lsp = function(lang, bufnr)
 			vim.notify(err, vim.log.levels.ERROR)
 		end
 		return NJLspStatus.new(LspStatusMsg.NO_RPC, nil), err
-
 	elseif type(lsp_cfg.cmd) == "table" and not vim.fn.executable(lsp_cfg.cmd[1]) then
 		local err = "ninjection.lsp.start_lsp() error: LSP executable, "
 			.. tostring(lsp_cfg.cmd[1])
@@ -151,6 +150,5 @@ M.start_lsp = function(lang, bufnr)
 
 	return NJLspStatus.new(LspStatusMsg.STARTED, client_id), nil
 end
-
 
 return M
