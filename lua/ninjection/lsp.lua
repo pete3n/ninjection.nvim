@@ -11,18 +11,16 @@ local cfg = require("ninjection.config").values
 ---@alias NJLspStatusResponseType
 ---| "unmapped"
 ---| "unconfigured"
----| "unavailable"
 ---| "no-exec"
----| "unsupported"
+---| "no-rpc"
 ---| "failed_start"
 ---| "started"
 
 ---@class NJLspStatusMsg
 ---@field UNMAPPED "unmapped"
 ---@field UNCONFIGURED "unconfigured"
----@field UNAVAILABLE "unavailable"
 ---@field NO_EXEC "no-exec"
----@field UNSUPPORTED "unsupported"
+---@field NO_RPC "no-rpc"
 ---@field FAILED_START "failed_start"
 ---@field STARTED "started"
 
@@ -30,9 +28,8 @@ local cfg = require("ninjection.config").values
 local LspStatusMsg = {
 	UNMAPPED = "unmapped",
 	UNCONFIGURED = "unconfigured",
-	UNAVAILABLE = "unavailable",
 	NO_EXEC = "no-exec",
-	UNSUPPORTED = "unsupported",
+	NO_RPC = "no-rpc",
 	FAILED_START = "failed_start",
 	STARTED = "started",
 }
@@ -85,17 +82,16 @@ M.NJLspStatus = NJLspStatus
 ---
 --- Parameters ~
 ---@param lang string - The filetype of the injected language (e.g., "lua", "python").
----@param root_dir string - The root directory for the buffer.
 ---@param bufnr integer - The bufnr handle to attach the LSP to.
 ---
 ---@return NJLspStatus? result, string? err - The LSP status.
-M.start_lsp = function(lang, root_dir, bufnr)
+M.start_lsp = function(lang, bufnr)
 	-- The injected language must be mapped to an LSP
-	---@type table?
+	---@type string?
 	local lang_lsp = cfg.lsp_map[lang]
 	if not lang_lsp then
 		---@type string
-		local err = "ninjection.buffer.start_lsp() warning: No LSP mapped to "
+		local err = "ninjection.lsp.start_lsp() warning: No LSP mapped to "
 			.. "language: "
 			.. lang
 			.. " check your configuration."
@@ -104,85 +100,50 @@ M.start_lsp = function(lang, root_dir, bufnr)
 		end
 		return NJLspStatus.new(LspStatusMsg.UNMAPPED, nil), err
 	end
-	---@cast lang_lsp { name: string, cmd: string[] }
+	---@cast lang_lsp string
 
---	-- The LSP must have an available configuration
---	---@type boolean, lspconfig.Config?
---	local ok, lsp_def = pcall(function()
---		return lspconfig[lang_lsp]
---	end)
---	if not ok or not lsp_def then
---		err = "Ninjection.buffer.start_lsp() error: no LSP configuration for: " .. lang_lsp .. " " .. tostring(lsp_def)
---		if cfg.debug then
---			vim.notify(err, vim.log.levels.WARN)
---		end
---		return NJLspStatus.new(LspStatusMsg.UNCONFIGURED, nil), err
---	end
---	---@cast lsp_def lspconfig.Config
---
---	-- The LSP binary path must exist
---	-- RPC function support is not implemented
---	---@type string[]|fun(dispatchers: vim.lsp.rpc.Dispatchers): vim.lsp.rpc.PublicClient?
---	local lsp_cmd = lsp_def.cmd
---	if not lsp_cmd or #lsp_cmd == 0 then
---		err = "ninjection.buffer.start_lsp() warning: Command to execute "
---			.. lang_lsp
---			.. " does not exist. Ensure it is installed and configured."
---		if cfg.debug then
---			vim.notify(err, vim.log.levels.WARN)
---		end
---		return NJLspStatus.new(LspStatusMsg.UNAVAILABLE, nil), err
---	end
---	---@cast lsp_cmd string[]
---
---	-- The LSP binary path must be executable
---	-- The command must be the first element
---	---@type unknown?
---	local is_executable
---	ok, is_executable = pcall(function()
---		return vim.fn.executable(lsp_cmd[1])
---	end)
---	if not ok or is_executable ~= 1 then
---		err = "ninjection.buffer.start_lsp() warning: The LSP command: "
---			.. lsp_cmd[1]
---			.. " is not executable. "
---			.. tostring(is_executable)
---		vim.notify(err, vim.log.levels.WARN)
---		return NJLspStatus.new(LspStatusMsg.NO_EXEC, nil), err
---	end
---	---@cast is_executable integer
---
---	-- The LSP must support our injected language
---	if not vim.tbl_contains(lsp_def.filetypes, lang) then
---		err = "ninjection.buffer.start_lsp() warning: The configured LSP: "
---			.. lang_lsp
---			.. " does not support "
---			.. lang
---			.. " modify your configuration "
---			.. " to use an appropriate LSP."
---		if cfg.debug then
---			vim.notify(err, vim.log.levels.WARN)
---		end
---		return NJLspStatus.new(LspStatusMsg.UNSUPPORTED, nil), err
---	end
+	---@type vim.lsp.ClientConfig
+	local lsp_cfg = vim.lsp.config[lang_lsp]
+
+	if not lsp_cfg then
+		---@type string
+		local err = "ninjection.lsp.start_lsp() error: LSP, " .. lang_lsp .. " is not configured."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return NJLspStatus.new(LspStatusMsg.UNCONFIGURED, nil), err
+	end
+
+	if type(lsp_cfg.cmd) == "function" then
+		-- Advanced users may be using a dynamic client
+		local err = "ninjection.lsp.start_lsp() error: dynamic RPC clients are not supported."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return NJLspStatus.new(LspStatusMsg.NO_RPC, nil), err
+
+	elseif type(lsp_cfg.cmd) == "table" and not vim.fn.executable(lsp_cfg.cmd[1]) then
+		local err = "ninjection.lsp.start_lsp() error: LSP executable, "
+			.. tostring(lsp_cfg.cmd[1])
+			.. " not found in $PATH."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return NJLspStatus.new(LspStatusMsg.NO_EXEC, nil), err
+	end
 
 	---@type integer?
-	local client_id = vim.lsp.start({
-		name = lang_lsp.name,
-		cmd = lang_lsp.cmd,
-		root_dir = root_dir,
-		bufnr = bufnr,
-	})
-	if client_id then
-		vim.lsp.buf_attach_client(bufnr, client_id)
-	else
-		--@type string
-		local err = "ninjection.buffer.start_lsp() warning: The LSP: "
+	local client_id = vim.lsp.start(lsp_cfg, { bufnr = bufnr })
+	if not client_id then
+		---@type string
+		local err = "ninjection.lsp.start_lsp() warning: The LSP, "
 			.. lang_lsp
-			.. " did not return a client_id, check your language client logs "
+			.. " with the configuration: "
+			.. vim.inspect(lsp_cfg)
+			.. " lsp.start() did not return a client_id, check your LSP logs "
 			.. "(default ~/.local/state/nvim/lsp.log) for more information."
 		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN)
+			vim.notify(err, vim.log.levels.ERROR)
 		end
 		return NJLspStatus.new(LspStatusMsg.FAILED_START, nil), err
 	end
@@ -190,5 +151,6 @@ M.start_lsp = function(lang, root_dir, bufnr)
 
 	return NJLspStatus.new(LspStatusMsg.STARTED, client_id), nil
 end
+
 
 return M

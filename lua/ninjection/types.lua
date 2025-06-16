@@ -36,8 +36,8 @@
 --- will re-apply indents that `auto_format` normally removes. If you don't remove
 --- indents, then enabling this will increas the original indenation.
 ---
----@field auto_format? boolean - Auto format the new child buffer.
----@field format_cmd? string - Command for `auto_format`.
+---@field auto_format? boolean - Auto format the new child buffer: default (true).
+---@field format_cmd? string - Command used for formatting.
 ---@field format_indent? integer - Additional spaces to indent injected text blocks.
 ---@field register? string - Register to use to copy injected content.
 ---@field debug? boolean - Output debug messages.
@@ -65,10 +65,8 @@
 --- language functions to workaround limitations in Treesitter queries and post-process
 --- injected content selections.
 ---
----@field lsp_map? table<string, { name: string, cmd: string[] }> - LSP associated
---- with the injected languages These keys must match the language comment used to
---- identify injected languages, and the value must match the LSP configured in your
---- lspconfig.
+---@field lsp_map? table<string, string> - Maps the injected language filetype
+--- comment to an LSP configuration name for that filetype.
 
 ---@tag NJRange
 ---@class NJRange
