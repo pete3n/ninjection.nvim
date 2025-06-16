@@ -39,6 +39,10 @@
 ---@field auto_format? boolean - Auto format the new child buffer: default (true).
 ---@field format_cmd? string - Command used for formatting.
 ---@field format_indent? integer - Additional spaces to indent injected text blocks.
+---@field format_timeout? integer - Timeout in ms to wait for buffer formatting:
+--- default (1000)
+---@field lsp_timeout? integer - Timeout in ms to wait for LSP to start:
+--- default (2000)
 ---@field register? string - Register to use to copy injected content.
 ---@field debug? boolean - Output debug messages.
 ---

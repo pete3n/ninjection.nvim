@@ -75,16 +75,6 @@ function ninjection.select()
 		vim.fn.setpos("'<", { 0, v_range.s_row + 1, 1, 0 }) -- start at beginning of start line
 		vim.fn.setpos("'>", { 0, v_range.e_row + 1, 1, 0 }) -- end at beginning of end line
 
-		if cfg.debug then
-			vim.notify(
-				"ninjection.select(): selecting rows "
-					.. tostring(v_range.s_row + 1)
-					.. " to "
-					.. tostring(v_range.e_row + 1),
-				vim.log.levels.INFO
-			)
-		end
-
 		-- Visual line mode selection
 		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("`<V`>", true, false, true), "x", false)
 	end)
@@ -418,41 +408,6 @@ function ninjection.replace()
 	return true, nil
 end
 
----@tag indent_block()
----@brief
---- Re-indents a block of lines and surrounding delimiters ('' and '';
---- for a given injection range and replacement text.
----
---- Parameters ~
----@param bufnr integer - Buffer handle to operate on
----@param range NJRange - Injection range { s_row, e_row }
----@param rep_lines string[] - Formatted injected code
----
---- Notes ~
---- Assumes the line before s_row is the parent indent base.
-local function indent_block(bufnr, range, rep_lines)
-	local s_row = range.s_row
-	local e_row = range.e_row
-
-	-- Get parent indent from the line above the start row
-	local parent_line = vim.api.nvim_buf_get_lines(bufnr, s_row - 1, s_row, false)[1] or ""
-	local parent_indent = parent_line:match("^(%s*)") or ""
-
-	-- Compute indents
-	local delimiter_indent = parent_indent .. string.rep(" ", cfg.format_indent)
-	local child_indent = delimiter_indent .. string.rep(" ", cfg.format_indent)
-
-	-- Construct replacement lines
-	local formatted_lines = {}
-	table.insert(formatted_lines, delimiter_indent .. "''")
-	for _, line in ipairs(rep_lines) do
-		table.insert(formatted_lines, child_indent .. line)
-	end
-	table.insert(formatted_lines, delimiter_indent .. "'';")
-
-	-- Replace full block (including delimiters)
-	vim.api.nvim_buf_set_lines(bufnr, s_row, e_row + 1, false, formatted_lines)
-end
 
 ---@tag ninjection.format()
 ---@brief
@@ -546,7 +501,7 @@ function ninjection.format()
 
 	-- Wait for LSP to attach
 	---@type boolean
-	local lsp_attach_ok = vim.wait(3000, function()
+	local lsp_attach_ok = vim.wait(cfg.lsp_timeout, function()
 		return lsp_status:is_attached(nj_child.c_bufnr)
 	end, 50)
 
@@ -554,16 +509,9 @@ function ninjection.format()
 		vim.notify("ninjeciton.format() warning: Timeout waiting for LSP to attach.", vim.log.levels.WARN)
 	end
 
-	--require("conform").format({
-	--	bufnr = nj_child.c_bufnr,
-	--	async = true,
-	--	lsp_fallback = true,
-	--	timeout_ms = 3000,
-	--},
 	vim.lsp.buf.format({
 		bufnr = nj_child.c_bufnr,
-		async = true,
-		timeout_ms = 1000,
+		timeout_ms = cfg.format_timeout,
 	})
 
 	vim.defer_fn(function()
@@ -571,7 +519,7 @@ function ninjection.format()
 		if not rep_lines or #rep_lines == 0 then
 			vim.notify("No formatted output", vim.log.levels.WARN)
 		else
-			indent_block(cur_bufnr, injection.range, rep_lines)
+			buffer.indent_block(cur_bufnr, injection.range, rep_lines)
 		end
 
 		vim.api.nvim_win_hide(nj_child.c_win)

@@ -17,6 +17,10 @@ local default_config = {
 	auto_format = true,
 	---@type integer
 	format_indent = 2,
+	---@type integer
+	format_timeout = 1000,
+	---@type integer
+	lsp_timeout = 2000,
 	---@type string
 	register = "z",
 	---@type boolean
