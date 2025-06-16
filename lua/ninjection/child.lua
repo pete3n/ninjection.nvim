@@ -308,6 +308,9 @@ function NJChild:format()
 
 	---@private
 	local function fallback()
+		if cfg.debug then
+			vim.notify("ninjection.child:format() info: defaulting to LSP formatting", vim.log.levels.INFO)
+		end
 		local fmt_ok, err = pcall(vim.lsp.buf.format, {
 			bufnr = self.c_bufnr,
 			timeout_ms = timeout,
