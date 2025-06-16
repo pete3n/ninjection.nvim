@@ -17,15 +17,5 @@ jobs:
 
       - name: Run End-to-End Tests in Container
         run: |
-          mkdir -p /debug
-          touch /debug/debug_log.txt
-          docker run --rm \
-            -v ${{ github.workspace }}/debug:/debug \
-            ninjection-test
+          docker run --rm ninjection-test
         continue-on-error: true
-
-      - name: Dump test output
-        run: cat debug/test_output.log || echo "No test log found"
-
-      - name: Dump debug log
-        run: cat debug/debug_log.txt || echo "No debug log written"
