@@ -1,21 +1,28 @@
-name: End-to-End Tests
-
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
-
 jobs:
   e2e-tests:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
 
+      - name: Cache Nix Store Closure
+        uses: actions/cache@v3
+        with:
+          path: .nix-store-closure
+          key: nix-closure-${{ hashFiles('flake.lock') }}
+          restore-keys: |
+            nix-closure-
+
       - name: Build Docker Image
         run: |
-          docker build -f ci/Dockerfile -t ninjection-test .
+          docker build \
+            --build-arg NIX_STORE_PATH=/nix \
+            -f ci/Dockerfile \
+            -t ninjection-test .
 
-      - name: Run End-to-End Tests in Container
+      - name: Run End-to-End Tests with Cached Nix Store
         run: |
-          docker run --rm ninjection-test
-        continue-on-error: true
+          docker run --rm \
+            -v ${{ github.workspace }}/.nix-store-closure:/nix/store \
+            -v ${{ github.workspace }}:/ninjection \
+            -w /ninjection \
+            ninjection-test

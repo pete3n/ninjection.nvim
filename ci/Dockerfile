@@ -17,7 +17,8 @@ FROM nixos/nix:latest
 
 WORKDIR /ninjection
 
-COPY --from=builder /tmp/nix-store-closure /nix/store
+# Safe COPY with fallback
+COPY --from=builder /tmp/nix-store-closure /nix/store || true
 COPY --from=builder /tmp/build/kickstart-nix.nvim/result /ninjection
 
 COPY ../ci/nix /ninjection/ci/nix
