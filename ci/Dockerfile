@@ -31,4 +31,4 @@ ENV NVIM_PACKPATH="/ninjection/pack/myNeovimPackages/start/*"
 ENV NVIM_RTP="/ninjection/share/nvim/runtime"
 # (Note: the devShell should already have set LUA_PATH correctly.)
 
-CMD ["nix", "develop", "./ci/nix/kickstart-nix.nvim", "--extra-experimental-features", "nix-command flakes", "--command", "nvim-dev", "--headless", "-c", "lua require('plenary.busted').run({ directory = 'tests/e2e', summary = true })", "-c", "qa"]
+CMD ["nix", "develop", "./ci/nix/kickstart-nix.nvim", "--extra-experimental-features", "nix-command flakes", "--command", "nvim-dev", "--headless", "-c", "PlenaryBustedDirectory tests/e2e", "-c", "qa"]
