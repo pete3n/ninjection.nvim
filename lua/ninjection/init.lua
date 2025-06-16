@@ -74,7 +74,19 @@ function ninjection.select()
 	local ok, result = pcall(function()
 		vim.fn.setpos("'<", { 0, v_range.s_row + 1, 1, 0 }) -- start at beginning of start line
 		vim.fn.setpos("'>", { 0, v_range.e_row + 1, 1, 0 }) -- end at beginning of end line
-		vim.cmd("normal! `<V`>") -- Visual line select using marks
+
+		if cfg.debug then
+			vim.notify(
+				"ninjection.select(): selecting rows "
+					.. tostring(v_range.s_row + 1)
+					.. " to "
+					.. tostring(v_range.e_row + 1),
+				vim.log.levels.INFO
+			)
+		end
+
+		-- Visual line mode selection
+		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("`<V`>", true, false, true), "x", false)
 	end)
 
 	if not ok then
