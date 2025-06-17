@@ -206,10 +206,9 @@ function ninjection.edit()
 			vim.notify("ninjection.edit() warning: Timeout waiting for LSP to attach.", vim.log.levels.WARN)
 		end
 
-		vim.lsp.buf.format({
-			bufnr = nj_child.c_bufnr,
-			timeout_ms = cfg.format_timeout,
-		})
+		if cfg.auto_format then
+			nj_child:format()
+		end
 	end
 
 	-- Track parent, child buffer relations, in the event multiple child buffers
