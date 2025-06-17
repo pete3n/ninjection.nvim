@@ -17,6 +17,7 @@ FROM nixos/nix:latest
 
 WORKDIR /ninjection
 
+# Safe COPY with fallback
 COPY --from=builder /tmp/nix-store-closure /nix/store
 COPY --from=builder /tmp/build/kickstart-nix.nvim/result /ninjection
 
@@ -30,4 +31,4 @@ ENV NVIM_PACKPATH="/ninjection/pack/myNeovimPackages/start/*"
 ENV NVIM_RTP="/ninjection/share/nvim/runtime"
 # (Note: the devShell should already have set LUA_PATH correctly.)
 
-CMD ["nix", "develop", "./ci/nix/kickstart-nix.nvim", "--extra-experimental-features", "nix-command flakes", "--command", "nvim-dev", "--headless", "-c", "PlenaryBustedDirectory tests/e2e", "-c", "qa"]
+CMD ["nix", "develop", "./ci/nix/kickstart-nix.nvim", "--extra-experimental-features", "nix-command flakes", "--command", "nvim-dev", "--headless", "-c", "PlenaryBustedDirectory tests", "-c", "qa"]

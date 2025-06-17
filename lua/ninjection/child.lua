@@ -206,24 +206,6 @@ function NJChild:init_buf(opts)
 		self.p_indents = p_indents
 	end
 
-	--TODO: Replace with format function with Conform/LSP support
-	-- Detect Conform and gracefully fallback to LSP if not present, with warning
-	if cfg.auto_format then
-		---@type boolean
-		local fmt_ok = pcall(function()
-			return vim.cmd("lua " .. cfg.format_cmd)
-		end)
-		if not fmt_ok then
-			if cfg.debug then
-				vim.notify(
-					'ninjection.child:init_buf() warning: Calling vim.cmd("lua "' .. tostring(cfg.format_cmd) .. ")\n",
-					vim.log.levels.WARN
-				)
-				-- Don't return early on auto-format error
-			end
-		end
-	end
-
 	---@type boolean, string?
 	local set_ok, set_nj_err = self:set_nj_table()
 	if not set_ok then
@@ -318,6 +300,57 @@ function NJChild:get_parent()
 
 	setmetatable(nj_parent, require("ninjection.parent"))
 	return nj_parent, nil
+end
+
+---@return boolean success, string? err
+function NJChild:format()
+	local timeout = cfg.format_timeout or 500
+
+	---@private
+	local function fallback()
+		if cfg.debug then
+			vim.notify("ninjection.child:format() info: defaulting to LSP formatting", vim.log.levels.INFO)
+		end
+		local fmt_ok, err = pcall(vim.lsp.buf.format, {
+			bufnr = self.c_bufnr,
+			timeout_ms = timeout,
+		})
+		if not fmt_ok and cfg.debug then
+			vim.notify("ninjection.child:format() fallback format error: " .. tostring(err), vim.log.levels.WARN)
+		end
+		return fmt_ok, err
+	end
+
+	---@type string?
+	local cmd = cfg.format_cmd
+
+	if cmd then
+		---@type string[]
+		local path = vim.split(cmd, ".", { plain = true })
+
+		---@type unknown
+		local fmt_fn = vim.tbl_get(_G, unpack(path))
+
+		if type(fmt_fn) == "function" then
+			---@type boolean, string?
+			local fmt_ok, fmt_err = pcall(fmt_fn)
+			return fmt_ok, fmt_err
+		else
+			---@type boolean, string?
+			local fmt_ok, fmt_err = pcall(function()
+				vim.cmd(cmd)
+			end)
+			if not fmt_ok and cfg.debug then
+				vim.notify(
+					"ninjection.child:format() invalid format_cmd string: " .. tostring(fmt_err),
+					vim.log.levels.WARN
+				)
+			end
+			return fmt_ok, fmt_err
+		end
+	end
+
+	return fallback()
 end
 
 return NJChild

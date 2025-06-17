@@ -16,9 +16,13 @@ local default_config = {
 	---@type  boolean
 	auto_format = true,
 	---@type string
-	format_cmd = 'require("conform").format { async = true, lsp_format = "fallback" }',
+	format_cmd = "format_with_conform",
 	---@type integer
 	format_indent = 2,
+	---@type integer
+	format_timeout = 500,
+	---@type integer
+	lsp_timeout = 1000,
 	---@type string
 	register = "z",
 	---@type boolean
@@ -137,20 +141,12 @@ local default_config = {
 			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0 },
 		},
 	},
-	---@type table<string,string>
+	---@type table<string, string>
 	lsp_map = {
 		bash = "bashls",
-		c = "clangd",
-		cpp = "clangd",
-		javascript = "ts_ls",
-		json = "jsonls",
 		lua = "lua_ls",
 		python = "ruff",
-		rust = "rust_analyzer",
 		sh = "bashls",
-		typescript = "ts_ls",
-		yaml = "yamlls",
-		zig = "zls",
 	},
 }
 
@@ -162,7 +158,7 @@ M.get_default = function()
 end
 
 --- NOTE: width/height col/row default values are dynamically set to:
---- 80% of vim.o.columns/vim.o.rows and offset for a centered window.
+--- 80% of jvim.o.columns/vim.o.rows and offset for a centered window.
 ---@eval return (function()
 ---  local s = vim.inspect(require("ninjection.config").get_default())
 ---  s = s:gsub("\\t", "  ")

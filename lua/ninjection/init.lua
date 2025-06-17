@@ -74,7 +74,9 @@ function ninjection.select()
 	local ok, result = pcall(function()
 		vim.fn.setpos("'<", { 0, v_range.s_row + 1, 1, 0 }) -- start at beginning of start line
 		vim.fn.setpos("'>", { 0, v_range.e_row + 1, 1, 0 }) -- end at beginning of end line
-		vim.cmd("normal! `<V`>") -- Visual line select using marks
+
+		-- Visual line mode selection
+		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("`<V`>", true, false, true), "x", false)
 	end)
 
 	if not ok then
@@ -185,7 +187,7 @@ function ninjection.edit()
 	})
 
 	---@type NJLspStatus?, string?
-	local c_lsp, lsp_err = lsp.start_lsp(injection.pair.inj_lang, root_dir, nj_child.c_bufnr)
+	local c_lsp, lsp_err = lsp.start_lsp(injection.pair.inj_lang, nj_child.c_bufnr)
 	if not c_lsp or c_lsp.status == lsp.LspStatusMsg then
 		---@type string
 		local err = "ninjection.edit() warning: starting LSP failed ... " .. tostring(lsp_err)
@@ -193,15 +195,19 @@ function ninjection.edit()
 			vim.notify(err, vim.log.levels.WARN)
 		end
 		-- Don't return early on LSP failure
-	end
-	---@cast c_lsp NJLspStatus
-	if c_lsp and not c_lsp:is_attached(nj_child.c_bufnr) then
-		if cfg.debug then
-			vim.notify(
-				"ninjection.edit() warning: LSP failed to attach to buffer: " .. nj_child.c_bufnr,
-				vim.log.levels.WARN
-			)
-			-- Don't return early on LSP failure
+	else
+		-- Wait for LSP to attach
+		---@type boolean
+		local lsp_attach_ok = vim.wait(cfg.lsp_timeout, function()
+			return c_lsp:is_attached(nj_child.c_bufnr)
+		end, 50)
+
+		if not lsp_attach_ok and cfg.debug then
+			vim.notify("ninjection.edit() warning: Timeout waiting for LSP to attach.", vim.log.levels.WARN)
+		end
+
+		if cfg.auto_format then
+			nj_child:format()
 		end
 	end
 
@@ -401,42 +407,6 @@ function ninjection.replace()
 	return true, nil
 end
 
----@tag indent_block()
----@brief
---- Re-indents a block of lines and surrounding delimiters ('' and '';
---- for a given injection range and replacement text.
----
---- Parameters ~
----@param bufnr integer - Buffer handle to operate on
----@param range NJRange - Injection range { s_row, e_row }
----@param rep_lines string[] - Formatted injected code
----
---- Notes ~
---- Assumes the line before s_row is the parent indent base.
-local function indent_block(bufnr, range, rep_lines)
-	local s_row = range.s_row
-	local e_row = range.e_row
-
-	-- Get parent indent from the line above the start row
-	local parent_line = vim.api.nvim_buf_get_lines(bufnr, s_row - 1, s_row, false)[1] or ""
-	local parent_indent = parent_line:match("^(%s*)") or ""
-
-	-- Compute indents
-	local delimiter_indent = parent_indent .. string.rep(" ", cfg.format_indent)
-	local child_indent = delimiter_indent .. string.rep(" ", cfg.format_indent)
-
-	-- Construct replacement lines
-	local formatted_lines = {}
-	table.insert(formatted_lines, delimiter_indent .. "''")
-	for _, line in ipairs(rep_lines) do
-		table.insert(formatted_lines, child_indent .. line)
-	end
-	table.insert(formatted_lines, delimiter_indent .. "'';")
-
-	-- Replace full block (including delimiters)
-	vim.api.nvim_buf_set_lines(bufnr, s_row, e_row + 1, false, formatted_lines)
-end
-
 ---@tag ninjection.format()
 ---@brief
 --- Formats the injected code block under cursor using a specified format cmd,
@@ -505,13 +475,13 @@ function ninjection.format()
 	})
 
 	---@type boolean, string?
-	local init_ok, init_err = nj_child:init_buf({ text = injection.text, create_win = false })
+	local init_ok, init_err = nj_child:init_buf({ text = injection.text, create_win = true })
 	if not init_ok then
 		return false, tostring(init_err)
 	end
 
 	---@type NJLspStatus?, string?
-	local lsp_status, lsp_err = lsp.start_lsp(injection.pair.inj_lang, root_dir, nj_child.c_bufnr)
+	local lsp_status, lsp_err = lsp.start_lsp(injection.pair.inj_lang, nj_child.c_bufnr)
 	if not lsp_status then
 		-- start_lsp should always return a status
 		return false, tostring(lsp_err)
@@ -520,33 +490,40 @@ function ninjection.format()
 	if lsp_status.status ~= lsp.LspStatusMsg.STARTED then
 		if cfg.debug then
 			---@type string
-			local err = "ninjection.format() warning: starting LSP failed... " .. tostring(lsp_err)
-			vim.notify(err, vim.log.levels.WARN)
+			local err = "ninjection.format() error: starting LSP failed... " .. tostring(lsp_err)
+			vim.notify(err, vim.log.levels.ERROR)
 			-- Don't return early on LSP start failure
 		end
 	end
 	---@cast lsp_status NJLspStatus
 
-	require("conform").format({
-		bufnr = nj_child.c_bufnr,
-		async = true,
-		lsp_fallback = true,
-		timeout_ms = 3000,
-	}, function()
-		local rep_lines = vim.api.nvim_buf_get_lines(nj_child.c_bufnr, 0, -1, false)
-		if not rep_lines or #rep_lines == 0 then
-			vim.notify("No formatted output", vim.log.levels.WARN)
-		else
-			indent_block(cur_bufnr, injection.range, rep_lines)
-		end
+	-- Wait for LSP to attach
+	---@type boolean
+	local lsp_attach_ok = vim.wait(cfg.lsp_timeout, function()
+		return lsp_status:is_attached(nj_child.c_bufnr)
+	end, 50)
 
-		-- Defer deletion to allow LSP background operations to finish
-		vim.defer_fn(function()
-			if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
-				vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
-			end
-		end, 150) -- ~150ms delay to avoid race with semantic token requests
-	end)
+	if not lsp_attach_ok then
+		vim.notify("ninjection.format() error: Timeout waiting for LSP to attach.", vim.log.levels.ERROR)
+	end
+
+	vim.lsp.buf.format({
+		bufnr = nj_child.c_bufnr,
+		timeout_ms = cfg.format_timeout,
+	})
+
+	local rep_lines = vim.api.nvim_buf_get_lines(nj_child.c_bufnr, 0, -1, false)
+	if not rep_lines or #rep_lines == 0 then
+		vim.notify("ninjection.format() warning: No formatted output", vim.log.levels.WARN)
+	else
+		buffer.indent_block(cur_bufnr, injection.range, rep_lines)
+	end
+
+	vim.api.nvim_win_hide(nj_child.c_win)
+
+	if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
+		vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
+	end
 
 	return true, nil
 end

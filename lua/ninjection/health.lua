@@ -39,7 +39,6 @@ M.validate_config = function(cfg)
 end
 
 local required_plugins = {
-	{ lib = "lspconfig", optional = false, info = "Required for LSP integration" },
 	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
 }
 

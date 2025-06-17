@@ -1,10 +1,1 @@
-{
-  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
-  "runtime.version": "LuaJIT",
-  "runtime.path": ["lua/?.lua", "lua/?/init.lua", "plugin/?.lua"],
-  "diagnostics": {
-    "globals": ["vim"],
-    "ignoredFiles": "Disable",
-    "libraryFiles": "Disable"
-  }
-}
+/nix/store/zjrsybyswllsd5i755yyyh07lqsvy6jf-luarc.json

@@ -45,6 +45,7 @@
           name = "nvim-devShell";
           buildInputs = with pkgs; [
             lua-language-server
+						nixd
             nil
             stylua
             luajitPackages.luacheck
@@ -56,6 +57,7 @@
 							# symlink the .luarc.json generated in the overlay
 							ln -fs ${pkgs.nvim-luarc-json} .luarc.json
 							# allow quick iteration of lua configs
+							mkdir -p ~/.config
 							ln -Tfns $PWD/ci/nix/kickstart-nix.nvim/nvim ~/.config/nvim-dev
 							# Make packpath available for testing
 							nvimDevPath=$(which nvim-dev)
