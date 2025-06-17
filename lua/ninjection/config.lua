@@ -144,7 +144,7 @@ local default_config = {
 	---@type table<string, string>
 	lsp_map = {
 		lua = "lua_ls",
-		python = "pylsp",
+		python = "ruff",
 	},
 }
 
