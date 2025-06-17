@@ -1,0 +1,13 @@
+return {
+  _all = {
+    coverage = true,
+  },
+  default = {
+    verbose = true,
+  },
+  e2e = {
+    tags = "e2e",
+    ROOT = {"tests/e2e"},
+    verbose = true,
+  },
+}

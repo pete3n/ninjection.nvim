@@ -85,7 +85,7 @@ M.NJLspStatus = NJLspStatus
 ---@param bufnr integer - The bufnr handle to attach the LSP to.
 ---
 ---@return NJLspStatus? result, string? err - The LSP status.
-M.start_lsp = function(lang, bufnr)
+function M.start_lsp (lang, bufnr)
 	-- The injected language must be mapped to an LSP
 	---@type string?
 	local lang_lsp = cfg.lsp_map[lang]
