@@ -143,8 +143,10 @@ local default_config = {
 	},
 	---@type table<string, string>
 	lsp_map = {
+		bash = "bashls",
 		lua = "lua_ls",
 		python = "ruff",
+		sh = "bashls",
 	},
 }
 
