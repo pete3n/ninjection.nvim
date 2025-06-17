@@ -16,7 +16,7 @@ local default_config = {
 	---@type  boolean
 	auto_format = true,
 	---@type string
-	format_cmd = "format_with_conform",
+	format_cmd = "lua format_with_conform()",
 	---@type integer
 	format_indent = 2,
 	---@type integer
