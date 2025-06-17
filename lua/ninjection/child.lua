@@ -321,21 +321,24 @@ function NJChild:format()
 		return fmt_ok, err
 	end
 
-	if cfg.format_cmd then
+	---@type string?
+	local cmd = cfg.format_cmd
+
+	if cmd then
 		---@type string[]
-		local path = vim.split(cfg.format_cmd, ".", { plain = true })
+		local path = vim.split(cmd, ".", { plain = true })
 
-		---@type boolean, fun()|nil
-		local cmd_ok, fmt_fn = pcall(vim.fn.get, _G, path)
+		---@type unknown
+		local fmt_fn = vim.tbl_get(_G, unpack(path))
 
-		if cmd_ok and type(fmt_fn) == "function" then
+		if type(fmt_fn) == "function" then
 			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(fmt_fn)
 			return fmt_ok, fmt_err
 		else
 			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(function()
-				vim.cmd(cfg.format_cmd)
+				vim.cmd(cmd)
 			end)
 			if not fmt_ok and cfg.debug then
 				vim.notify(
