@@ -322,16 +322,28 @@ function NJChild:format()
 	end
 
 	if cfg.format_cmd then
-		---@type boolean, function?
-		local cmd_ok, fmt_fn = pcall(vim.fn.get, _G, vim.split(cfg.format_cmd, ".", { plain = true }))
+		---@type string[]
+		local path = vim.split(cfg.format_cmd, ".", { plain = true })
+
+		---@type boolean, fun()|nil
+		local cmd_ok, fmt_fn = pcall(vim.fn.get, _G, path)
+
 		if cmd_ok and type(fmt_fn) == "function" then
+			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(fmt_fn)
 			return fmt_ok, fmt_err
 		else
-			if cfg.debug then
-				vim.notify("ninjection.child:format() Invalid format_cmd: " .. cfg.format_cmd, vim.log.levels.WARN)
+			---@type boolean, string?
+			local fmt_ok, fmt_err = pcall(function()
+				vim.cmd(cfg.format_cmd)
+			end)
+			if not fmt_ok and cfg.debug then
+				vim.notify(
+					"ninjection.child:format() invalid format_cmd string: " .. tostring(fmt_err),
+					vim.log.levels.WARN
+				)
 			end
-			return fallback()
+			return fmt_ok, fmt_err
 		end
 	end
 
