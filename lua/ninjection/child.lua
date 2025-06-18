@@ -349,6 +349,8 @@ function NJChild:format()
 			local fmt_ok, fmt_err = pcall(fmt_fn)
 			if not fmt_ok then
 				return fallback(true, fmt_fn, fmt_err)
+			else
+				return true, nil
 			end
 		else
 			---@type boolean, string?
@@ -357,6 +359,8 @@ function NJChild:format()
 			end)
 			if not fmt_ok then
 				return fallback(true, fmt_fn, fmt_err)
+			else
+				return true, nil
 			end
 		end
 	end
