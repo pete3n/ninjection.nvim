@@ -307,7 +307,20 @@ function NJChild:format()
 	local timeout = cfg.format_timeout or 500
 
 	---@private
-	local function fallback()
+	---@param fmt_failed boolean
+	---@param fmt_fn string?
+	---@param fmt_err string?
+	---@return boolean success, string? err
+	local function fallback(fmt_failed, fmt_fn, fmt_err)
+		if cfg.debug and fmt_failed then
+			vim.notify(
+				"ninjection.child:format(): warning format function call, "
+					.. tostring(fmt_fn)
+					.. " failed with error: "
+					.. tostring(fmt_err)
+					.. " ... Reverting to LSP formatting."
+			)
+		end
 		if cfg.debug then
 			vim.notify("ninjection.child:format() info: defaulting to LSP formatting", vim.log.levels.INFO)
 		end
@@ -334,23 +347,21 @@ function NJChild:format()
 		if type(fmt_fn) == "function" then
 			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(fmt_fn)
-			return fmt_ok, fmt_err
+			if not fmt_ok then
+				return fallback(true, fmt_fn, fmt_err)
+			end
 		else
 			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(function()
 				vim.cmd(cmd)
 			end)
-			if not fmt_ok and cfg.debug then
-				vim.notify(
-					"ninjection.child:format() invalid format_cmd string: " .. tostring(fmt_err),
-					vim.log.levels.WARN
-				)
+			if not fmt_ok then
+				return fallback(true, fmt_fn, fmt_err)
 			end
-			return fmt_ok, fmt_err
 		end
 	end
 
-	return fallback()
+	return fallback(false)
 end
 
 return NJChild
