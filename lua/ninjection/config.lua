@@ -52,11 +52,19 @@ local default_config = {
 				(indented_string_expression) @inj_text
 			)
 		]],
+		lua = [[
+			(
+				(comment) @inj_lang
+				.
+				(string_content) @inj_text
+			)
+		]],
 	},
 
 	---@type table<string, string>
 	inj_lang_comment_pattern = {
 		nix = [[#%s*([%w%p]+)%s*]], -- Parses "# lang" to "lang"
+		lua = [[--%s*([%w%p]+)%s*]], -- Parses "-- lang" to "lang"
 	},
 
 	---@type table<string,fun(text: string): string, table<string, boolean>>
@@ -145,6 +153,7 @@ local default_config = {
 	lsp_map = {
 		bash = "bashls",
 		lua = "lua_ls",
+		nix = "nixd",
 		python = "ruff",
 		sh = "bashls",
 	},
