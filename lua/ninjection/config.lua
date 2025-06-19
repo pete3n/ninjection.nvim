@@ -56,7 +56,7 @@ local default_config = {
 			(
 				(comment) @inj_lang
 				.
-				(string) @inj_text
+				(expression_list) @inj_text
 			)
 		]],
 	},
