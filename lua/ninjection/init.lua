@@ -166,7 +166,6 @@ function ninjection.edit()
 			p_ft = injection.ft,
 			p_name = buf_name,
 		})
-		nj_parent:update_buf()
 	end
 
 	nj_child = NJChild.new({
@@ -364,17 +363,6 @@ function ninjection.replace()
 		return false, err
 	end
 
-	---@type boolean
-	local del_buf_ok = pcall(vim.api.nvim_buf_delete, cur_bufnr, { force = true })
-	if not del_buf_ok then
-		---@type string
-		local err = "ninjection.replace() warning: Failed to delete child buffer: " .. cur_bufnr
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN)
-		end
-		return true, err
-	end
-
 	nj_parent:del_child(cur_bufnr)
 
 	-- Calculate tentative row and col based on config
@@ -476,7 +464,6 @@ function ninjection.format()
 			p_ft = injection.ft, -- The parent filetype is the current filetype
 			p_name = buf_name,
 		})
-		nj_parent:update_buf()
 	end
 
 	---@type NJChild
