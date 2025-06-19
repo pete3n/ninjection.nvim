@@ -97,6 +97,9 @@ end
 ---@return boolean success, string? err
 ---
 function ninjection.edit()
+	---@type NJParent, NJChild
+	local nj_parent, nj_child
+
 	---@type boolean, integer?
 	local get_cbuf_ok, cur_bufnr
 	get_cbuf_ok, cur_bufnr = pcall(vim.api.nvim_get_current_buf)
@@ -157,7 +160,16 @@ function ninjection.edit()
 	end
 	---@cast buf_name string
 
-	local nj_child = NJChild.new({
+	if not buffer.get_njparent(cur_bufnr) then
+		nj_parent = NJParent.new({
+			p_bufnr = cur_bufnr,
+			p_ft = injection.ft,
+			p_name = buf_name,
+		})
+		nj_parent:update()
+	end
+
+	nj_child = NJChild.new({
 		c_ft = injection.pair.inj_lang, -- The injected language becomes the child ft
 		c_root_dir = root_dir, -- Child inherits the root directory of the parent
 		p_bufnr = cur_bufnr, -- The parent buffer will be the current buffer
@@ -253,7 +265,7 @@ function ninjection.replace()
 	---@cast cur_bufnr integer
 
 	---@type NJChild?, string?
-	local nj_child, child_err = buffer.get_buf_child(cur_bufnr)
+	local nj_child, child_err = buffer.get_njchild(cur_bufnr)
 	if not NJChild.is_child(nj_child) then
 		return false, tostring(child_err)
 	end
@@ -372,7 +384,6 @@ function ninjection.replace()
 	end
 
 	nj_parent:del_child(cur_bufnr)
-	nj_parent:set_nj_table(nj_child.p_bufnr)
 
 	-- Calculate tentative row and col based on config
 	---@type integer, integer
@@ -414,6 +425,9 @@ end
 ---
 --- @return boolean success, string? err
 function ninjection.format()
+	---@type NJParent, NJChild
+	local nj_parent, nj_child
+
 	---@type boolean, integer?
 	local cbuf_ok, cur_bufnr
 	cbuf_ok, cur_bufnr = pcall(vim.api.nvim_get_current_buf)
@@ -463,13 +477,23 @@ function ninjection.format()
 		injection.text, injection.text_meta = cfg.inj_text_modifiers[injection.ft](injection.text)
 	end
 
+	if not buffer.get_njparent(cur_bufnr) then
+		---@type NJParent
+		nj_parent = NJParent.new({
+			p_bufnr = cur_bufnr,
+			p_ft = injection.ft, -- The parent filetype is the current filetype
+			p_name = buf_name,
+		})
+		nj_parent:update()
+	end
+
 	---@type NJChild
-	local nj_child = NJChild.new({
+	nj_child = NJChild.new({
 		c_ft = injection.pair.inj_lang, -- The injected language becomes the child ft
 		c_root_dir = root_dir, -- Child inherits the root directory of the parent
-		p_bufnr = cur_bufnr, -- The parent buffer will be the current buffer
+		p_bufnr = cur_bufnr,
 		p_name = buf_name, -- The parent buffer name will be the current buffer name
-		p_ft = injection.ft, -- The parent filetype is the current filetype
+		p_ft = injection.ft,
 		p_range = injection.range, -- The parent range is the current injection range
 		p_text_meta = injection.text_meta, -- Metadata of modifications made to original text
 	})
@@ -508,19 +532,12 @@ function ninjection.format()
 	end
 
 	nj_child:format()
-
-	local rep_lines = vim.api.nvim_buf_get_lines(nj_child.c_bufnr, 0, -1, false)
-	if not rep_lines or #rep_lines == 0 then
-		vim.notify("ninjection.format() warning: No formatted output", vim.log.levels.WARN)
-	else
-		buffer.indent_block(cur_bufnr, injection.range, rep_lines)
-	end
+	---@type string[]
+	local formatted_lines = vim.api.nvim_buf_get_lines(nj_child.c_bufnr, 0, -1, false)
+	nj_parent:replace_range(formatted_lines, injection.range)
 
 	vim.api.nvim_win_hide(nj_child.c_win)
-
-	if nj_child.c_bufnr and vim.api.nvim_buf_is_valid(nj_child.c_bufnr) then
-		vim.api.nvim_buf_delete(nj_child.c_bufnr, { force = true })
-	end
+	nj_parent:del_child(nj_child.c_bufnr)
 
 	return true, nil
 end
