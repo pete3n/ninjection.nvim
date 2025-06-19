@@ -507,10 +507,7 @@ function ninjection.format()
 		vim.notify("ninjection.format() error: Timeout waiting for LSP to attach.", vim.log.levels.ERROR)
 	end
 
-	vim.lsp.buf.format({
-		bufnr = nj_child.c_bufnr,
-		timeout_ms = cfg.format_timeout,
-	})
+	nj_child:format()
 
 	local rep_lines = vim.api.nvim_buf_get_lines(nj_child.c_bufnr, 0, -1, false)
 	if not rep_lines or #rep_lines == 0 then
