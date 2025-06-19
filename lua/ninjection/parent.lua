@@ -48,6 +48,7 @@ function NJParent.new(opts)
 		p_name = opts.p_name,
 		children = opts.children,
 	}, NJParent)
+	self:update_buf()
 
 	-- Bypass __newindex to set immutable type
 	rawset(self, "type", "NJParent")
@@ -56,12 +57,12 @@ function NJParent.new(opts)
 end
 
 ---@nodoc
--- Update the ninjection table in the parent buffer.
+-- Update the ninjection state table in the parent buffer.
 -- This overwrites the ninjection table for the buffer if it exists.
 -- Ninjection does not support nested parent -> child -> parent buffer relationships.
 -- A parent should never become a child and vice-versa.
 ---@return boolean success, string? err
-function NJParent:update()
+function NJParent:update_buf()
 	if not vim.api.nvim_buf_is_valid(self.p_bufnr) then
 		local err = "ninjection.parent:update() error: Bufnr, " .. self.p_bufnr .. " is invalid."
 		if cfg.debug then
@@ -86,6 +87,54 @@ function NJParent:update()
 end
 
 ---@nodoc
+--- Associate a child bufnr with the parent bufnr
+---@param c_bufnr integer
+---@return boolean success, string? err
+function NJParent:add_child(c_bufnr)
+	if not vim.api.nvim_buf_is_valid(self.p_bufnr) then
+		---@type string
+		local err = "ninjection.parent:add_child() error: The parent buffer, " .. self.p_bufnr .. " is invalid."
+		if cfg.debug then
+			vim.notify(err, vim.log.level.ERROR)
+		end
+		return false, err
+	end
+
+	if not vim.api.nvim_buf_is_valid(c_bufnr) then
+		---@type string
+		local err = "ninjection.parent:add_child() error: The child buffer, " .. c_bufnr .. " is invalid."
+		if cfg.debug then
+			vim.notify(err, vim.log.level.ERROR)
+		end
+		return false, err
+	end
+
+	-- A parent buffer should be initialized with a ninjection table when created,
+	-- So if it can't be retrieved then we are in a bad state.
+	---@type boolean, NJParent?
+	local get_nj_ok, nj_parent = pcall(vim.api.nvim_buf_get_var, self.p_bufnr, "ninjection")
+	if not get_nj_ok or not NJParent.is_parent(nj_parent) then
+		---@type string
+		local err = "ninjection.parent.add_child() error: Parent bufnr "
+			.. self.p_bufnr
+			.. " does not have a valid parent ninjection table."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return false, err
+	end
+	---@cast nj_parent NJParent
+
+	-- Don't add a duplicate child reference
+	if not vim.tbl_contains(self.children, c_bufnr) then
+		table.insert(self.children, c_bufnr)
+	end
+	self:update_buf() -- Sync with the parent buffers ninjection state table
+
+	return true, nil
+end
+
+---@nodoc
 --- Delete a child buffer, remove it from the parent, and update the parent table.
 ---@param c_bufnr integer
 ---@return boolean success, string? err
@@ -100,7 +149,7 @@ function NJParent:del_child(c_bufnr)
 			return true, nil
 		end
 	end
-	self:update()
+	self:update_buf()
 
 	---@type string
 	local err = "ninjection.parent:del_child(): bufnr " .. c_bufnr .. " not found in parent."
