@@ -61,7 +61,6 @@ function NJChild.new(opts)
 		c_bufnr = opts.c_bufnr,
 		c_win = opts.c_win,
 	}, NJChild)
-	self:update_buf()
 
 	-- Bypass __newindex to set immutable type
 	rawset(self, "type", "NJChild")
