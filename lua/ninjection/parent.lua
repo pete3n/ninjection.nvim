@@ -150,16 +150,17 @@ function NJParent:del_child(c_bufnr)
 				vim.api.nvim_buf_delete(c_bufnr, { force = true })
 			end
 			table.remove(self.children, i)
+			self:update_buf()
 			return true, nil
 		end
 	end
-	self:update_buf()
 
 	---@type string
 	local err = "ninjection.parent:del_child(): bufnr " .. c_bufnr .. " not found in parent."
 	if cfg.debug then
 		vim.notify(err, vim.error.levels.ERROR)
 	end
+
 	return false, err
 end
 
