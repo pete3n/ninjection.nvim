@@ -48,11 +48,11 @@ function NJParent.new(opts)
 		p_name = opts.p_name,
 		children = opts.children,
 	}, NJParent)
-	self:update_buf()
-
 	-- Bypass __newindex to set immutable type
 	rawset(self, "type", "NJParent")
 
+	-- Sync new parent object with ninjection state table
+	self:update_buf()
 	return self
 end
 
