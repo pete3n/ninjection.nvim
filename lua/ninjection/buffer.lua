@@ -112,22 +112,9 @@ function M.get_njparent(p_bufnr)
 	local get_pnj_ok, get_pnj_return = pcall(vim.api.nvim_buf_get_var, p_bufnr, "ninjection")
 	-- Assuming that a vailed get_var call for ninjection on a valid bufnr means that
 	-- the table doesn't exist.
-	if not get_pnj_ok then
-		---@type string
-		local err = "ninjection.buffer.get_njparent() error: Error retrieving ninjection table for buffer " .. p_bufnr
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return nil, err
-	end
-
-	if not get_pnj_return or not NJParent.is_parent(get_pnj_return) then
-		---@type string
-		local err = "ninjection.buffer.get_njparent() error: No parent ninjection table for buffer: " .. p_bufnr
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return nil, err
+	if not get_pnj_ok or not NJParent.is_parent(get_pnj_return) then
+		-- The table does not exist. This is not an error condition for a new parent buffer.
+		return nil
 	end
 	---@cast get_pnj_return NJParent
 
