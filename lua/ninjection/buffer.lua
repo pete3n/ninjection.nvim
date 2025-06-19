@@ -93,69 +93,59 @@ function M.create_child_win(bufnr, style)
 	return 0, nil
 end
 
--- Track parent, child buffer relations, in the event multiple child buffers
--- are opened for the same injected content.
--- Retrieve the existing ninjection table or initialize a new one
----@param p_bufnr integer
----@param c_bufnr integer
----@return boolean success, string? err
-function M.reg_child_buf(p_bufnr, c_bufnr)
-	---@type NJParent
-	local nj_parent = NJParent.new({ children = {} })
 
+---@nodoc
+--- Determines if a buffer is a ninjection parent buffer and returns the NJParent
+--- object for that buffer.
+---@param p_bufnr integer
+---@return NJParent? nj_parent, string? err
+function M.get_njparent(p_bufnr)
 	if not vim.api.nvim_buf_is_valid(p_bufnr) then
 		---@type string
-		local err = "buffer.reg_child_buf() error: The buffer, " .. p_bufnr .. " is invalid."
+		local err = "ninjection.buffer.get_njparent(): The buffer, " .. p_bufnr .. " is invalid."
 		if cfg.debug then
 			vim.notify(err, vim.log.level.ERROR)
 		end
-		return false, err
+		return nil, err
 	end
 
 	---@type boolean, NJParent?
-	local get_nj_ok, get_nj_return = pcall(vim.api.nvim_buf_get_var, p_bufnr, "ninjection")
-
-	--- If the buffer already has a ninjection table, then we want to update the
-	--- table by appending new children to it.
-	if get_nj_ok and NJParent.is_parent(get_nj_return) then
-		---@cast get_nj_return NJParent
-		nj_parent = get_nj_return
-	end
-
-	--- Existing ninjection child buffers cannot also be parents (grandparents)
-	if get_nj_ok and NJChild.is_child(get_nj_return) then
+	local get_pnj_ok, get_pnj_return = pcall(vim.api.nvim_buf_get_var, p_bufnr, "ninjection")
+	-- Assuming that a vailed get_var call for ninjection on a valid bufnr means that
+	-- the table doesn't exist.
+	if not get_pnj_ok then
 		---@type string
-		local err = "buffer.reg_child_buf() error: The buffer, "
-			.. p_bufnr
-			.. " is a ninjection child buffer already. It cannot be a parent, "
-			.. " gandparents are not supported."
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN)
-		end
-		return false, err
-	end
-	table.insert(nj_parent.children, c_bufnr)
-
-	---@type boolean
-	local svar_ok = pcall(vim.api.nvim_buf_set_var, p_bufnr, "ninjection", nj_parent)
-	if not svar_ok then
-		---@type string
-		local err = "buffer.reg_child_buf() error: Failed to set ninjection table var in parent bufnr: " .. p_bufnr
+		local err = "ninjection.buffer.get_njparent() error: Error retrieving ninjection table for buffer " .. p_bufnr
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.ERROR)
 		end
-		return false, err
+		return nil, err
 	end
 
-	return true, nil
+	if not get_pnj_return or not NJParent.is_parent(get_pnj_return) then
+		---@type string
+		local err = "ninjection.buffer.get_njparent() error: No parent ninjection table for buffer: " .. p_bufnr
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return nil, err
+	end
+	---@cast get_pnj_return NJParent
+
+	setmetatable(get_pnj_return, NJParent)
+	return get_pnj_return, nil
 end
 
+
+---@nodoc
+--- Determines if a buffer is a ninjection child buffer and returns the NJChild
+--- object for that buffer.
 ---@param c_bufnr integer
 ---@return NJChild? nj_child, string? err
-function M.get_buf_child(c_bufnr)
+function M.get_njchild(c_bufnr)
 	if not vim.api.nvim_buf_is_valid(c_bufnr) then
 		---@type string
-		local err = "buffer.reg_child_buf() error: The buffer, " .. c_bufnr .. " is invalid."
+		local err = "ninjection.buffer.get_njchild(): The buffer, " .. c_bufnr .. " is invalid."
 		if cfg.debug then
 			vim.notify(err, vim.log.level.ERROR)
 		end
@@ -168,7 +158,7 @@ function M.get_buf_child(c_bufnr)
 	-- the table doesn't exist.
 	if not get_cnj_ok then
 		---@type string
-		local err = "ninjection.buffer.get_buf_parent() error: Error retrieving ninjection table for buffer " .. c_bufnr
+		local err = "ninjection.buffer.get_njchild() error: Error retrieving ninjection table for buffer " .. c_bufnr
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.ERROR)
 		end
@@ -177,7 +167,7 @@ function M.get_buf_child(c_bufnr)
 
 	if not get_cnj_return or not NJChild.is_child(get_cnj_return) then
 		---@type string
-		local err = "ninjection.buffer.get_buf_parent() error: No child ninjection table for buffer: " .. c_bufnr
+		local err = "ninjection.buffer.get_njchild() error: No child ninjection table for buffer: " .. c_bufnr
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.ERROR)
 		end
