@@ -41,6 +41,8 @@
 ---@field format_indent? integer - Additional spaces to indent injected text blocks.
 ---@field format_timeout? integer - Timeout in ms to wait for buffer formatting:
 --- default (500)
+---@field format_delimiters table<string, NJDelimiterPair> - Delimiter pairs for
+--- injected language comments.
 ---@field lsp_timeout? integer - Timeout in ms to wait for LSP to start:
 --- default (1000)
 ---@field register? string - Register to use to copy injected content.
@@ -80,6 +82,13 @@
 ---@field s_col integer
 ---@field e_row integer
 ---@field e_col integer
+
+---@tab NJDelimiterPair
+---@class NJDelimiterPair
+---@brief Store language specific comment delimiters for injected code.
+---
+---@field open string
+---@field close string
 
 ---@tag NJCapturePair
 ---@class NJCapturePair
