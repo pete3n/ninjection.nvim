@@ -93,7 +93,6 @@ function M.create_child_win(bufnr, style)
 	return 0, nil
 end
 
-
 ---@nodoc
 --- Determines if a buffer is a ninjection parent buffer and returns the NJParent
 --- object for that buffer.
@@ -135,7 +134,6 @@ function M.get_njparent(p_bufnr)
 	setmetatable(get_pnj_return, NJParent)
 	return get_pnj_return, nil
 end
-
 
 ---@nodoc
 --- Determines if a buffer is a ninjection child buffer and returns the NJChild
