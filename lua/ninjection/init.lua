@@ -166,7 +166,7 @@ function ninjection.edit()
 			p_ft = injection.ft,
 			p_name = buf_name,
 		})
-		nj_parent:update()
+		nj_parent:update_buf()
 	end
 
 	nj_child = NJChild.new({
@@ -190,8 +190,14 @@ function ninjection.edit()
 		return false, err
 	end
 
-	buffer.set_child_cur({
-		win = nj_child.c_win,
+	---@type boolean, string?
+	local add_child_ok, add_child_err = nj_parent:add_child(nj_child.c_bufnr)
+	if not add_child_ok then
+			vim.notify(tostring(add_child_err), vim.log.levels.ERROR)
+		return false, add_child_err
+	end
+
+	nj_child:set_cursor({
 		p_cursor = injection.cursor_pos,
 		s_row = (injection.range.s_row + cur_row_offset),
 		indents = cfg.preserve_indents and nj_child.p_indents or nil,
@@ -221,20 +227,6 @@ function ninjection.edit()
 		if cfg.auto_format then
 			nj_child:format()
 		end
-	end
-
-	-- Track parent, child buffer relations, in the event multiple child buffers
-	-- are opened for the same injected content.
-	-- Retrieve the existing ninjection table or initialize a new one
-	---@type boolean, string?
-	local reg_ok, reg_err = buffer.reg_child_buf(nj_child.p_bufnr, nj_child.c_bufnr)
-	if not reg_ok then
-		---@type string
-		local err = "ninjection.edit() error: Failed to register child buffer with parent..." .. tostring(reg_err)
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return false, err
 	end
 
 	return true, nil
@@ -484,7 +476,7 @@ function ninjection.format()
 			p_ft = injection.ft, -- The parent filetype is the current filetype
 			p_name = buf_name,
 		})
-		nj_parent:update()
+		nj_parent:update_buf()
 	end
 
 	---@type NJChild
