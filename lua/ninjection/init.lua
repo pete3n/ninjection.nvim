@@ -160,7 +160,11 @@ function ninjection.edit()
 	end
 	---@cast buf_name string
 
-	if not buffer.get_njparent(cur_bufnr) then
+	-- Don't overwrite an existing parent if it exists
+	local cur_parent = buffer.get_njparent(cur_bufnr)
+	if cur_parent then
+		nj_parent = cur_parent
+	else
 		nj_parent = NJParent.new({
 			p_bufnr = cur_bufnr,
 			p_ft = injection.ft,
@@ -457,11 +461,14 @@ function ninjection.format()
 		injection.text, injection.text_meta = cfg.inj_text_modifiers[injection.ft](injection.text)
 	end
 
-	if not buffer.get_njparent(cur_bufnr) then
-		---@type NJParent
+	-- Don't overwrite an existing parent if it exists
+	local cur_parent = buffer.get_njparent(cur_bufnr)
+	if cur_parent then
+		nj_parent = cur_parent
+	else
 		nj_parent = NJParent.new({
 			p_bufnr = cur_bufnr,
-			p_ft = injection.ft, -- The parent filetype is the current filetype
+			p_ft = injection.ft,
 			p_name = buf_name,
 		})
 	end
