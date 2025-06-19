@@ -207,7 +207,7 @@ function NJChild:init_buf(opts)
 	end
 
 	---@type boolean, string?
-	local set_ok, set_nj_err = self:set_nj_table()
+	local set_ok, set_nj_err = self:update()
 	if not set_ok then
 		return false, tostring(set_nj_err)
 	end
@@ -215,14 +215,16 @@ function NJChild:init_buf(opts)
 	return true, nil
 end
 
+---@nodoc
+-- Update the ninjection table for the child buffer.
 -- This overwrites the ninjection table for the buffer if it exists.
 -- Ninjection does not support nested parent -> child -> parent buffer relationships,
 -- So this shouldn't be an issue. A parent should never become a child and vice-versa.
 ---@return boolean success, string? err
-function NJChild:set_nj_table()
+function NJChild:update()
 	-- Save the child information to the buffer's ninjection table
 	if not vim.api.nvim_buf_is_valid(self.c_bufnr) then
-		local err = "ninjection.child:set_nj_table() error: Child buffer is invalid."
+		local err = "ninjection.child:update() error: Child buffer, " .. self.c_bufnr .. " is invalid."
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.ERROR)
 		end
