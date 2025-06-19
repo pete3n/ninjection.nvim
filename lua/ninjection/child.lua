@@ -7,6 +7,15 @@
 ---@type Ninjection.Config
 local cfg = require("ninjection.config").values
 
+---@tag NJChildCursor
+---@class NJChildCursor -- Options to calculate child window cursor position
+---@brief Ninjection child cursor object, stores cursor information to sync
+--- relative positions between parent and child buffers.
+---@field p_cursor integer[] -- Parent window cursor coordinates
+---@field s_row integer -- Starting row to calculate offset from
+---@field indents? NJIndents -- Optional indent preservation object
+---@field text_meta? table<string, boolean> -- Metadata for text modifications
+
 ---@tag NJChild
 ---@class NJChild
 ---@brief Ninjection child object, stores child information and associated parent info.
@@ -52,6 +61,7 @@ function NJChild.new(opts)
 		c_bufnr = opts.c_bufnr,
 		c_win = opts.c_win,
 	}, NJChild)
+	self:update_buf()
 
 	-- Bypass __newindex to set immutable type
 	rawset(self, "type", "NJChild")
@@ -74,6 +84,8 @@ function NJChild.is_child(obj)
 	return type(obj) == "table" and obj.type and obj.type == "NJChild"
 end
 
+---@nodoc
+--- Initialize a child buffer with provided text, optionally initialize a window for it.
 ---@param opts {
 --- text: string,
 --- create_win?: boolean }
@@ -207,7 +219,7 @@ function NJChild:init_buf(opts)
 	end
 
 	---@type boolean, string?
-	local set_ok, set_nj_err = self:update()
+	local set_ok, set_nj_err = self:update_buf()
 	if not set_ok then
 		return false, tostring(set_nj_err)
 	end
@@ -216,12 +228,12 @@ function NJChild:init_buf(opts)
 end
 
 ---@nodoc
--- Update the ninjection table for the child buffer.
+-- Update the ninjection state table for the child buffer.
 -- This overwrites the ninjection table for the buffer if it exists.
 -- Ninjection does not support nested parent -> child -> parent buffer relationships,
 -- So this shouldn't be an issue. A parent should never become a child and vice-versa.
 ---@return boolean success, string? err
-function NJChild:update()
+function NJChild:update_buf()
 	-- Save the child information to the buffer's ninjection table
 	if not vim.api.nvim_buf_is_valid(self.c_bufnr) then
 		local err = "ninjection.child:update() error: Child buffer, " .. self.c_bufnr .. " is invalid."
@@ -368,6 +380,61 @@ function NJChild:format()
 	end
 
 	return fallback(false)
+end
+
+---@nodoc
+--- Sets the child cursor to the same relative position as in the parent window.
+--- @param opts NJChildCursor
+--- @return boolean success, string? err
+function NJChild:set_cursor(opts)
+	if not self.c_win then
+		---@type string
+		local err = "ninjection.child:set_cursor() warning: Child bufnr " .. self.c_bufnr .. " has no window."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.WARN)
+		end
+		return false, nil
+	end
+
+	---@type integer[]
+	local offset_cur
+
+	-- Assuming autoformat will remove any existing indents, we need to offset
+	-- the cursor for the removed indents.
+	if cfg.preserve_indents and cfg.auto_format then
+		---@type integer
+		local relative_row = opts.p_cursor[1] - opts.s_row
+		relative_row = math.max(1, relative_row)
+		---@type integer
+		if opts.indents then
+			local relative_col = opts.p_cursor[2] - opts.indents.l_indent
+			relative_col = math.max(0, relative_col)
+			offset_cur = { relative_row, relative_col }
+		end
+	else
+		---@type integer
+		local relative_row = opts.p_cursor[1] - opts.s_row
+		relative_row = math.max(1, relative_row)
+		offset_cur = { relative_row, opts.p_cursor[2] }
+	end
+
+	---@type boolean, string?
+	local set_cur_ok, set_cur_err = pcall(function()
+		return vim.api.nvim_win_set_cursor(self.c_win, offset_cur)
+	end)
+	if not set_cur_ok then
+		if cfg.debug then
+			vim.notify(
+				"ninjection.child:set_cursor() error: Setting cursor for window "
+					.. self.c_win
+					.. " ... "
+					.. tostring(set_cur_err),
+				vim.log.levels.ERROR
+			)
+		end
+	end
+
+	return true, nil
 end
 
 return NJChild
