@@ -17,6 +17,17 @@ local default_config = {
 	auto_format = true,
 	---@type string
 	format_cmd = "format_with_conform",
+	---@type table<string, NJDelimiterPair>
+	format_delimiters = {
+		nix = {
+			open = "''",
+			close = "'';",
+		},
+		lua = {
+			open = "[[",
+			close = "]]",
+		},
+	},
 	---@type integer
 	format_indent = 2,
 	---@type integer
