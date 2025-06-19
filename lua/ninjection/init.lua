@@ -193,7 +193,7 @@ function ninjection.edit()
 	---@type boolean, string?
 	local add_child_ok, add_child_err = nj_parent:add_child(nj_child.c_bufnr)
 	if not add_child_ok then
-			vim.notify(tostring(add_child_err), vim.log.levels.ERROR)
+		vim.notify(tostring(add_child_err), vim.log.levels.ERROR)
 		return false, add_child_err
 	end
 
