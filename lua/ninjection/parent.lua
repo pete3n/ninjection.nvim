@@ -125,11 +125,15 @@ function NJParent:add_child(c_bufnr)
 	end
 	---@cast nj_parent NJParent
 
-	-- Don't add a duplicate child reference
+	-- Ensure children table exists in the case of a new parent
+	self.children = self.children or {}
+
+	-- Avoid duplicate child entries
 	if not vim.tbl_contains(self.children, c_bufnr) then
 		table.insert(self.children, c_bufnr)
 	end
-	self:update_buf() -- Sync with the parent buffers ninjection state table
+
+	self:update_buf() -- Sync with the parent buffer's ninjection state table
 
 	return true, nil
 end
