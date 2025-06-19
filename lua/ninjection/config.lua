@@ -56,7 +56,8 @@ local default_config = {
 			(
 				(comment) @inj_lang
 				.
-				(string_content) @inj_text
+				(string
+					(string_content) @inj_text)
 			)
 		]],
 	},
@@ -64,7 +65,7 @@ local default_config = {
 	---@type table<string, string>
 	inj_lang_comment_pattern = {
 		nix = [[^#%s*([%w_+%-]+)%s*$]], -- Parses "# lang" to "lang"
-		lua = [[^%-%-%s*([%w_+%-]+)%s*$]] , -- Parses "-- lang" to "lang"
+		lua = [[^%-%-%s*([%w_+%-]+)%s*$]], -- Parses "-- lang" to "lang"
 	},
 
 	---@type table<string,fun(text: string): string, table<string, boolean>>
