@@ -482,6 +482,7 @@ function ninjection.format()
 	if not init_ok then
 		return false, tostring(init_err)
 	end
+	nj_parent:add_child(nj_child.c_bufnr)
 
 	---@type NJLspStatus?, string?
 	local lsp_status, lsp_err = lsp.start_lsp(injection.pair.inj_lang, nj_child.c_bufnr)
