@@ -27,7 +27,7 @@ COPY ../plugin /ninjection/plugin
 COPY ../tests /ninjection/tests
 
 COPY ./ci/docker-entrypoint.sh /usr/local/bin/nvim-dev-entry
-RUN chmod +x /usr/local/bin/test-entry
+RUN chmod +x /usr/local/bin/nvim-dev-entry
 
 ENV VIMRUNTIME="/ninjection/share/nvim/runtime"
 ENV NVIM_PACKPATH="/ninjection/pack/myNeovimPackages/start/*"
