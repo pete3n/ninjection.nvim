@@ -131,7 +131,6 @@ function NJChild:init_buf(opts)
 				---@type integer, integer
 				for i, bufnr in ipairs(parent.children or {}) do
 					if bufnr == c_bufnr then
-						vim.notify("autocmd Debug: removing child from parent children.")
 						table.remove(parent.children, i)
 						parent:update_buf()
 						break
