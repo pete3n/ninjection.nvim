@@ -5,7 +5,7 @@ local nj = require("ninjection")
 
 describe("ninjection.select integration test #e2e #nix-lua #select", function()
 	it("validates injected content in select buffer", function()
-		vim.cmd("edit /ninjection/tests/ft/lua/nix_select.lua")
+		vim.cmd("edit /ninjection/tests/ft/lua/nix/nix_select.lua")
 
 		local p_content = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 		if _G.test_debug then

@@ -5,7 +5,7 @@ local nj = require("ninjection")
 
 describe("ninjection.format integration test #e2e #nix-lua #format", function()
 	it("validates injected content after formatting buffer", function()
-		vim.cmd("edit /ninjection/tests/ft/lua/nix_format.lua")
+		vim.cmd("edit /ninjection/tests/ft/lua/nix/nix_format.lua")
 
 		local buf_content = vim.api.nvim_buf_get_lines(0, 1, 9, false)
 		if _G.test_debug then

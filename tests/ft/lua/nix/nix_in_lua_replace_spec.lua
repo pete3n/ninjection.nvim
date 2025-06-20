@@ -5,7 +5,7 @@ local nj = require("ninjection")
 
 describe("ninjection.replace integration test #e2e #nix-lua #replace", function()
 	it("partially replaces injected content in the parent buffer", function()
-		vim.cmd("edit /ninjection/tests/ft/lua/nix_replace.lua")
+		vim.cmd("edit /ninjection/tests/ft/lua/nix/nix_replace.lua")
 
 		local parent_buf = vim.api.nvim_get_current_buf()
 		local p_before = vim.api.nvim_buf_get_lines(parent_buf, 0, -1, false)

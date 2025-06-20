@@ -1,4 +1,4 @@
-name: End-to-End Tests
+name: Ninjection E2E Tests
 
 on:
   push:
@@ -6,16 +6,38 @@ on:
   workflow_dispatch:
 
 jobs:
-  e2e-tests:
+  build-image:
     runs-on: ubuntu-22.04
+    outputs:
+      image-tag: ${{ steps.build.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v3
 
       - name: Build Docker Image
+        id: build
         run: |
           docker build -f ci/Dockerfile -t ninjection-test .
 
-      - name: Run End-to-End Tests in Container
+  health-tests:
+    needs: build-image
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Run health tests
         run: |
-          docker run --rm ninjection-test
-        continue-on-error: true
+          docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/health" -c "qa"
+
+  nix-lua-tests:
+    needs: build-image
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Run nix-lua tests
+        run: |
+          docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/nix/lua" -c "qa"
+
+  lua-nix-tests:
+    needs: build-image
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Run lua-nix tests
+        run: |
+          docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/lua/nix" -c "qa"
