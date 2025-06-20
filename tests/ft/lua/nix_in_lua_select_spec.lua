@@ -3,7 +3,7 @@ package.path = vim.fn.getcwd() .. "/tests/e2e/?.lua;" .. package.path
 local eq = assert.are.same
 local nj = require("ninjection")
 
-describe("ninjection.select integration test #e2e # #select", function()
+describe("ninjection.select integration test #e2e #nix-lua #select", function()
 	it("validates injected content in select buffer", function()
 		vim.cmd("edit /ninjection/tests/ft/lua/nix_select.lua")
 
@@ -32,10 +32,9 @@ describe("ninjection.select integration test #e2e # #select", function()
 			"    let",
 			"      flake = builtins.getFlake (toString ./.);",
 			"    in",
-			"    if builtins.isAttrs flake.outputs.devShells.x86_64-linux.default then",
-			"      builtins.attrNames flake.outputs.devShells.x86_64-linux.default",
-			"    else",
-			'      "LEAF"',
+			"      if builtins.isAttrs flake.outputs.devShells.x86_64-linux.default",
+			"      then builtins.attrNames flake.outputs.devShells.x86_64-linux.default",
+			'      else "LEAF"',
 			"  ]]",
 		}
 
