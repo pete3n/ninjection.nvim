@@ -88,7 +88,8 @@ with final.pkgs.lib; let
   extraPackages = with pkgs; [
     # language servers, etc.
     lua-language-server
-    nil # nix LSP
+		nixfmt-rfc-style
+		nixd
   ];
 in {
   # This is the neovim derivation

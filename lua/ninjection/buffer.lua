@@ -93,69 +93,44 @@ function M.create_child_win(bufnr, style)
 	return 0, nil
 end
 
--- Track parent, child buffer relations, in the event multiple child buffers
--- are opened for the same injected content.
--- Retrieve the existing ninjection table or initialize a new one
+---@nodoc
+--- Determines if a buffer is a ninjection parent buffer and returns the NJParent
+--- object for that buffer.
 ---@param p_bufnr integer
----@param c_bufnr integer
----@return boolean success, string? err
-function M.reg_child_buf(p_bufnr, c_bufnr)
-	---@type NJParent
-	local nj_parent = NJParent.new({ children = {} })
-
+---@return NJParent? nj_parent, string? err
+function M.get_njparent(p_bufnr)
 	if not vim.api.nvim_buf_is_valid(p_bufnr) then
 		---@type string
-		local err = "buffer.reg_child_buf() error: The buffer, " .. p_bufnr .. " is invalid."
+		local err = "ninjection.buffer.get_njparent(): The buffer, " .. p_bufnr .. " is invalid."
 		if cfg.debug then
 			vim.notify(err, vim.log.level.ERROR)
 		end
-		return false, err
+		return nil, err
 	end
 
 	---@type boolean, NJParent?
-	local get_nj_ok, get_nj_return = pcall(vim.api.nvim_buf_get_var, p_bufnr, "ninjection")
-
-	--- If the buffer already has a ninjection table, then we want to update the
-	--- table by appending new children to it.
-	if get_nj_ok and NJParent.is_parent(get_nj_return) then
-		---@cast get_nj_return NJParent
-		nj_parent = get_nj_return
+	local get_pnj_ok, get_pnj_return = pcall(vim.api.nvim_buf_get_var, p_bufnr, "ninjection")
+	-- Assuming that a vailed get_var call for ninjection on a valid bufnr means that
+	-- the table doesn't exist.
+	if not get_pnj_ok or not NJParent.is_parent(get_pnj_return) then
+		-- The table does not exist. This is not an error condition for a new parent buffer.
+		return nil
 	end
+	---@cast get_pnj_return NJParent
 
-	--- Existing ninjection child buffers cannot also be parents (grandparents)
-	if get_nj_ok and NJChild.is_child(get_nj_return) then
-		---@type string
-		local err = "buffer.reg_child_buf() error: The buffer, "
-			.. p_bufnr
-			.. " is a ninjection child buffer already. It cannot be a parent, "
-			.. " gandparents are not supported."
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.WARN)
-		end
-		return false, err
-	end
-	table.insert(nj_parent.children, c_bufnr)
-
-	---@type boolean
-	local svar_ok = pcall(vim.api.nvim_buf_set_var, p_bufnr, "ninjection", nj_parent)
-	if not svar_ok then
-		---@type string
-		local err = "buffer.reg_child_buf() error: Failed to set ninjection table var in parent bufnr: " .. p_bufnr
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return false, err
-	end
-
-	return true, nil
+	setmetatable(get_pnj_return, NJParent)
+	return get_pnj_return, nil
 end
 
+---@nodoc
+--- Determines if a buffer is a ninjection child buffer and returns the NJChild
+--- object for that buffer.
 ---@param c_bufnr integer
 ---@return NJChild? nj_child, string? err
-function M.get_buf_child(c_bufnr)
+function M.get_njchild(c_bufnr)
 	if not vim.api.nvim_buf_is_valid(c_bufnr) then
 		---@type string
-		local err = "buffer.reg_child_buf() error: The buffer, " .. c_bufnr .. " is invalid."
+		local err = "ninjection.buffer.get_njchild(): The buffer, " .. c_bufnr .. " is invalid."
 		if cfg.debug then
 			vim.notify(err, vim.log.level.ERROR)
 		end
@@ -168,7 +143,7 @@ function M.get_buf_child(c_bufnr)
 	-- the table doesn't exist.
 	if not get_cnj_ok then
 		---@type string
-		local err = "ninjection.buffer.get_buf_parent() error: Error retrieving ninjection table for buffer " .. c_bufnr
+		local err = "ninjection.buffer.get_njchild() error: Error retrieving ninjection table for buffer " .. c_bufnr
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.ERROR)
 		end
@@ -177,7 +152,7 @@ function M.get_buf_child(c_bufnr)
 
 	if not get_cnj_return or not NJChild.is_child(get_cnj_return) then
 		---@type string
-		local err = "ninjection.buffer.get_buf_parent() error: No child ninjection table for buffer: " .. c_bufnr
+		local err = "ninjection.buffer.get_njchild() error: No child ninjection table for buffer: " .. c_bufnr
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.ERROR)
 		end
@@ -379,103 +354,6 @@ function M.restore_indents(text, indents)
 	end
 
 	return lines
-end
-
----@tag indent_block()
----@brief
---- Re-indents a block of lines and surrounding delimiters ('' and '';
---- for a given injection range and replacement text.
----
---- Parameters ~
----@param bufnr integer - Buffer handle to operate on
----@param range NJRange - Injection range { s_row, e_row }
----@param rep_lines string[] - Formatted injected code
----
---- Notes ~
---- Assumes the line before s_row is the parent indent base.
-function M.indent_block(bufnr, range, rep_lines)
-	local s_row = range.s_row
-	local e_row = range.e_row
-
-	-- Get parent indent from the line above the start row
-	local parent_line = vim.api.nvim_buf_get_lines(bufnr, s_row - 1, s_row, false)[1] or ""
-	local parent_indent = parent_line:match("^(%s*)") or ""
-
-	-- Compute indents
-	local delimiter_indent = parent_indent .. string.rep(" ", cfg.format_indent)
-	local child_indent = delimiter_indent .. string.rep(" ", cfg.format_indent)
-
-	-- Construct replacement lines
-	local formatted_lines = {}
-	table.insert(formatted_lines, delimiter_indent .. "''")
-	for _, line in ipairs(rep_lines) do
-		table.insert(formatted_lines, child_indent .. line)
-	end
-	table.insert(formatted_lines, delimiter_indent .. "'';")
-
-	-- Replace full block (including delimiters)
-	vim.api.nvim_buf_set_lines(bufnr, s_row, e_row + 1, false, formatted_lines)
-end
-
----@class NJChildCursor -- Options to calculate child window cursor position
----@field win integer -- Child window handle
----@field p_cursor integer[] -- Parent window cursor coordinates
----@field s_row integer -- Starting row to calculate offset from
----@field indents? NJIndents -- Optional indent preservation object
----@field text_meta? table<string, boolean> -- Metadata for text modifications
----
----@tag ninjection.buffer.set_child_cur()
----@brief
---- Sets the child cursor to the same relative position as in the parent window.
----
---- Parameters ~
----
---- @param opts NJChildCursor
----
---- @return nil|string err
-function M.set_child_cur(opts)
-	---@type boolean, unknown, string?
-	local ok, raw_output, err
-	---@type integer[]?
-	local offset_cur
-	-- Assuming autoformat will remove any existing indents, we need to offset
-	-- the cursor for the removed indents.
-	if cfg.preserve_indents and cfg.auto_format then
-		---@type integer
-		local relative_row = opts.p_cursor[1] - opts.s_row
-		relative_row = math.max(1, relative_row)
-		---@type integer
-		if opts.indents then
-			local relative_col = opts.p_cursor[2] - opts.indents.l_indent
-			relative_col = math.max(0, relative_col)
-			offset_cur = { relative_row, relative_col }
-		end
-	else
-		---@type integer
-		local relative_row = opts.p_cursor[1] - opts.s_row
-		relative_row = math.max(1, relative_row)
-		offset_cur = { relative_row, opts.p_cursor[2] }
-	end
-	---@cast offset_cur integer[]
-
-	ok, raw_output = pcall(function()
-		return vim.api.nvim_win_set_cursor(opts.win, offset_cur)
-	end)
-	if not ok then
-		if cfg.debug then
-			err = tostring(raw_output)
-			vim.notify(
-				"ninjection.buffer.set_child_cur() warning: Calling vim.api.nvim_win_set_cursor"
-					.. opts.win
-					.. tostring(offset_cur)
-					.. "\n"
-					.. err,
-				vim.log.levels.WARN
-			)
-		end
-	end
-
-	return nil
 end
 
 return M

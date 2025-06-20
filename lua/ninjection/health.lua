@@ -37,7 +37,9 @@ M.validate_config = function(cfg)
 
 	return is_valid, err
 end
-
+-- TODO: Validate fmt_cmd
+-- List all doublets configured
+-- Check LSP executable
 local required_plugins = {
 	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
 }

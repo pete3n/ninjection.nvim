@@ -1,4 +1,4 @@
-name: End-to-End Tests
+name: Ninjection E2E Tests
 
 on:
   push:
@@ -6,16 +6,72 @@ on:
   workflow_dispatch:
 
 jobs:
-  e2e-tests:
+  build-image:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Build Docker Image
         run: |
           docker build -f ci/Dockerfile -t ninjection-test .
+          docker save ninjection-test:latest -o ninjection-test.tar
 
-      - name: Run End-to-End Tests in Container
-        run: |
-          docker run --rm ninjection-test
-        continue-on-error: true
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ninjection-test-image
+          path: ninjection-test.tar
+
+  health-tests:
+    needs: build-image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ninjection-test-image
+          path: .
+
+      - name: Load Docker image
+        run: docker load < ninjection-test.tar
+
+      - name: Run health tests
+        run: docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/health" -c "qa"
+
+  nix-lua-tests:
+    needs: build-image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ninjection-test-image
+          path: .
+
+      - name: Load Docker image
+        run: docker load < ninjection-test.tar
+
+      - name: Run nix-lua tests
+        run: docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/nix/lua" -c "qa"
+
+  lua-nix-tests:
+    needs: build-image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ninjection-test-image
+          path: .
+
+      - name: Load Docker image
+        run: docker load < ninjection-test.tar
+
+      - name: Run lua-nix tests
+        run: docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/lua/nix" -c "qa"
