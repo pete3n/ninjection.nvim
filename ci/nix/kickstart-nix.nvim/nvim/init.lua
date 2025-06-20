@@ -30,7 +30,7 @@ require('lspconfig').nixd.setup {
   settings = {
     nixd = {
       formatting = {
-        command = { 'nixfmt' },
+        command = { 'nixfmt-rfc-style' },
       },
     },
   },
