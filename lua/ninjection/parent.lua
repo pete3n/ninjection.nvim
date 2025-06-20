@@ -143,6 +143,18 @@ end
 ---@param c_bufnr integer
 ---@return boolean success, string? err
 function NJParent:del_child(c_bufnr)
+	if not vim.tbl_contains(self.children or {}, c_bufnr) then
+		---@type string
+		local err = "ninjection.parent:del_child() info: bufnr " .. c_bufnr .. " already removed from children table."
+		if cfg.debug then
+			vim.notify(
+				err,
+				vim.log.levels.INFO
+			)
+		end
+		return false, nil
+	end
+
 	---@type integer, integer
 	for i, bufnr in ipairs(self.children) do
 		if bufnr == c_bufnr then
@@ -150,9 +162,11 @@ function NJParent:del_child(c_bufnr)
 			for _, client in ipairs(clients) do
 				pcall(vim.lsp.buf_detach_client, c_bufnr, client.id)
 			end
+
 			if vim.api.nvim_buf_is_valid(c_bufnr) then
 				vim.api.nvim_buf_delete(c_bufnr, { force = true })
 			end
+
 			table.remove(self.children, i)
 			self:update_buf()
 			return true, nil
@@ -160,9 +174,9 @@ function NJParent:del_child(c_bufnr)
 	end
 
 	---@type string
-	local err = "ninjection.parent:del_child(): bufnr " .. c_bufnr .. " not found in parent."
+	local err = "ninjection.parent:del_child() error: Unable to delete child for unknown reason."
 	if cfg.debug then
-		vim.notify(err, vim.error.levels.ERROR)
+		vim.notify(err, vim.log.levels.ERROR)
 	end
 
 	return false, err
