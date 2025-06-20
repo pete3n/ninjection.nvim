@@ -8,20 +8,34 @@ on:
 jobs:
   build-image:
     runs-on: ubuntu-22.04
-    outputs:
-      image-tag: ${{ steps.build.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v3
 
       - name: Build Docker Image
-        id: build
         run: |
           docker build -f ci/Dockerfile -t ninjection-test .
+          docker save ninjection-test:latest -o ninjection-test.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ninjection-test-image
+          path: ninjection-test.tar
 
   health-tests:
     needs: build-image
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v3
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ninjection-test-image
+
+      - name: Load Docker image
+        run: docker load < ninjection-test.tar
+
       - name: Run health tests
         run: |
           docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/health" -c "qa"
@@ -30,6 +44,16 @@ jobs:
     needs: build-image
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v3
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ninjection-test-image
+
+      - name: Load Docker image
+        run: docker load < ninjection-test.tar
+
       - name: Run nix-lua tests
         run: |
           docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/nix/lua" -c "qa"
@@ -38,6 +62,16 @@ jobs:
     needs: build-image
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v3
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ninjection-test-image
+
+      - name: Load Docker image
+        run: docker load < ninjection-test.tar
+
       - name: Run lua-nix tests
         run: |
           docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/lua/nix" -c "qa"
