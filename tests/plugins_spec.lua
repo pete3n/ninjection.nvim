@@ -1,8 +1,10 @@
 package.path = vim.fn.getcwd() .. "/tests/e2e/?.lua;" .. package.path
 
-describe("Required plugins", function()
+describe("Plugin validation", function()
   local required_plugins = {
     { lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
+    { lib = "conform", optional = true, info = "Optional for language formatting - must be configured" },
+    { lib = "lspconfig", optional = true, info = "Optional for LSP configuration" },
   }
 
   local function is_installed(lib_name)
@@ -14,9 +16,8 @@ describe("Required plugins", function()
     it("should have " .. plugin.lib .. " installed", function()
       local ok = is_installed(plugin.lib)
       if plugin.optional then
-        -- optional plugins can be missing but we warn
         if not ok then
-          print("[WARN] Optional plugin missing: " .. plugin.lib .. " - " .. plugin.info)
+          print("[INFO] Optional plugin missing: " .. plugin.lib .. " - " .. plugin.info)
         end
         assert.is_true(true) -- Always pass for optional plugins
       else
