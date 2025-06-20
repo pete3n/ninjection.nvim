@@ -3,9 +3,9 @@ package.path = vim.fn.getcwd() .. "/tests/e2e/?.lua;" .. package.path
 local eq = assert.are.same
 local nj = require("ninjection")
 
-describe("ninjection.edit integration test #e2e #lua-nix #edit", function()
+describe("ninjection.edit integration test #e2e #nix-lua #edit", function()
 	it("validates injected content in edit buffer", function()
-		vim.cmd("edit /ninjection/tests/ft/lua/nix_edit.lua")
+		vim.cmd("edit nix_edit.lua")
 
 		local p_content = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 		if _G.test_debug then

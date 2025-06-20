@@ -3,7 +3,7 @@ package.path = vim.fn.getcwd() .. "/tests/e2e/?.lua;" .. package.path
 local eq = assert.are.same
 local nj = require("ninjection")
 
-describe("ninjection.replace integration test #e2e #lua-nix #replace", function()
+describe("ninjection.replace integration test #e2e #nix-lua #replace", function()
 	it("partially replaces injected content in the parent buffer", function()
 		vim.cmd("edit /ninjection/tests/ft/lua/nix_replace.lua")
 
@@ -32,16 +32,18 @@ describe("ninjection.replace integration test #e2e #lua-nix #replace", function(
 		local expected = {
 			"local injected_content_edit = -- nix",
 			"  [[",
-			"		let",
-			"			# updated second line",
-			"			flake = builtins.getFlake (toString ./.);",
-			"		in",
-			"			if builtins.isAttrs flake.outputs.devShells.x86_64-linux.default",
-			"			then builtins.attrNames flake.outputs.devShells.x86_64-linux.default",
-			'			else "LEAF"',
-			"	]]",
+			"    let",
+			"      # updated second line",
+			"      flake = builtins.getFlake (toString ./.);",
+			"    in",
+			"    if builtins.isAttrs flake.outputs.devShells.x86_64-linux.default then",
+			"      builtins.attrNames flake.outputs.devShells.x86_64-linux.default",
+			"    else",
+			'      "LEAF"',
+			"  ]]",
 			"print(injected_content_edit)",
 		}
+
 		eq(expected, p_after)
 
 		vim.cmd("bdelete!")

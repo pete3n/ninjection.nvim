@@ -5,7 +5,7 @@ local nj = require("ninjection")
 
 describe("ninjection.select integration test #e2e #lua-nix #select", function()
 	it("validates injected content in select buffer", function()
-		vim.cmd("edit /ninjection/tests/ft/lua/nix_select.lua")
+		vim.cmd("edit /ninjection/tests/ft/nix/lua_select.nix")
 
 		local p_content = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 		if _G.test_debug then
@@ -28,13 +28,13 @@ describe("ninjection.select integration test #e2e #lua-nix #select", function()
 		end
 
 		local expected = {
-			"let",
-			"  flake = builtins.getFlake (toString ./.);",
-			"in",
-			"if builtins.isAttrs flake.outputs.devShells.x86_64-linux.default then",
-			"  builtins.attrNames flake.outputs.devShells.x86_64-linux.default",
-			"else",
-			'  "LEAF"',
+			"    ''",
+			"      local lua_content",
+			"      local more_lua_content",
+			"      for i = 1, 10, 1 do",
+			"        lua_content = lua_content + 1",
+			"      end",
+			"    '';",
 		}
 
 		if _G.test_debug then

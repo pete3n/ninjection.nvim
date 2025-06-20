@@ -3,7 +3,7 @@ package.path = vim.fn.getcwd() .. "/tests/e2e/?.lua;" .. package.path
 local eq = assert.are.same
 local nj = require("ninjection")
 
-describe("ninjection.edit integration test #e2e #nix-lua #edit", function()
+describe("ninjection.edit integration test #e2e #lua-nix #edit", function()
 	it("validates injected content in edit buffer", function()
 		vim.cmd("edit /ninjection/tests/ft/nix/lua_edit.nix")
 
