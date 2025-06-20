@@ -125,10 +125,6 @@ function NJChild:init_buf(opts)
 				---@type NJParent?
 				local parent = require("ninjection.buffer").get_njparent(self.p_bufnr)
 				if not parent then
-					vim.notify(
-						"autocmd Debug: Parent not found on p_bufnr " .. self.p_bufnr .. " for c_bufnr " .. c_bufnr,
-						vim.log.levels.DEBUG
-					)
 					return
 				end
 
@@ -138,9 +134,6 @@ function NJChild:init_buf(opts)
 						vim.notify("autocmd Debug: removing child from parent children.")
 						table.remove(parent.children, i)
 						parent:update_buf()
-						if cfg.debug then
-							vim.notify("ninjection: autocmd cleaned up child bufnr " .. c_bufnr, vim.log.levels.DEBUG)
-						end
 						break
 					end
 				end
