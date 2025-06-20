@@ -358,6 +358,7 @@ function ninjection.replace()
 			rep_lines
 		)
 	end)
+
 	if not set_text_ok then
 		---@type string
 		local err = "ninjection.replace() error: Failed to set replacement text in parent buffer: " .. nj_child.p_bufnr

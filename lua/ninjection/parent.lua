@@ -146,7 +146,11 @@ function NJParent:del_child(c_bufnr)
 	---@type integer, integer
 	for i, bufnr in ipairs(self.children) do
 		if bufnr == c_bufnr then
-			if c_bufnr and vim.api.nvim_buf_is_valid(c_bufnr) then
+			local clients = vim.lsp.get_clients({ bufnr = c_bufnr })
+			for _, client in ipairs(clients) do
+				pcall(vim.lsp.buf_detach_client, c_bufnr, client.id)
+			end
+			if vim.api.nvim_buf_is_valid(c_bufnr) then
 				vim.api.nvim_buf_delete(c_bufnr, { force = true })
 			end
 			table.remove(self.children, i)
