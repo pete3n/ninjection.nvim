@@ -118,16 +118,20 @@ function NJChild:init_buf(opts)
 
 	-- Create autocommand for cleanup in the event the child buffer is closed outside
 	-- of ninjection functions.
-	vim.api.nvim_create_autocmd("BufDelete", {
-		buffer = self.c_bufnr,
-		once = true,
-		callback = function()
-			local parent = require("ninjection.buffer").get_njparent(self.p_bufnr)
-			if parent then
-				parent:del_child(self.c_bufnr)
-			end
-		end,
-	})
+	for _, event in ipairs({ "BufDelete", "BufWipeout" }) do
+		vim.api.nvim_create_autocmd(event, {
+			buffer = self.c_bufnr,
+			once = true,
+			callback = function()
+				local parent = require("ninjection.buffer").get_njparent(self.p_bufnr)
+				if parent then
+					pcall(function()
+						parent:del_child(self.c_bufnr)
+					end)
+				end
+			end,
+		})
+	end
 
 	if opts.create_win then
 		---@type integer, string?
