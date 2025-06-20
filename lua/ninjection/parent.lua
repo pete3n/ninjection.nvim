@@ -147,10 +147,7 @@ function NJParent:del_child(c_bufnr)
 		---@type string
 		local err = "ninjection.parent:del_child() info: bufnr " .. c_bufnr .. " already removed from children table."
 		if cfg.debug then
-			vim.notify(
-				err,
-				vim.log.levels.INFO
-			)
+			vim.notify(err, vim.log.levels.INFO)
 		end
 		return false, nil
 	end
