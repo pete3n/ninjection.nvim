@@ -15,8 +15,6 @@ local default_config = {
 	preserve_indents = true,
 	---@type  boolean
 	auto_format = true,
-	---@type string
-	format_cmd = "fmt_with_conform",
 	---@type table<string, NJDelimiterPair>
 	format_delimiters = {
 		nix = {

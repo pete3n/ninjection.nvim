@@ -36,24 +36,23 @@ M.validate_config = function(cfg)
 	end
 
 	if cfg.format_cmd then
-		---@type string[]
-		local path = vim.split(cfg.format_cmd, ".", { plain = true })
 		---@type unknown
-		local fmt_fn = vim.tbl_get(_G, unpack(path))
+		local fmt_fn = _G[cfg.format_cmd]
 
 		if type(fmt_fn) ~= "function" then
-			---@cast fmt_fn function
+			---@cast fmt_fn string
 			---@type boolean, string?
-			local fn_ok, _ = pcall(function()
-				vim.cmd("silent! " .. cfg.format_cmd)
+			local cmd_ok, cmd_err = pcall(function()
+				vim.cmd(cfg.format_cmd)
 			end)
 
-			if not fn_ok then
+			if not cmd_ok then
 				table.insert(
 					errors,
 					"Invalid format_cmd: '"
 						.. cfg.format_cmd
-						.. "' is neither a valid Lua function nor a valid Ex command"
+						.. "' is not a Lua function and is not a valid Ex command: "
+						.. cmd_err
 				)
 				is_valid = false
 			end
