@@ -239,7 +239,7 @@ local default_config = {
 --- Fetch current configuration, or default_config
 ---@return NinjectionConfig
 M.get_config = function()
-  return M.values or default_config
+	return M.values or default_config
 end
 
 ---@nodoc
@@ -274,16 +274,6 @@ M.reload = function()
 		if key:match("^ninjection") then
 			package.loaded[key] = nil
 		end
-	end
-
-	local ninjection = require("ninjection")
-
-	local cfg = _G.ninjection_config or vim.g.ninjection
-	if type(cfg) == "table" then
-		_G.ninjection_config = cfg -- persist it explicitly
-		ninjection.setup(cfg)
-	else
-		vim.notify("ninjection.config.reload(): no user config found; using defaults", vim.log.levels.WARN)
 	end
 end
 
