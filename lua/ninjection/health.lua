@@ -19,24 +19,54 @@ local M = {}
 --- Parameters ~
 ---@param cfg? Ninjection.Config
 ---
----@return boolean is_valid, string? err
+---@return boolean is_valid, string[]? err
 ---
 M.validate_config = function(cfg)
 	cfg = cfg or require("ninjection.config").values or {}
-	---@type boolean, string?
-	local is_valid, err
-	is_valid = true
 
-	-- Ensure user only configures a supported editor style
+	---@type boolean, string[]
+	local is_valid = true
+	local errors = {}
+
 	---@type table<boolean>
 	local valid_editor_styles = { cur_win = true, floating = true, v_split = true, h_split = true }
 	if not valid_editor_styles[cfg.editor_style] then
-		err = "Ninjection configuration error: Invalid editor_style: " .. tostring(cfg.editor_style)
+		table.insert(errors, "Invalid editor_style: " .. tostring(cfg.editor_style))
 		is_valid = false
 	end
 
-	return is_valid, err
+	if cfg.format_cmd then
+		---@type string[]
+		local path = vim.split(cfg.format_cmd, ".", { plain = true })
+		---@type unknown
+		local fmt_fn = vim.tbl_get(_G, unpack(path))
+
+		if type(fmt_fn) ~= "function" then
+			---@cast fmt_fn function
+			---@type boolean, string?
+			local fn_ok, _ = pcall(function()
+				vim.cmd("silent! " .. cfg.format_cmd)
+			end)
+
+			if not fn_ok then
+				table.insert(
+					errors,
+					"Invalid format_cmd: '"
+						.. cfg.format_cmd
+						.. "' is neither a valid Lua function nor a valid Ex command"
+				)
+				is_valid = false
+			end
+		end
+	end
+
+	if is_valid then
+		return true, nil
+	else
+		return false, errors
+	end
 end
+
 -- TODO: Validate fmt_cmd
 -- List all doublets configured
 -- Check LSP executable
@@ -72,14 +102,18 @@ function M.check()
 	end
 
 	start("Checking configuration")
-	local is_valid, err = M.validate_config()
+	local is_valid, errors = M.validate_config()
+
 	if is_valid then
-		ok(" valid config.")
-	elseif err then
-		h_error(err)
+		ok("Valid config.")
+	elseif errors then
+		for _, msg in ipairs(errors) do
+			h_error(msg)
+		end
 	else
 		h_error("Unknown error validating configuration.")
 	end
+
 end
 
 return M
