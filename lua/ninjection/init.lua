@@ -9,20 +9,16 @@ local ninjection = {}
 ---@param user_cfg Ninjection.Config
 ---@return nil
 function ninjection.setup(user_cfg)
-	---@type boolean, string[]?
-	local is_valid, cfg_errors
-	is_valid, cfg_errors = require("ninjection.health").validate_config(user_cfg)
-	if is_valid == true then
-		require("ninjection.config")._merge_config(user_cfg)
-	else
-		---@cast cfg_errors string[]
-		vim.notify(
-			"ninjection warning: User configuration is invalid: "
-				.. table.concat(cfg_errors, "\n")
-				.. " \nReverting to default configuration settings.",
-			vim.log.levels.WARN
-		)
-	end
+  ---@type boolean, string[]?
+  local is_valid_cfg, cfg_errors = require("ninjection.config")._merge_config(user_cfg)
+
+  if not is_valid_cfg then
+    vim.notify(
+      "ninjection.setup() warning: Reverted to default_config. Invalid user configuration:\n"
+        .. table.concat(cfg_errors or {}, "\n"),
+      vim.log.levels.WARN
+    )
+  end
 end
 
 ---@type Ninjection.Config

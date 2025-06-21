@@ -16,7 +16,7 @@ local default_config = {
 	---@type  boolean
 	auto_format = true,
 	---@type string
-	format_cmd = "format_with_conform",
+	format_cmd = "fmt_with_conform",
 	---@type table<string, NJDelimiterPair>
 	format_delimiters = {
 		nix = {
@@ -273,23 +273,26 @@ end
 ---@nodoc
 --- Merges user provided configuration overrides with the default configuration.
 ---@param cfg_overrides? Ninjection.Config
----@return nil
+---@return boolean success, string[]? errors
 M._merge_config = function(cfg_overrides)
 	---@type Ninjection.Config
 	local user_config = vim.g.ninjection or cfg_overrides or {}
 	---@type Ninjection.Config
-	local config = vim.tbl_deep_extend("force", default_config, user_config)
+	local tmp_config = vim.tbl_deep_extend("force", default_config, user_config)
 
-	local is_valid, err
-	is_valid, err = vc(config)
-	if not is_valid then
-		error(err, 2)
+	---@type boolean, string[]?
+	local is_valid_cfg, cfg_errors
+	is_valid_cfg, cfg_errors = vc(tmp_config)
+	if not is_valid_cfg then
+		M.values = default_config
+		return false, cfg_errors
 	end
 
-	M.values = config
-	return M.values
+	M.values = tmp_config
+	return true, nil
 end
 
 -- Provide default config in the event no user overrides are provided.
-M.values = M._merge_config()
+M._merge_config()
+
 return M
