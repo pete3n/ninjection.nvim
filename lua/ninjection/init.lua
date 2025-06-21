@@ -6,23 +6,26 @@
 local ninjection = {}
 
 ---@nodoc
----@param user_cfg Ninjection.Config
+---@param user_cfg NinjectionConfig
 ---@return nil
 function ninjection.setup(user_cfg)
-  ---@type boolean, string[]?
-  local is_valid_cfg, cfg_errors = require("ninjection.config")._merge_config(user_cfg)
+	---@type boolean, string[]?
+	local is_valid_cfg, cfg_errors = require("ninjection.config")._merge_config(user_cfg)
 
-  if not is_valid_cfg then
-    vim.notify(
-      "ninjection.setup() warning: Reverted to default_config. Invalid user configuration:\n"
-        .. table.concat(cfg_errors or {}, "\n"),
-      vim.log.levels.WARN
-    )
-  end
+	if not is_valid_cfg then
+		vim.notify(
+			"ninjection.setup() warning: Reverted to default_config. Invalid user configuration:\n"
+				.. table.concat(cfg_errors or {}, "\n"),
+			vim.log.levels.WARN
+		)
+	end
 end
 
----@type Ninjection.Config
-local cfg = require("ninjection.config").values
+local config_mod = require("ninjection.config")
+
+---@type NinjectionConfig
+local cfg = config_mod.values
+
 local buffer = require("ninjection.buffer")
 local parse = require("ninjection.parse")
 local NJChild = require("ninjection.child")

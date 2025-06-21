@@ -17,7 +17,7 @@ local M = {}
 ---	current configuration.
 ---
 --- Parameters ~
----@param cfg? Ninjection.Config
+---@param cfg? NinjectionConfig
 ---
 ---@return boolean is_valid, string[]? err
 ---

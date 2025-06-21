@@ -10,14 +10,14 @@
 --- `"cur_win" | "floating" | "v_split" | "h_split"`
 
 ---@tag Ninjection.Subcommand
----@class Ninjection.Subcommand
+---@class NinjectionSubcommand
 ---@brief Implemented by `plugin/ninjection.lua` for user commands.
 ---
 ---@field impl fun()
 ---@field complete? fun(arg_lead: string): string[]
 
 ---@tag Ninjection.CmdOpts
----@class Ninjection.CmdOpts
+---@class NinjectionCmdOpts
 ---@brief Implemented by `plugin/ninjection.lua` for user commands.
 ---
 ---@field args string - The entire argument string as typed.
@@ -27,8 +27,8 @@
 ---@field line2? number - Ending line number for optional range.
 ---@field count? number - Optional count.
 
----@tag Ninjection.Config
----@class Ninjection.Config
+---@tag NinjectionConfig
+---@class NinjectionConfig
 ---@brief Implemented by `ninjection/config.lua` for default and user configs.
 ---
 ---@field preserve_indents? boolean - Preserve indents from the parent buffer.

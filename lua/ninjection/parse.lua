@@ -3,7 +3,7 @@
 --- The parse module contains all treesitter related functions for ninjection.
 ---
 local M = {}
----@type Ninjection.Config
+---@type NinjectionConfig
 local cfg = require("ninjection.config").values
 local ts = require("vim.treesitter")
 

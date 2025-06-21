@@ -8,7 +8,7 @@ local M = {}
 local vc = require("ninjection.health").validate_config
 
 ---@nodoc
----@type Ninjection.Config
+---@type NinjectionConfig
 ---@tag default_config
 local default_config = {
 	---@type boolean
@@ -236,8 +236,15 @@ local default_config = {
 }
 
 ---@nodoc
+--- Fetch current configuration, or default_config
+---@return NinjectionConfig
+M.get_config = function()
+  return M.values or default_config
+end
+
+---@nodoc
 --- Provide default_config for inspection, primarily for documentation.
----@return Ninjection.Config
+---@return NinjectionConfig
 M.get_default = function()
 	return default_config
 end
@@ -268,16 +275,26 @@ M.reload = function()
 			package.loaded[key] = nil
 		end
 	end
+
+	local ninjection = require("ninjection")
+
+	local cfg = _G.ninjection_config or vim.g.ninjection
+	if type(cfg) == "table" then
+		_G.ninjection_config = cfg -- persist it explicitly
+		ninjection.setup(cfg)
+	else
+		vim.notify("ninjection.config.reload(): no user config found; using defaults", vim.log.levels.WARN)
+	end
 end
 
 ---@nodoc
 --- Merges user provided configuration overrides with the default configuration.
----@param cfg_overrides? Ninjection.Config
+---@param cfg_overrides? NinjectionConfig
 ---@return boolean success, string[]? errors
 M._merge_config = function(cfg_overrides)
-	---@type Ninjection.Config
+	---@type NinjectionConfig
 	local user_config = vim.g.ninjection or cfg_overrides or {}
-	---@type Ninjection.Config
+	---@type NinjectionConfig
 	local tmp_config = vim.tbl_deep_extend("force", default_config, user_config)
 
 	---@type boolean, string[]?
@@ -292,7 +309,7 @@ M._merge_config = function(cfg_overrides)
 	return true, nil
 end
 
--- Provide default config in the event no user overrides are provided.
-M._merge_config()
+-- Always ensure at least the default_config exists.
+M.values = M.values or default_config
 
 return M

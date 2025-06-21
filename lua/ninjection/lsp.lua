@@ -5,7 +5,7 @@
 ---
 local M = {}
 ---@nodoc
----@type Ninjection.Config
+---@type NinjectionConfig
 local cfg = require("ninjection.config").values
 
 ---@alias NJLspStatusResponseType
