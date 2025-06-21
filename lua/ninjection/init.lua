@@ -21,10 +21,15 @@ function ninjection.setup(user_cfg)
 	end
 end
 
-local config_mod = require("ninjection.config")
-
 ---@type NinjectionConfig
-local cfg = config_mod.values
+local cfg = setmetatable({}, {
+  __index = function(_, key)
+    return require("ninjection.config").values[key]
+  end,
+  __newindex = function(_, key, value)
+    require("ninjection.config").values[key] = value
+  end,
+})
 
 local buffer = require("ninjection.buffer")
 local parse = require("ninjection.parse")
