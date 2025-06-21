@@ -113,7 +113,6 @@ function M.check()
 	else
 		h_error("Unknown error validating configuration.")
 	end
-
 end
 
 return M
