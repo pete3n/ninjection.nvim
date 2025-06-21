@@ -3,9 +3,12 @@
 --- The buffer module contains the ninjection child object class.
 ---
 
----@nodoc
 ---@type NinjectionConfig
-local cfg = require("ninjection.config").values
+local cfg = setmetatable({}, {
+	__index = function(_, key)
+		return require("ninjection.config").values[key]
+	end,
+})
 
 ---@tag NJChildCursor
 ---@class NJChildCursor -- Options to calculate child window cursor position

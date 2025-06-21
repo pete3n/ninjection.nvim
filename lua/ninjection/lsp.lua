@@ -3,10 +3,13 @@
 --- The buffer module contains helper functions utilized by the main ninjection
 --- module for starting and managing LSP connections.
 ---
-local M = {}
----@nodoc
+
 ---@type NinjectionConfig
-local cfg = require("ninjection.config").values
+local cfg = setmetatable({}, {
+	__index = function(_, key)
+		return require("ninjection.config").values[key]
+	end,
+})
 
 ---@alias NJLspStatusResponseType
 ---| "unmapped"

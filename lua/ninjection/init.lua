@@ -23,12 +23,12 @@ end
 
 ---@type NinjectionConfig
 local cfg = setmetatable({}, {
-  __index = function(_, key)
-    return require("ninjection.config").values[key]
-  end,
-  __newindex = function(_, key, value)
-    require("ninjection.config").values[key] = value
-  end,
+	__index = function(_, key)
+		return require("ninjection.config").values[key]
+	end,
+	__newindex = function(_, key, value)
+		require("ninjection.config").values[key] = value
+	end,
 })
 
 local buffer = require("ninjection.buffer")

@@ -1,10 +1,16 @@
 ---@module "ninjection.parse"
 ---@brief
 --- The parse module contains all treesitter related functions for ninjection.
----
+
 local M = {}
+
 ---@type NinjectionConfig
-local cfg = require("ninjection.config").values
+local cfg = setmetatable({}, {
+	__index = function(_, key)
+		return require("ninjection.config").values[key]
+	end,
+})
+
 local ts = require("vim.treesitter")
 
 ---@nodoc
