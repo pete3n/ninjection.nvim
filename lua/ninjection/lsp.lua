@@ -3,6 +3,7 @@
 --- The buffer module contains helper functions utilized by the main ninjection
 --- module for starting and managing LSP connections.
 ---
+local M = {}
 
 ---@type NinjectionConfig
 local cfg = setmetatable({}, {
