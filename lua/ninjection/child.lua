@@ -374,33 +374,25 @@ function NJChild:format()
 		return fmt_ok, err
 	end
 
-	---@type string?
-	local cmd = cfg.format_cmd
-
-	if cmd then
-		---@type string[]
-		local path = vim.split(cmd, ".", { plain = true })
-
+	if cfg.format_cmd then
 		---@type unknown
-		local fmt_fn = vim.tbl_get(_G, unpack(path))
+		local fmt_fn = _G[cfg.format_cmd]
 
 		if type(fmt_fn) == "function" then
-			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(fmt_fn)
-			if not fmt_ok then
-				return fallback(true, fmt_fn, fmt_err)
-			else
+			if fmt_ok then
 				return true, nil
+			else
+				return fallback(true, cfg.format_cmd, fmt_err)
 			end
 		else
-			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(function()
-				vim.cmd(cmd)
+				vim.cmd(cfg.format_cmd)
 			end)
-			if not fmt_ok then
-				return fallback(true, fmt_fn, fmt_err)
-			else
+			if fmt_ok then
 				return true, nil
+			else
+				return fallback(true, cfg.format_cmd, fmt_err)
 			end
 		end
 	end
