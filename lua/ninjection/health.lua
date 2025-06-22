@@ -141,26 +141,44 @@ M.validate_config = function(cfg)
 		is_valid = false
 	end
 
-	if cfg.format_cmd then
+	if cfg.formatter then
 		---@type unknown
-		local fmt_fn = _G[cfg.format_cmd]
-
-		if type(fmt_fn) ~= "function" then
-			---@cast fmt_fn string
+		local formatter = cfg.formatter
+		if type(formatter) == "function" then
+			---@cast formatter function
 			---@type boolean, string?
-			local cmd_ok, cmd_err = pcall(function()
-				vim.cmd(cfg.format_cmd)
-			end)
-
-			if not cmd_ok then
-				table.insert(
-					errors,
-					"Invalid format_cmd: '"
-						.. cfg.format_cmd
-						.. "' is not a Lua function and is not a valid Ex command: "
-						.. cmd_err
-				)
+			local fn_call_ok, fn_call_err = pcall(formatter)
+			if not fn_call_ok then
+				table.insert(errors, "Invalid anonymous function: " .. cfg.formatter .. fn_call_err)
 				is_valid = false
+			end
+		elseif type(formatter) == "string" then
+			---@cast formatter string
+			---@type unknown
+			local global_fn = _G[cfg.formatter]
+			if type(global_fn) == "function" then
+				---@cast global_fn function
+				---@type boolean, string?
+				local fmt_ok, fmt_err = pcall(global_fn)
+				if not fmt_ok then
+					table.insert(errors, "Invalid formatting global function: " .. cfg.formatter .. fmt_err)
+					is_valid = false
+				end
+			else
+				---@type boolean, string?
+				local cmd_ok, cmd_err = pcall(function()
+					vim.cmd(formatter)
+				end)
+				if not cmd_ok then
+					table.insert(
+						errors,
+						"Invalid formatter user defined command: '"
+							.. cfg.formatter
+							.. " is not a valid Ex command: "
+							.. cmd_err
+					)
+					is_valid = false
+				end
 			end
 		end
 	end

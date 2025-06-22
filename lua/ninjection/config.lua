@@ -15,6 +15,8 @@ local default_config = {
 	preserve_indents = true,
 	---@type  boolean
 	auto_format = true,
+	---@type string|function|nil
+	formatter = nil, -- Defaults to LSP formatting
 
 	---@type table<string, NJDelimiterPair>
 	format_delimiters = {

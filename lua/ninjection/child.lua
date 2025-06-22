@@ -342,20 +342,27 @@ function NJChild:get_parent()
 	return nj_parent, nil
 end
 
+---@nodoc
+--- Reads cfg.formatter and formats child buffer given either a:
+--- - custom anonymous function
+--- - globally defined function
+--- - user defined ex command
+--- - LSP formatting (default/fallback on failure)
+---
 ---@return boolean success, string? err
 function NJChild:format()
 	local timeout = cfg.format_timeout or 500
 
 	---@private
 	---@param fmt_failed boolean
-	---@param fmt_fn string?
+	---@param formatter string?
 	---@param fmt_err string?
 	---@return boolean success, string? err
-	local function fallback(fmt_failed, fmt_fn, fmt_err)
+	local function fallback(fmt_failed, formatter, fmt_err)
 		if cfg.debug and fmt_failed then
 			vim.notify(
 				"ninjection.child:format(): warning format function call, "
-					.. tostring(fmt_fn)
+					.. tostring(formatter)
 					.. " failed with error: "
 					.. tostring(fmt_err)
 					.. " ... Reverting to LSP formatting."
@@ -374,25 +381,39 @@ function NJChild:format()
 		return fmt_ok, err
 	end
 
-	if cfg.format_cmd then
+	---@type unknown
+	local formatter = cfg.formatter
+	if type(formatter) == "function" then
+		---@cast formatter function
+		---@type boolean, string?
+		local fn_call_ok, fn_call_err = pcall(formatter)
+		if fn_call_ok then
+			return true, nil
+		else
+			return fallback(true, "<anonymous fn>", fn_call_err)
+		end
+	elseif type(formatter) == "string" then
+		---@cast formatter string
 		---@type unknown
-		local fmt_fn = _G[cfg.format_cmd]
-
-		if type(fmt_fn) == "function" then
-			local fmt_ok, fmt_err = pcall(fmt_fn)
+		local global_fn = _G[cfg.formatter]
+		if type(global_fn) == "function" then
+			---@cast global_fn function
+			---@type boolean, string?
+			local fmt_ok, fmt_err = pcall(global_fn)
 			if fmt_ok then
 				return true, nil
 			else
-				return fallback(true, cfg.format_cmd, fmt_err)
+				return fallback(true, tostring(cfg.formatter), fmt_err)
 			end
 		else
+			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(function()
-				vim.cmd(cfg.format_cmd)
+				vim.cmd(cfg.formatter)
 			end)
 			if fmt_ok then
 				return true, nil
 			else
-				return fallback(true, cfg.format_cmd, fmt_err)
+				return fallback(true, tostring(cfg.formatter), fmt_err)
 			end
 		end
 	end
