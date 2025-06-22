@@ -149,7 +149,7 @@ M.validate_config = function(cfg)
 			---@type boolean, string?
 			local fn_call_ok, fn_call_err = pcall(formatter)
 			if not fn_call_ok then
-				table.insert(errors, "Invalid anonymous function: " .. cfg.formatter .. fn_call_err)
+				table.insert(errors, "Invalid anonymous function: \n'" .. cfg.formatter .. "'\n'" .. fn_call_err .. "'")
 				is_valid = false
 			end
 		elseif type(formatter) == "string" then
@@ -161,7 +161,10 @@ M.validate_config = function(cfg)
 				---@type boolean, string?
 				local fmt_ok, fmt_err = pcall(global_fn)
 				if not fmt_ok then
-					table.insert(errors, "Invalid formatting global function: " .. cfg.formatter .. fmt_err)
+					table.insert(
+						errors,
+						"Invalid formatting global function: \n'" .. cfg.formatter .. "'\n'" .. fmt_err .. "'"
+					)
 					is_valid = false
 				end
 			else
@@ -172,9 +175,9 @@ M.validate_config = function(cfg)
 				if not cmd_ok then
 					table.insert(
 						errors,
-						"Invalid formatter user defined command: '"
+						"Invalid formatter user defined command: \n'"
 							.. cfg.formatter
-							.. " is not a valid Ex command: "
+							.. "' is not a valid Ex command: \n"
 							.. cmd_err
 					)
 					is_valid = false
