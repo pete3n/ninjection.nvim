@@ -15,7 +15,7 @@ function ninjection.setup(user_cfg)
 	if not is_valid_cfg then
 		vim.notify(
 			"ninjection.setup() warning: Reverted to default_config. Invalid user configuration:\n"
-				.. table.concat(cfg_errors or {}, "\n"),
+				.. table.concat(vim.tbl_map(tostring, cfg_errors or {}), "\n"),
 			vim.log.levels.WARN
 		)
 	end
