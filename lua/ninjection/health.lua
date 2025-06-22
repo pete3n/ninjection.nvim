@@ -12,6 +12,27 @@ local h_error = health.error
 local M = {}
 
 ---@nodoc
+--- Flatten table for error message outputs
+---@param str_table table
+---@return string[]
+local function flatten_table(str_table)
+	local flattened_tbl = {}
+
+	local function flatten(val)
+		if type(val) == "table" then
+			for _, v in ipairs(val) do
+				flatten(v)
+			end
+		else
+			table.insert(flattened_tbl, tostring(val))
+		end
+	end
+
+	flatten(str_table)
+	return flattened_tbl
+end
+
+---@nodoc
 --- Ensure win_config uses a valid vim.api.keyset.win_config table.
 ---@return boolean succes, string[]? errors
 local function validate_win_config(cfg)
@@ -46,8 +67,8 @@ local function validate_win_config(cfg)
 	end)
 
 	if not valid_cfg then
-		table.insert(errors, vim.inspect(validate_err))
-		return false, errors
+		table.insert(errors, validate_err)
+		return false, flatten_table(errors)
 	end
 
 	local enums = {
@@ -154,7 +175,7 @@ M.validate_config = function(cfg)
 	if is_valid then
 		return true, nil
 	else
-		return false, errors
+		return false, flatten_table(errors)
 	end
 end
 
