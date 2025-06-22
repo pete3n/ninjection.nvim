@@ -15,6 +15,7 @@ local default_config = {
 	preserve_indents = true,
 	---@type  boolean
 	auto_format = true,
+
 	---@type table<string, NJDelimiterPair>
 	format_delimiters = {
 		nix = {
@@ -26,6 +27,7 @@ local default_config = {
 			close = "]]",
 		},
 	},
+
 	---@type integer
 	format_indent = 2,
 	---@type integer
@@ -38,6 +40,7 @@ local default_config = {
 	debug = true,
 	---@type EditorStyle
 	editor_style = "floating",
+
 	---@type vim.api.keyset.win_config
 	win_config = {
 		zindex = 25,
@@ -49,6 +52,7 @@ local default_config = {
 		col = math.floor((vim.o.columns - math.floor(vim.o.columns * 0.8)) / 2),
 		border = "single",
 	},
+
 	---@type table<string, string>
 	--- inj_lang and inj_text mandatory labels to indicate the language being
 	--- injected and the text associated with that injected node, the string name
@@ -223,6 +227,7 @@ local default_config = {
 			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0 },
 		},
 	},
+
 	---@type table<string, string>
 	lsp_map = {
 		bash = "bashls",

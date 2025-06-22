@@ -11,6 +11,87 @@ local h_error = health.error
 
 local M = {}
 
+---@nodoc
+--- Ensure win_config uses a valid vim.api.keyset.win_config table.
+---@return boolean succes, string[]? errors
+local function validate_win_config(cfg)
+	---@type string[]
+	local errors = {}
+
+	---@type boolean, string?
+	local valid_cfg, validate_err = pcall(function()
+		vim.validate({
+			row = { cfg.row, "number", true },
+			col = { cfg.col, "number", true },
+			width = { cfg.width, "number", true },
+			height = { cfg.height, "number", true },
+			anchor = { cfg.anchor, { "string", "nil" } },
+			relative = { cfg.relative, { "string", "nil" } },
+			split = { cfg.split, { "string", "nil" } },
+			win = { cfg.win, { "number", "nil" } },
+			bufpos = { cfg.bufpos, { "table", "nil" } },
+			external = { cfg.external, { "boolean", "nil" } },
+			focusable = { cfg.focusable, { "boolean", "nil" } },
+			mouse = { cfg.mouse, { "boolean", "nil" } },
+			vertical = { cfg.vertical, { "boolean", "nil" } },
+			zindex = { cfg.zindex, { "number", "nil" } },
+			border = { cfg.border, { "string", "table", "nil" } },
+			title_pos = { cfg.title_pos, { "string", "nil" } },
+			footer_pos = { cfg.footer_pos, { "string", "nil" } },
+			style = { cfg.style, { "string", "nil" } },
+			noautocmd = { cfg.noautocmd, { "boolean", "nil" } },
+			fixed = { cfg.fixed, { "boolean", "nil" } },
+			hide = { cfg.hide, { "boolean", "nil" } },
+		})
+	end)
+
+	if not valid_cfg then
+		table.insert(errors, validate_err)
+		return false, errors
+	end
+
+	local enums = {
+		anchor = { NW = true, NE = true, SW = true, SE = true },
+		relative = { cursor = true, editor = true, laststatus = true, mouse = true, tabline = true, win = true },
+		split = { left = true, right = true, above = true, below = true },
+		title_pos = { center = true, left = true, right = true },
+		footer_pos = { center = true, left = true, right = true },
+		style = { minimal = true },
+	}
+
+	local border_enums = {
+		none = true, single = true, double = true,
+		rounded = true, solid = true, shadow = true,
+	}
+
+	for field, allowed in pairs(enums) do
+		local val = cfg[field]
+		if val and not allowed[val] then
+			table.insert(errors, "`win_config." .. field .. "` has invalid value: " .. tostring(val))
+		end
+	end
+
+	-- Handle border specially because it can be a table of strings or a single string
+	local border = cfg.border
+	if border and type(border) == "string" then
+		if not border_enums[border] then
+			table.insert(errors, "`win_config.border` has invalid value: " .. border)
+		end
+	elseif type(border) == "table" then
+		for i, v in ipairs(border) do
+			if type(v) ~= "string" or not border_enums[v] then
+				table.insert(errors, "`win_config.border[" .. i .. "]` has invalid value: " .. tostring(v))
+			end
+		end
+	end
+
+	if #errors > 0 then
+		return false, errors
+	end
+
+	return true, nil
+end
+
 ---@tag ninjection.health.validate_config()
 ---@brief
 ---	Validates either a provided configuration table or the
@@ -57,6 +138,13 @@ M.validate_config = function(cfg)
 				is_valid = false
 			end
 		end
+	end
+
+	---@type boolean, string[]?
+	local win_ok, win_errs = validate_win_config(cfg.win_config)
+	if not win_ok then
+		table.insert(errors, win_errs)
+		is_valid = false
 	end
 
 	if is_valid then
