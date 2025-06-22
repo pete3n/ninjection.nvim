@@ -110,6 +110,7 @@ local function validate_win_config(cfg)
 		end
 	end
 
+	cfg = cfg or require("ninjection.config").values or {}
 	if #errors > 0 then
 		return false, errors
 	end
@@ -245,6 +246,41 @@ function M.check()
 		end
 	else
 		h_error("Unknown error validating configuration.")
+	end
+
+	start("Configured injected language support")
+	local cfg = require("ninjection.config").values or {}
+
+	---@type table<string, string>
+	local lsp_map = cfg.lsp_map or {}
+	---@type table<string, string>
+	local inj_lang_queries = cfg.inj_lang_queries or {}
+	---@type table<boolean, string>
+	local seen = {}
+	---@type string[]
+	local doublets = {}
+
+	---@type string
+	for outer_lang in pairs(inj_lang_queries) do
+		---@type string
+		for inner_lang in pairs(lsp_map) do
+			local label = ("%s in %s"):format(inner_lang, outer_lang)
+			if not seen[label] then
+				table.insert(doublets, label)
+				seen[label] = true
+			end
+		end
+	end
+
+	if #doublets > 0 then
+		table.sort(doublets)
+		ok("Supported pairs:")
+		---@type string
+		for _, doublet in ipairs(doublets) do
+			print("   " .. doublet)
+		end
+	else
+		warn("No injected language pairs configured.")
 	end
 end
 
