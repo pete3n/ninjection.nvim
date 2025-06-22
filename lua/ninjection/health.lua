@@ -9,12 +9,25 @@ local ok = health.ok
 local warn = health.warn
 local h_error = health.error
 
+local required_plugins = {
+	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
+}
+
 local M = {}
 
 ---@nodoc
---- Flatten table for error message outputs
+--- Check plugin can be required.
+---@param lib_name string
+---@return boolean resolved
+local function lualib_installed(lib_name)
+	local resolved, _ = pcall(require, lib_name)
+	return resolved
+end
+
+---@nodoc
+--- Flatten table for error message outputs.
 ---@param str_table table
----@return string[]
+---@return string[] flattened_tbl
 local function flatten_table(str_table)
 	local flattened_tbl = {}
 
@@ -118,6 +131,50 @@ local function validate_win_config(cfg)
 	return true, nil
 end
 
+---@nodoc
+--- Validate configured mapping between languages and LSPs
+---@param lsp_map table<string, string>
+---@return table<{lsp: string, is_valid: boolean, err: string?}> valid_lsp_map
+local function validate_lsp_map(lsp_map)
+	lsp_map = lsp_map or {}
+	---@type table<{lsp: string, is_valid: boolean, err: string?}>
+	local valid_lsp_map = {}
+
+	---@private
+	---@param lsp_cmd unknown
+	---@return boolean is_exec, string? err
+	local function is_executable(lsp_cmd)
+		if type(lsp_cmd) == "function" then
+			return false, "Dynamic RPC clients are not supported"
+		elseif type(lsp_cmd) == "table" and type(lsp_cmd[1]) == "string" then
+			if vim.fn.executable(lsp_cmd[1]) == 1 then
+				return true, nil
+			else
+				return false, "Executable not found in $PATH: " .. lsp_cmd[1]
+			end
+		end
+		return false, "Unsupported cmd type: " .. type(lsp_cmd)
+	end
+
+	---@type string
+	for _, lsp in pairs(lsp_map) do
+		---@type vim.lsp.ClientConfig?
+		local lsp_cfg = vim.lsp.config[lsp]
+		if not lsp_cfg then
+			table.insert(valid_lsp_map, { lsp = lsp, is_valid = false, err = "No config found" })
+		else
+			local is_exec, exec_err = is_executable(lsp_cfg.cmd)
+			table.insert(valid_lsp_map, {
+				lsp = lsp,
+				is_valid = is_exec,
+				err = is_exec and nil or exec_err,
+			})
+		end
+	end
+
+	return valid_lsp_map
+end
+
 ---@tag ninjection.health.validate_config()
 ---@brief
 ---	Validates either a provided configuration table or the
@@ -127,8 +184,7 @@ end
 ---@param cfg? NinjectionConfig
 ---
 ---@return boolean is_valid, string[]? err
----
-M.validate_config = function(cfg)
+function M.validate_config(cfg)
 	cfg = cfg or require("ninjection.config").values or {}
 
 	---@type boolean, string[]
@@ -201,64 +257,11 @@ M.validate_config = function(cfg)
 	end
 end
 
----@nodoc
---- Validate configured mapping between languages and LSPs
----@param lsp_map table<string, string>
----@return table<{lsp: string, is_valid: boolean, err: string?}> valid_lsp_map
-function M.validate_lsp_map(lsp_map)
-	lsp_map = lsp_map or {}
-	---@type table<{lsp: string, is_valid: boolean, err: string?}>
-	local valid_lsp_map = {}
-
-	---@private
-	---@param lsp_cmd unknown
-	---@return boolean is_exec, string? err
-	local function is_executable(lsp_cmd)
-		if type(lsp_cmd) == "function" then
-			return false, "Dynamic RPC clients are not supported"
-		elseif type(lsp_cmd) == "table" and type(lsp_cmd[1]) == "string" then
-			if vim.fn.executable(lsp_cmd[1]) == 1 then
-				return true, nil
-			else
-				return false, "Executable not found in $PATH: " .. lsp_cmd[1]
-			end
-		end
-		return false, "Unsupported cmd type: " .. type(lsp_cmd)
-	end
-
-	---@type string
-	for _, lsp in pairs(lsp_map) do
-		---@type vim.lsp.ClientConfig?
-		local lsp_cfg = vim.lsp.config[lsp]
-		if not lsp_cfg then
-			table.insert(valid_lsp_map, { lsp = lsp, is_valid = false, err = "No config found" })
-		else
-			local is_exec, exec_err = is_executable(lsp_cfg.cmd)
-			table.insert(valid_lsp_map, {
-				lsp = lsp,
-				is_valid = is_exec,
-				err = is_exec and nil or exec_err,
-			})
-		end
-	end
-
-	return valid_lsp_map
-end
-
-M.get_lang_doublets = function() end
-
--- TODO: Validate fmt_cmd
--- List all doublets configured
--- Check LSP executable
-local required_plugins = {
-	{ lib = "nvim-treesitter", optional = false, info = "Required for injected language parsing" },
-}
-
-local function lualib_installed(lib_name)
-	local res, _ = pcall(require, lib_name)
-	return res
-end
-
+---@tag ninjection.health.check()
+---@brief
+--- checkhealth function for ninjection: checks requirements and
+--- validates configuration.
+---
 function M.check()
 	start("Checking Neovim version >= 0.11.0")
 	if vim.version().major == 0 and vim.version().minor < 11 then
@@ -283,7 +286,6 @@ function M.check()
 
 	start("Checking configuration")
 	local is_valid, errors = M.validate_config()
-
 	if is_valid then
 		ok("valid config.")
 	elseif errors then
@@ -294,9 +296,8 @@ function M.check()
 		h_error("Unknown error validating configuration.")
 	end
 
-	start("Validate mapped LSPs")
-
-	for _, result in ipairs(M.validate_lsp_map(require("ninjection.config").values.lsp_map)) do
+	start("Checking configured LSPs")
+	for _, result in ipairs(validate_lsp_map(require("ninjection.config").values.lsp_map)) do
 		if result.is_valid then
 			ok("LSP " .. result.lsp .. " is available.")
 		else
@@ -304,7 +305,7 @@ function M.check()
 		end
 	end
 
-	start("Configured injected language support")
+	start("Checking configured language pairs")
 	local cfg = require("ninjection.config").values or {}
 
 	---@type table<string, string>
@@ -333,7 +334,7 @@ function M.check()
 		ok("Supported pairs:")
 		---@type string
 		for _, doublet in ipairs(doublets) do
-			ok("   " .. doublet)
+			ok(doublet)
 		end
 	else
 		warn("No injected language pairs configured.")
