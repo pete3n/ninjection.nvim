@@ -119,7 +119,7 @@ function M.start_lsp(lang, bufnr)
 	end
 
 	if type(lsp_cfg.cmd) == "function" then
-		-- Advanced users may be using a dynamic client
+		-- Dynamic clients not currently supported
 		local err = "ninjection.lsp.start_lsp() error: dynamic RPC clients are not supported."
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.ERROR)

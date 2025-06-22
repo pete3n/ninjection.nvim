@@ -201,6 +201,52 @@ M.validate_config = function(cfg)
 	end
 end
 
+---@nodoc
+--- Validate configured mapping between languages and LSPs
+---@param lsp_map table<string, string>
+---@return table<{lsp: string, is_valid: boolean, err: string?}> valid_lsp_map
+function M.validate_lsp_map(lsp_map)
+	lsp_map = lsp_map or {}
+	---@type table<{lsp: string, is_valid: boolean, err: string?}>
+	local valid_lsp_map = {}
+
+	---@private
+	---@param lsp_cmd unknown
+	---@return boolean is_exec, string? err
+	local function is_executable(lsp_cmd)
+		if type(lsp_cmd) == "function" then
+			return false, "Dynamic RPC clients are not supported"
+		elseif type(lsp_cmd) == "table" and type(lsp_cmd[1]) == "string" then
+			if vim.fn.executable(lsp_cmd[1]) == 1 then
+				return true, nil
+			else
+				return false, "Executable not found in $PATH: " .. lsp_cmd[1]
+			end
+		end
+		return false, "Unsupported cmd type: " .. type(lsp_cmd)
+	end
+
+	---@type string
+	for _, lsp in pairs(lsp_map) do
+		---@type vim.lsp.ClientConfig?
+		local lsp_cfg = vim.lsp.config[lsp]
+		if not lsp_cfg then
+			table.insert(valid_lsp_map, { lsp = lsp, is_valid = false, err = "No config found" })
+		else
+			local is_exec, exec_err = is_executable(lsp_cfg.cmd)
+			table.insert(valid_lsp_map, {
+				lsp = lsp,
+				is_valid = is_exec,
+				err = is_exec and nil or exec_err,
+			})
+		end
+	end
+
+	return valid_lsp_map
+end
+
+M.get_lang_doublets = function() end
+
 -- TODO: Validate fmt_cmd
 -- List all doublets configured
 -- Check LSP executable
@@ -239,13 +285,23 @@ function M.check()
 	local is_valid, errors = M.validate_config()
 
 	if is_valid then
-		ok("Valid config.")
+		ok("valid config.")
 	elseif errors then
 		for _, msg in ipairs(errors) do
 			h_error(msg)
 		end
 	else
 		h_error("Unknown error validating configuration.")
+	end
+
+	start("Validate mapped LSPs")
+
+	for _, result in ipairs(M.validate_lsp_map(require("ninjection.config").values.lsp_map)) do
+		if result.is_valid then
+			ok("LSP " .. result.lsp .. " is available.")
+		else
+			h_error("LSP " .. result.lsp .. " invalid: " .. (result.err or "unknown error"))
+		end
 	end
 
 	start("Configured injected language support")
