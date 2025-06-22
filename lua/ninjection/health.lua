@@ -46,7 +46,7 @@ local function validate_win_config(cfg)
 	end)
 
 	if not valid_cfg then
-		table.insert(errors, validate_err)
+		table.insert(errors, vim.inspect(validate_err))
 		return false, errors
 	end
 
@@ -60,8 +60,12 @@ local function validate_win_config(cfg)
 	}
 
 	local border_enums = {
-		none = true, single = true, double = true,
-		rounded = true, solid = true, shadow = true,
+		none = true,
+		single = true,
+		double = true,
+		rounded = true,
+		solid = true,
+		shadow = true,
 	}
 
 	for field, allowed in pairs(enums) do
