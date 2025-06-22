@@ -277,7 +277,7 @@ function M.check()
 		ok("Supported pairs:")
 		---@type string
 		for _, doublet in ipairs(doublets) do
-			print("   " .. doublet)
+			ok("   " .. doublet)
 		end
 	else
 		warn("No injected language pairs configured.")
