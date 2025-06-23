@@ -5,6 +5,7 @@
 ---
 local health = require("vim.health")
 local start = health.start
+local info = health.info
 local ok = health.ok
 local warn = health.warn
 local h_error = health.error
@@ -193,11 +194,11 @@ local function print_lang_pair_table(cfg)
 	table.sort(injected_langs)
 
 	if #filetypes == 0 or #injected_langs == 0 then
-		vim.health.report.warn("No configured injected languages or filetypes found.")
+		warn("No configured injected languages or filetypes found.")
 		return
 	end
 
-	vim.health.report.start("Injected Language Support Matrix")
+	start("Injected Language Support Matrix")
 
 	local pad = 10
 	local function pad_str(str, len)
@@ -210,7 +211,7 @@ local function print_lang_pair_table(cfg)
 	for _, ft in ipairs(filetypes) do
 		header = header .. pad_str(ft, pad)
 	end
-	vim.health.report.info(header)
+	info(header)
 
 	-- Build rows
 	for _, inj_lang in ipairs(injected_langs) do
@@ -219,7 +220,7 @@ local function print_lang_pair_table(cfg)
 			local is_supported = inj_lang_queries[outer_ft] and lsp_map[inj_lang]
 			row = row .. pad_str(is_supported and "✓" or "", pad)
 		end
-		vim.health.report.info(row)
+		info(row)
 	end
 end
 
