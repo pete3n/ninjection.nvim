@@ -345,7 +345,7 @@ function M.check()
 	end
 
 	start("Checking configured LSPs")
-	for _, result in ipairs(validate_lsp_map(require("ninjection.config").values.lsp_map)) do
+	for _, result in ipairs(validate_lsp_map(cfg.lsp_map)) do
 		if result.is_valid then
 			ok("LSP " .. result.lsp .. " is available.")
 		else
