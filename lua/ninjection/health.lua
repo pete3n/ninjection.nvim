@@ -177,7 +177,6 @@ end
 
 ---@param cfg NinjectionConfig
 local function print_lang_pair_table(cfg)
-	cfg = cfg or require("ninjection.config").values or {}
 	local inj_lang_queries = cfg.inj_lang_queries or {}
 	local lsp_map = cfg.lsp_map or {}
 
