@@ -198,27 +198,32 @@ local function print_lang_pair_table(cfg)
 		return
 	end
 
-	local pad = 8
+	local col_widths = {}
+	col_widths[1] = math.max(11, unpack(vim.tbl_map(vim.fn.strdisplaywidth, injected_langs))) + 2
+	for i, ft in ipairs(filetypes) do
+		col_widths[i + 1] = math.max(#ft, 1) + 2
+	end
+
 	local function pad_str(str, len)
 		local pad_len = len - vim.fn.strdisplaywidth(str)
 		return str .. string.rep(" ", math.max(0, pad_len))
 	end
 
 	-- Header row
-	local cells = { pad_str("Injections", pad) }
-	for _, ft in ipairs(filetypes) do
-		table.insert(cells, pad_str(ft, pad))
+	local header_cells = { pad_str("Injections", col_widths[1]) }
+	for i, ft in ipairs(filetypes) do
+		table.insert(header_cells, pad_str(ft, col_widths[i + 1]))
 	end
-	info(table.concat(cells, " "))
+	info(table.concat(header_cells, ""))
 
 	-- Data rows
 	for _, inj_lang in ipairs(injected_langs) do
-		local row_cells = { pad_str(inj_lang, pad) }
-		for _, outer_ft in ipairs(filetypes) do
+		local row_cells = { pad_str(inj_lang, col_widths[1]) }
+		for i, outer_ft in ipairs(filetypes) do
 			local is_supported = inj_lang_queries[outer_ft] and lsp_map[inj_lang]
-			table.insert(row_cells, pad_str(is_supported and "✓" or "", pad))
+			table.insert(row_cells, pad_str(is_supported and "✓" or "", col_widths[i + 1]))
 		end
-		info(table.concat(row_cells, " "))
+		info(table.concat(row_cells, ""))
 	end
 end
 
