@@ -198,22 +198,18 @@ local function print_lang_pair_table(cfg)
 		return
 	end
 
-	start("Injected Language Support Matrix")
-
-	local pad = 10
+	local pad = 8
 	local function pad_str(str, len)
 		local pad_len = len - vim.fn.strdisplaywidth(str)
 		return str .. string.rep(" ", math.max(0, pad_len))
 	end
 
-	-- Build header row
 	local header = pad_str("Injections", pad)
 	for _, ft in ipairs(filetypes) do
 		header = header .. pad_str(ft, pad)
 	end
 	info(header)
 
-	-- Build rows
 	for _, inj_lang in ipairs(injected_langs) do
 		local row = pad_str(inj_lang, pad)
 		for _, outer_ft in ipairs(filetypes) do
