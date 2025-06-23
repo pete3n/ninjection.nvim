@@ -37,8 +37,14 @@ local NJChild = require("ninjection.child")
 local NJParent = require("ninjection.parent")
 local lsp = require("ninjection.lsp")
 
-if vim.fn.exists(":checkhealth") == 2 then
-	require("ninjection.health").check()
+if vim.fn.exists(":checkhealth") == 2 and vim.health and vim.health.report_info then
+	---@type boolean, string?
+	local ok, err = pcall(function()
+		require("ninjection.health").check()
+	end)
+	if not ok then
+		vim.notify("ninjection.init() error: health check failed: " .. tostring(err), vim.log.levels.ERROR)
+	end
 end
 
 ---@tag ninjection.select()
