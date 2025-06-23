@@ -204,19 +204,21 @@ local function print_lang_pair_table(cfg)
 		return str .. string.rep(" ", math.max(0, pad_len))
 	end
 
+	-- Header row
 	local cells = { pad_str("Injections", pad) }
 	for _, ft in ipairs(filetypes) do
 		table.insert(cells, pad_str(ft, pad))
 	end
-	info(table.concat(cells, ""))
+	info(table.concat(cells, " "))
 
+	-- Data rows
 	for _, inj_lang in ipairs(injected_langs) do
 		local row_cells = { pad_str(inj_lang, pad) }
 		for _, outer_ft in ipairs(filetypes) do
 			local is_supported = inj_lang_queries[outer_ft] and lsp_map[inj_lang]
 			table.insert(row_cells, pad_str(is_supported and "✓" or "", pad))
 		end
-		info(table.concat(row_cells, ""))
+		info(table.concat(row_cells, " "))
 	end
 end
 
