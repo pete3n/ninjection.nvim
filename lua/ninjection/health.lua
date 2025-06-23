@@ -175,8 +175,9 @@ local function validate_lsp_map(lsp_map)
 	return valid_lsp_map
 end
 
-local function print_lang_pair_table()
-	local cfg = require("ninjection.config").values or {}
+---@param cfg NinjectionConfig
+local function print_lang_pair_table(cfg)
+	cfg = cfg or require("ninjection.config").values or {}
 	local inj_lang_queries = cfg.inj_lang_queries or {}
 	local lsp_map = cfg.lsp_map or {}
 
@@ -348,7 +349,7 @@ function M.check()
 	end
 
 	start("Checking configured language pairs")
-	print_lang_pair_table()
+	print_lang_pair_table(require("ninjection.config").values)
 end
 
 return M
