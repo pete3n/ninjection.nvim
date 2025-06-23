@@ -16,6 +16,12 @@ local required_plugins = {
 local M = {}
 
 ---@nodoc
+---@return NinjectionConfig
+local function get_cfg()
+	return require("ninjection.config").values or {}
+end
+
+---@nodoc
 --- Check plugin can be required.
 ---@param lib_name string
 ---@return boolean resolved
@@ -227,8 +233,7 @@ end
 ---
 ---@return boolean is_valid, string[]? err
 function M.validate_config(cfg)
-	cfg = cfg or require("ninjection.config").values or {}
-
+	cfg = cfg or get_cfg()
 	---@type boolean, string[]
 	local is_valid = true
 	local errors = {}
@@ -305,6 +310,7 @@ end
 --- validates configuration.
 ---
 function M.check()
+	local cfg = get_cfg()
 	start("Checking Neovim version >= 0.11.0")
 	if vim.version().major == 0 and vim.version().minor < 11 then
 		h_error("Neovim 0.11.0 or greater required")
@@ -327,7 +333,7 @@ function M.check()
 	end
 
 	start("Checking configuration")
-	local is_valid, errors = M.validate_config()
+	local is_valid, errors = M.validate_config(cfg)
 	if is_valid then
 		ok("valid config.")
 	elseif errors then
@@ -348,7 +354,7 @@ function M.check()
 	end
 
 	start("Checking configured language pairs")
-	print_lang_pair_table(require("ninjection.config").values)
+	print_lang_pair_table(cfg)
 end
 
 return M
