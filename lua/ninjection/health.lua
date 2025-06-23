@@ -175,6 +175,40 @@ local function validate_lsp_map(lsp_map)
 	return valid_lsp_map
 end
 
+local function print_lang_pair_table()
+	local cfg = require("ninjection.config").values or {}
+	local inj_lang_queries = cfg.inj_lang_queries or {}
+	local lsp_map = cfg.lsp_map or {}
+
+	local filetypes = vim.tbl_keys(inj_lang_queries)
+	table.sort(filetypes)
+
+	local injected_langs = vim.tbl_keys(lsp_map)
+	table.sort(injected_langs)
+
+	local pad = 10
+	local function pad_str(str, len)
+		return str .. string.rep(" ", len - #str)
+	end
+
+	local header = pad_str("Injections", pad)
+	for _, ft in ipairs(filetypes) do
+		header = header .. pad_str(ft, pad)
+	end
+	print("   Injected Language Matrix")
+	print("  " .. header)
+
+	-- Rows
+	for _, inj_lang in ipairs(injected_langs) do
+		local row = pad_str(inj_lang, pad)
+		for _, outer_ft in ipairs(filetypes) do
+			-- local supported = true -- Currently assume all LSPs work in all filetypes
+			row = row .. pad_str(inj_lang_queries[outer_ft] and lsp_map[inj_lang] and "✓" or "", pad)
+		end
+		print("  " .. row)
+	end
+end
+
 ---@tag ninjection.health.validate_config()
 ---@brief
 ---	Validates either a provided configuration table or the
@@ -306,39 +340,7 @@ function M.check()
 	end
 
 	start("Checking configured language pairs")
-	local cfg = require("ninjection.config").values or {}
-
-	---@type table<string, string>
-	local lsp_map = cfg.lsp_map or {}
-	---@type table<string, string>
-	local inj_lang_queries = cfg.inj_lang_queries or {}
-	---@type table<boolean, string>
-	local seen = {}
-	---@type string[]
-	local doublets = {}
-
-	---@type string
-	for outer_lang in pairs(inj_lang_queries) do
-		---@type string
-		for inner_lang in pairs(lsp_map) do
-			local label = ("%s in %s"):format(inner_lang, outer_lang)
-			if not seen[label] then
-				table.insert(doublets, label)
-				seen[label] = true
-			end
-		end
-	end
-
-	if #doublets > 0 then
-		table.sort(doublets)
-		ok("Supported pairs:")
-		---@type string
-		for _, doublet in ipairs(doublets) do
-			ok(doublet)
-		end
-	else
-		warn("No injected language pairs configured.")
-	end
+	print_lang_pair_table()
 end
 
 return M
