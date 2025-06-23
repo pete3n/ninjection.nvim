@@ -186,26 +186,34 @@ local function print_lang_pair_table()
 	local injected_langs = vim.tbl_keys(lsp_map)
 	table.sort(injected_langs)
 
-	local pad = 10
-	local function pad_str(str, len)
-		return str .. string.rep(" ", len - #str)
+	if #filetypes == 0 or #injected_langs == 0 then
+		vim.health.report_warn("No configured injected languages or filetypes found.")
+		return
 	end
 
+	vim.health.report_start("Injected Language Support Matrix")
+
+	local pad = 10
+	local function pad_str(str, len)
+		local pad_len = len - vim.fn.strdisplaywidth(str)
+		return str .. string.rep(" ", math.max(0, pad_len))
+	end
+
+	-- Build header row
 	local header = pad_str("Injections", pad)
 	for _, ft in ipairs(filetypes) do
 		header = header .. pad_str(ft, pad)
 	end
-	print("   Injected Language Matrix")
-	print("  " .. header)
+	vim.health.report_info(header)
 
-	-- Rows
+	-- Build rows
 	for _, inj_lang in ipairs(injected_langs) do
 		local row = pad_str(inj_lang, pad)
 		for _, outer_ft in ipairs(filetypes) do
-			-- local supported = true -- Currently assume all LSPs work in all filetypes
-			row = row .. pad_str(inj_lang_queries[outer_ft] and lsp_map[inj_lang] and "✓" or "", pad)
+			local is_supported = inj_lang_queries[outer_ft] and lsp_map[inj_lang]
+			row = row .. pad_str(is_supported and "✓" or "", pad)
 		end
-		print("  " .. row)
+		vim.health.report_info(row)
 	end
 end
 
