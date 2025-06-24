@@ -171,11 +171,13 @@ local function validate_lsp_map(lsp_map)
 			table.insert(valid_lsp_map, { lsp = lsp, is_valid = false, err = "No config found" })
 		else
 			local is_exec, exec_err = is_executable(lsp_cfg.cmd)
-			table.insert(valid_lsp_map, {
-				lsp = lsp,
-				is_valid = is_exec,
-				err = is_exec and nil or exec_err,
-			})
+			if not vim.tbl_contains(valid_lsp_map, lsp) then
+				table.insert(valid_lsp_map, {
+					lsp = lsp,
+					is_valid = is_exec,
+					err = is_exec and nil or exec_err,
+				})
+			end
 		end
 	end
 
