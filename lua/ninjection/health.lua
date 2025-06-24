@@ -351,9 +351,9 @@ function M.check()
 	start("Checking configured LSPs")
 	for _, result in ipairs(validate_lsp_map(cfg.lsp_map)) do
 		if result.is_valid then
-			ok("LSP " .. result.lsp .. " is available.")
+			ok(result.lsp .. " is available.")
 		else
-			h_error("LSP " .. result.lsp .. " invalid: " .. (result.err or "unknown error"))
+			h_error(result.lsp .. " is invalid: " .. (result.err or "unknown error"))
 		end
 	end
 
