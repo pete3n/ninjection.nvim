@@ -163,15 +163,19 @@ local function validate_lsp_map(lsp_map)
 		return false, "Unsupported cmd type: " .. type(lsp_cmd)
 	end
 
+	---@type table<string, boolean>
+	local checked_lsp = {}
+
 	---@type string
 	for _, lsp in pairs(lsp_map) do
+		if not checked_lsp[lsp] then
+			checked_lsp[lsp] = true
 		---@type vim.lsp.ClientConfig?
 		local lsp_cfg = vim.lsp.config[lsp]
 		if not lsp_cfg then
 			table.insert(valid_lsp_map, { lsp = lsp, is_valid = false, err = "No config found" })
 		else
 			local is_exec, exec_err = is_executable(lsp_cfg.cmd)
-			if not vim.tbl_contains(valid_lsp_map, lsp) then
 				table.insert(valid_lsp_map, {
 					lsp = lsp,
 					is_valid = is_exec,
