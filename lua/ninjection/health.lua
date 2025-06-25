@@ -252,7 +252,7 @@ function M.validate_config(cfg)
 	local format_delimiters = cfg.format_delimiters
 	if not format_delimiters then
 		is_valid = false
-		table.insert(errors,"`format_delimiters` must be configured.")
+		table.insert(errors, "`format_delimiters` must be configured.")
 	else
 		if type(format_delimiters) == "table" then
 			for k, v in pairs(format_delimiters) do
@@ -263,12 +263,15 @@ function M.validate_config(cfg)
 					is_valid = false
 				else
 					---@type string|unknown
-					local start_delim = val["start"]
+					local start_delim = val["open"]
 					---@type string|unknown
-					local end_delim = val["end"]
+					local end_delim = val["close"]
 
 					if type(start_delim) ~= "string" or type(end_delim) ~= "string" then
-						table.insert(errors, "`format_delimiters[" .. k .. "]` must have string 'start' and 'end' keys.")
+						table.insert(
+							errors,
+							"`format_delimiters[" .. k .. "]` must have string 'open' and 'close' keys."
+						)
 						is_valid = false
 					end
 				end
