@@ -248,6 +248,34 @@ function M.validate_config(cfg)
 	local is_valid = true
 	local errors = {}
 
+	---@type table<string, NJDelimiterPair>|nil
+	local format_delimiters = cfg.format_delimiters
+	if not format_delimiters then
+		is_valid = false
+		table.insert(errors,"`format_delimiters` must be configured.")
+	else
+		if type(format_delimiters) == "table" then
+			for k, v in pairs(format_delimiters) do
+				---@type unknown
+				local val = v
+				if type(val) ~= "table" then
+					table.insert(errors, "`format_delimiters[" .. k .. "]` must be a table")
+					is_valid = false
+				else
+					---@type string|unknown
+					local start_delim = val["start"]
+					---@type string|unknown
+					local end_delim = val["end"]
+
+					if type(start_delim) ~= "string" or type(end_delim) ~= "string" then
+						table.insert(errors, "`format_delimiters[" .. k .. "]` must have string 'start' and 'end' keys.")
+						is_valid = false
+					end
+				end
+			end
+		end
+	end
+
 	---@type table<boolean>
 	local valid_editor_styles = { cur_win = true, floating = true, v_split = true, h_split = true }
 	if not valid_editor_styles[cfg.editor_style] then
