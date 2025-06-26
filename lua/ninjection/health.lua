@@ -16,26 +16,25 @@ local required_plugins = {
 
 local M = {}
 
----@nodoc
+---@private
 ---@return NinjectionConfig
-local function get_cfg()
+local function _get_cfg()
 	return require("ninjection.config").values or {}
 end
 
----@nodoc
---- Check plugin can be required.
+---@private
 ---@param lib_name string
 ---@return boolean resolved
-local function lualib_installed(lib_name)
+local function _lualib_installed(lib_name)
 	local resolved, _ = pcall(require, lib_name)
 	return resolved
 end
 
----@nodoc
+---@private
 --- Flatten table for error message outputs.
 ---@param str_table table
 ---@return string[] flattened_tbl
-local function flatten_table(str_table)
+local function _flatten_table(str_table)
 	local flattened_tbl = {}
 
 	local function flatten(val)
@@ -88,7 +87,7 @@ local function _validate_win_config(cfg)
 
 	if not valid_cfg then
 		table.insert(errors, validate_err)
-		return false, flatten_table(errors)
+		return false, _flatten_table(errors)
 	end
 
 	local enums = {
@@ -188,8 +187,9 @@ local function _validate_lsp_map(lsp_map)
 	return valid_lsp_map
 end
 
+---@private
 ---@param cfg NinjectionConfig
-local function print_lang_pair_table(cfg)
+local function _print_lang_pair_table(cfg)
 	local inj_lang_queries = cfg.inj_lang_queries or {}
 	local lsp_map = cfg.lsp_map or {}
 
@@ -364,6 +364,62 @@ local function _validate_text_modifiers(text_modifiers)
 	end
 end
 
+---@private
+---@param text_restorers table<string, NJTextRestorer>
+---@return boolean is_valid, string[]? errors
+local function _validate_text_restorers(text_restorers)
+	---@type boolean
+	local is_valid = true
+
+	---@type string[]
+	local errors = {}
+
+	if type(text_restorers) == "table" then
+		for k, fn in pairs(text_restorers) do
+			if type(fn) ~= "function" then
+				table.insert(errors, "`inj_text_restorers[" .. k .. "]` must be a function")
+				is_valid = false
+			else
+				---@type boolean, any
+				local res_call_ok, res_result_str = pcall(fn, "test text", { dummy = true })
+
+				if not res_call_ok then
+					table.insert(
+						errors,
+						"`inj_text_restorers[" .. k .. "]` errored during test call: " .. tostring(res_result_str)
+					)
+					is_valid = false
+				elseif type(res_result_str) ~= "table" then
+					table.insert(errors, "`inj_text_restorers[" .. k .. "]` must return a table of strings")
+					is_valid = false
+				else
+					for i, val in ipairs(res_result_str) do
+						if type(val) ~= "string" then
+							table.insert(
+								errors,
+								"`inj_text_restorers["
+									.. k
+									.. "]` must return table<string>, but value at index "
+									.. i
+									.. " is of type "
+									.. type(val)
+							)
+							is_valid = false
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if is_valid then
+		return true, nil
+	else
+		return false, errors
+	end
+end
+
 ---@tag ninjection.health.validate_config()
 ---@brief
 ---	Validates either a provided configuration table or the
@@ -374,7 +430,7 @@ end
 ---
 ---@return boolean is_valid, string[]? err
 function M.validate_config(cfg)
-	cfg = cfg or get_cfg()
+	cfg = cfg or _get_cfg()
 	---@type boolean, string[]
 	local is_valid = true
 	local errors = {}
@@ -404,6 +460,15 @@ function M.validate_config(cfg)
 		end
 	end
 
+	if cfg.inj_text_restorers then
+		---@type boolean, string[]?
+		local res_ok, res_errs = _validate_text_restorers(cfg.inj_text_restorers)
+		if not res_ok then
+			table.insert(errors, res_errs)
+			is_valid = false
+		end
+	end
+
 	---@type boolean, string[]?
 	local win_ok, win_errs = _validate_win_config(cfg.win_config)
 	if not win_ok then
@@ -426,7 +491,7 @@ function M.validate_config(cfg)
 	if is_valid then
 		return true, nil
 	else
-		return false, flatten_table(errors)
+		return false, _flatten_table(errors)
 	end
 end
 
@@ -436,7 +501,7 @@ end
 --- validates configuration.
 ---
 function M.check()
-	local cfg = get_cfg()
+	local cfg = _get_cfg()
 	start("Checking Neovim version >= 0.11.0")
 	if vim.version().major == 0 and vim.version().minor < 11 then
 		h_error("Neovim 0.11.0 or greater required")
@@ -446,7 +511,7 @@ function M.check()
 
 	start("Checking for required plugins")
 	for _, plugin in ipairs(required_plugins) do
-		if lualib_installed(plugin.lib) then
+		if _lualib_installed(plugin.lib) then
 			ok(plugin.lib .. " installed.")
 		else
 			local lib_not_installed = plugin.lib .. " not found."
@@ -480,7 +545,7 @@ function M.check()
 	end
 
 	start("Checking configured language pairs")
-	print_lang_pair_table(cfg)
+	_print_lang_pair_table(cfg)
 end
 
 return M
