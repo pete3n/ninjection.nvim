@@ -27,6 +27,9 @@
 ---@field line2? number - Ending line number for optional range.
 ---@field count? number - Optional count.
 
+---@alias NJTextModifier fun(text: string): string, table<string, boolean>
+---@alias NJTextRestorer fun(text: string, metadata: table<string, boolean>, indents?: NJIndents): string[]
+
 ---@tag NinjectionConfig
 ---@class NinjectionConfig
 ---@brief Implemented by `ninjection/config.lua` for default and user configs.
@@ -62,10 +65,10 @@
 --- injected language comment to derive the language. Defaults to # lang style
 --- comments for Nix.
 ---
----@field inj_text_modifiers? table<string, fun(text: string): string, table> - Contains
+---@field inj_text_modifiers? table<string, NJTextModifier> - Contains
 --- per-language functions to modify text returned by the lang query
 ---
----@field inj_text_restorers? table<string, fun(text: string, meta: table): string[]> - Contains
+---@field inj_text_restorers? table<string, NJTextRestorer> - Contains
 --- per-language functions to restore modified text
 ---
 ---@field inj_lang_tweaks? table<string, NJLangTweak> - Contains
@@ -84,7 +87,7 @@
 ---@field e_row integer
 ---@field e_col integer
 
----@tab NJDelimiterPair
+---@tag NJDelimiterPair
 ---@class NJDelimiterPair
 ---@brief Store language specific comment delimiters for injected code.
 ---
