@@ -52,10 +52,10 @@ local function flatten_table(str_table)
 	return flattened_tbl
 end
 
----@nodoc
+---@private
 --- Ensure win_config uses a valid vim.api.keyset.win_config table.
----@return boolean succes, string[]? errors
-local function validate_win_config(cfg)
+---@return boolean is_valid, string[]? errors
+local function _validate_win_config(cfg)
 	---@type string[]
 	local errors = {}
 
@@ -138,11 +138,11 @@ local function validate_win_config(cfg)
 	return true, nil
 end
 
----@nodoc
+---@private
 --- Validate configured mapping between languages and LSPs
 ---@param lsp_map table<string, string>
 ---@return table<{lsp: string, is_valid: boolean, err: string?}> valid_lsp_map
-local function validate_lsp_map(lsp_map)
+local function _validate_lsp_map(lsp_map)
 	lsp_map = lsp_map or {}
 	---@type table<{lsp: string, is_valid: boolean, err: string?}>
 	local valid_lsp_map = {}
@@ -233,6 +233,137 @@ local function print_lang_pair_table(cfg)
 	end
 end
 
+---@private
+---@param delimiters table<string, NJDelimiterPair>
+---@return boolean is_valid, string[]? errors
+local function _validate_format_delimiters(delimiters)
+	---@type string[]
+	local errors = {}
+	if type(delimiters) == "table" then
+		for k, v in pairs(delimiters) do
+			---@type unknown
+			local val = v
+			if type(val) ~= "table" then
+				table.insert(errors, "`format_delimiters[" .. k .. "]` must be a table")
+				return false, errors
+			else
+				---@type string|unknown
+				local start_delim = val["open"]
+				---@type string|unknown
+				local end_delim = val["close"]
+
+				if type(start_delim) ~= "string" or type(end_delim) ~= "string" then
+					table.insert(errors, "`format_delimiters[" .. k .. "]` must have string 'open' and 'close' keys.")
+					return false, errors
+				end
+			end
+		end
+	else
+		table.insert(errors, "`format_delimiters` must be a table.")
+		return false, errors
+	end
+
+	return true, nil
+end
+
+---@private
+---@param formatter unknown
+---@return boolean is_valid, string[]? errors
+local function _validate_formatter(formatter)
+	---@type string[]
+	local errors = {}
+	if type(formatter) == "function" then
+		---@cast formatter function
+		---@type boolean, string?
+		local fn_call_ok, fn_call_err = pcall(formatter)
+		if not fn_call_ok then
+			table.insert(errors, "Invalid anonymous function: \n'" .. formatter .. "'\n'" .. fn_call_err .. "'")
+			return false, errors
+		end
+	elseif type(formatter) == "string" then
+		---@cast formatter string
+		---@type unknown
+		local global_fn = _G[formatter]
+		if type(global_fn) == "function" then
+			---@cast global_fn function
+			---@type boolean, string?
+			local fmt_ok, fmt_err = pcall(global_fn)
+			if not fmt_ok then
+				table.insert(errors, "Invalid formatting global function: \n'" .. formatter .. "'\n'" .. fmt_err .. "'")
+				return false, errors
+			end
+		else
+			---@type boolean, string?
+			local cmd_ok, cmd_err = pcall(function()
+				vim.cmd(formatter)
+			end)
+			if not cmd_ok then
+				table.insert(
+					errors,
+					"Invalid formatter user defined command: \n'"
+						.. formatter
+						.. "' is not a valid Ex command: \n"
+						.. cmd_err
+				)
+				return false, errors
+			end
+		end
+	end
+
+	return true, nil
+end
+
+---@private
+---@param text_modifiers table<string, NJTextModifier>
+---@return boolean is_valid, string[]? errors
+local function _validate_text_modifiers(text_modifiers)
+	---@type boolean
+	local is_valid = true
+	---@type string[]
+	local errors = {}
+
+	if type(text_modifiers) == "table" then
+		for k, fn in pairs(text_modifiers) do
+			if type(fn) ~= "function" then
+				table.insert(errors, "`inj_text_modifiers[" .. k .. "]` must be a function")
+				is_valid = false
+			else
+				---@type boolean, string, table<string, boolean>
+				local mod_call_ok, mod_result_str, mod_result_meta = pcall(fn, "test text")
+				if not mod_call_ok then
+					table.insert(
+						errors,
+						"`inj_text_modifiers[" .. k .. "]` errored during test call: " .. tostring(mod_result_str)
+					)
+					is_valid = false
+				elseif type(mod_result_str) ~= "string" then
+					table.insert(errors, "`inj_text_modifiers[" .. k .. "]` must return a string as the first result")
+					return false, errors
+				elseif type(mod_result_meta) ~= "table" then
+					table.insert(errors, "`inj_text_modifiers[" .. k .. "]` must return a table as the second result")
+					is_valid = false
+				else
+					for meta_k, meta_v in pairs(mod_result_meta) do
+						if type(meta_k) ~= "string" or type(meta_v) ~= "boolean" then
+							table.insert(
+								errors,
+								"`inj_text_modifiers[" .. k .. "]` must return table<string, boolean> as second result"
+							)
+							is_valid = false
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if is_valid then
+		return true, nil
+	else
+		return false, errors
+	end
+end
+
 ---@tag ninjection.health.validate_config()
 ---@brief
 ---	Validates either a provided configuration table or the
@@ -248,37 +379,6 @@ function M.validate_config(cfg)
 	local is_valid = true
 	local errors = {}
 
-	---@type table<string, NJDelimiterPair>|nil
-	local format_delimiters = cfg.format_delimiters
-	if not format_delimiters then
-		is_valid = false
-		table.insert(errors, "`format_delimiters` must be configured.")
-	else
-		if type(format_delimiters) == "table" then
-			for k, v in pairs(format_delimiters) do
-				---@type unknown
-				local val = v
-				if type(val) ~= "table" then
-					table.insert(errors, "`format_delimiters[" .. k .. "]` must be a table")
-					is_valid = false
-				else
-					---@type string|unknown
-					local start_delim = val["open"]
-					---@type string|unknown
-					local end_delim = val["close"]
-
-					if type(start_delim) ~= "string" or type(end_delim) ~= "string" then
-						table.insert(
-							errors,
-							"`format_delimiters[" .. k .. "]` must have string 'open' and 'close' keys."
-						)
-						is_valid = false
-					end
-				end
-			end
-		end
-	end
-
 	---@type table<boolean>
 	local valid_editor_styles = { cur_win = true, floating = true, v_split = true, h_split = true }
 	if not valid_editor_styles[cfg.editor_style] then
@@ -287,55 +387,40 @@ function M.validate_config(cfg)
 	end
 
 	if cfg.formatter then
-		---@type unknown
-		local formatter = cfg.formatter
-		if type(formatter) == "function" then
-			---@cast formatter function
-			---@type boolean, string?
-			local fn_call_ok, fn_call_err = pcall(formatter)
-			if not fn_call_ok then
-				table.insert(errors, "Invalid anonymous function: \n'" .. cfg.formatter .. "'\n'" .. fn_call_err .. "'")
-				is_valid = false
-			end
-		elseif type(formatter) == "string" then
-			---@cast formatter string
-			---@type unknown
-			local global_fn = _G[cfg.formatter]
-			if type(global_fn) == "function" then
-				---@cast global_fn function
-				---@type boolean, string?
-				local fmt_ok, fmt_err = pcall(global_fn)
-				if not fmt_ok then
-					table.insert(
-						errors,
-						"Invalid formatting global function: \n'" .. cfg.formatter .. "'\n'" .. fmt_err .. "'"
-					)
-					is_valid = false
-				end
-			else
-				---@type boolean, string?
-				local cmd_ok, cmd_err = pcall(function()
-					vim.cmd(formatter)
-				end)
-				if not cmd_ok then
-					table.insert(
-						errors,
-						"Invalid formatter user defined command: \n'"
-							.. cfg.formatter
-							.. "' is not a valid Ex command: \n"
-							.. cmd_err
-					)
-					is_valid = false
-				end
-			end
+		---@type boolean, string[]?
+		local fmtr_ok, fmtr_errs = _validate_formatter(cfg.formatter)
+		if not fmtr_ok then
+			table.insert(errors, fmtr_errs)
+			is_valid = false
+		end
+	end
+
+	if cfg.inj_text_modifiers then
+		---@type boolean, string[]?
+		local mod_ok, mod_errs = _validate_text_modifiers(cfg.inj_text_modifiers)
+		if not mod_ok then
+			table.insert(errors, mod_errs)
+			is_valid = false
 		end
 	end
 
 	---@type boolean, string[]?
-	local win_ok, win_errs = validate_win_config(cfg.win_config)
+	local win_ok, win_errs = _validate_win_config(cfg.win_config)
 	if not win_ok then
 		table.insert(errors, win_errs)
 		is_valid = false
+	end
+
+	if not cfg.format_delimiters then
+		is_valid = false
+		table.insert(errors, "`format_delimiters` must be configured.")
+	else
+		---@type boolean, string[]?
+		local delim_ok, delim_err = _validate_format_delimiters(cfg.format_delimiters)
+		if not delim_ok then
+			table.insert(errors, delim_err)
+			is_valid = false
+		end
 	end
 
 	if is_valid then
@@ -386,7 +471,7 @@ function M.check()
 	end
 
 	start("Checking configured LSPs")
-	for _, result in ipairs(validate_lsp_map(cfg.lsp_map)) do
+	for _, result in ipairs(_validate_lsp_map(cfg.lsp_map)) do
 		if result.is_valid then
 			ok(result.lsp .. " is available.")
 		else
