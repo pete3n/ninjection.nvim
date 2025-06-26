@@ -82,7 +82,7 @@ local default_config = {
 		lua = [[^%-%-%s*([%w_+%-]+)%s*$]], -- Parses "-- lang" to "lang"
 	},
 
-	---@type table<string,fun(text: string): string, table<string, boolean>>
+	---@type table<string, NJTextModifier>
 	inj_text_modifiers = {
 		nix = function(text)
 			---@type string[]
@@ -164,7 +164,7 @@ local default_config = {
 		end,
 	},
 
-	---@type table<string, fun(text: string, metadata: table<string, boolean>, indents?: NJIndents): string[]>
+	---@type table<string, NJTextRestorer>
 	inj_text_restorers = {
 		nix = function(text, metadata, indents)
 			---@type string[]
@@ -283,6 +283,7 @@ M.reload = function()
 end
 
 ---@nodoc
+---@private
 --- Merges user provided configuration overrides with the default configuration.
 ---@param cfg_overrides? NinjectionConfig
 ---@return boolean success, string[]? errors
