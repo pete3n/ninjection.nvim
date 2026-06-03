@@ -60,29 +60,27 @@ local function _validate_win_config(cfg)
 
 	---@type boolean, string?
 	local valid_cfg, validate_err = pcall(function()
-		vim.validate({
-			row = { cfg.row, "number", true },
-			col = { cfg.col, "number", true },
-			width = { cfg.width, "number", true },
-			height = { cfg.height, "number", true },
-			anchor = { cfg.anchor, { "string", "nil" } },
-			relative = { cfg.relative, { "string", "nil" } },
-			split = { cfg.split, { "string", "nil" } },
-			win = { cfg.win, { "number", "nil" } },
-			bufpos = { cfg.bufpos, { "table", "nil" } },
-			external = { cfg.external, { "boolean", "nil" } },
-			focusable = { cfg.focusable, { "boolean", "nil" } },
-			mouse = { cfg.mouse, { "boolean", "nil" } },
-			vertical = { cfg.vertical, { "boolean", "nil" } },
-			zindex = { cfg.zindex, { "number", "nil" } },
-			border = { cfg.border, { "string", "table", "nil" } },
-			title_pos = { cfg.title_pos, { "string", "nil" } },
-			footer_pos = { cfg.footer_pos, { "string", "nil" } },
-			style = { cfg.style, { "string", "nil" } },
-			noautocmd = { cfg.noautocmd, { "boolean", "nil" } },
-			fixed = { cfg.fixed, { "boolean", "nil" } },
-			hide = { cfg.hide, { "boolean", "nil" } },
-		})
+		vim.validate("row", cfg.row, "number", true)
+		vim.validate("col", cfg.col, "number", true)
+		vim.validate("width", cfg.width, "number", true)
+		vim.validate("height", cfg.height, "number", true)
+		vim.validate("anchor", cfg.anchor, "string", true)
+		vim.validate("relative", cfg.relative, "string", true)
+		vim.validate("split", cfg.split, "string", true)
+		vim.validate("win", cfg.win, "number", true)
+		vim.validate("bufpos", cfg.bufpos, "table", true)
+		vim.validate("external", cfg.external, "boolean", true)
+		vim.validate("focusable", cfg.focusable, "boolean", true)
+		vim.validate("mouse", cfg.mouse, "boolean", true)
+		vim.validate("vertical", cfg.vertical, "boolean", true)
+		vim.validate("zindex", cfg.zindex, "number", true)
+		vim.validate("border", cfg.border, { "string", "table" }, true)
+		vim.validate("title_pos", cfg.title_pos, "string", true)
+		vim.validate("footer_pos", cfg.footer_pos, "string", true)
+		vim.validate("style", cfg.style, "string", true)
+		vim.validate("noautocmd", cfg.noautocmd, "boolean", true)
+		vim.validate("fixed", cfg.fixed, "boolean", true)
+		vim.validate("hide", cfg.hide, "boolean", true)
 	end)
 
 	if not valid_cfg then
@@ -301,9 +299,9 @@ local function _validate_formatter(formatter)
 				table.insert(
 					errors,
 					"Invalid formatter user defined command: \n'"
-						.. formatter
-						.. "' is not a valid Ex command: \n"
-						.. cmd_err
+					.. formatter
+					.. "' is not a valid Ex command: \n"
+					.. cmd_err
 				)
 				return false, errors
 			end
@@ -398,11 +396,11 @@ local function _validate_text_restorers(text_restorers)
 							table.insert(
 								errors,
 								"`inj_text_restorers["
-									.. k
-									.. "]` must return table<string>, but value at index "
-									.. i
-									.. " is of type "
-									.. type(val)
+								.. k
+								.. "]` must return table<string>, but value at index "
+								.. i
+								.. " is of type "
+								.. type(val)
 							)
 							is_valid = false
 							break
