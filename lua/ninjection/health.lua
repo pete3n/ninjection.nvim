@@ -299,9 +299,9 @@ local function _validate_formatter(formatter)
 				table.insert(
 					errors,
 					"Invalid formatter user defined command: \n'"
-					.. formatter
-					.. "' is not a valid Ex command: \n"
-					.. cmd_err
+						.. formatter
+						.. "' is not a valid Ex command: \n"
+						.. cmd_err
 				)
 				return false, errors
 			end
@@ -396,11 +396,11 @@ local function _validate_text_restorers(text_restorers)
 							table.insert(
 								errors,
 								"`inj_text_restorers["
-								.. k
-								.. "]` must return table<string>, but value at index "
-								.. i
-								.. " is of type "
-								.. type(val)
+									.. k
+									.. "]` must return table<string>, but value at index "
+									.. i
+									.. " is of type "
+									.. type(val)
 							)
 							is_valid = false
 							break
