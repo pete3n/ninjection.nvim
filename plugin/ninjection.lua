@@ -16,6 +16,7 @@ local subcommand_tbl = {
 			require("ninjection").select()
 		end,
 	},
+	-- FIX: Don't format if diagnostic errors exist ( this causes the tab bug )
 	format = {
 		impl = function()
 			require("ninjection").format()
