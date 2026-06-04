@@ -3,9 +3,12 @@
 --- The buffer module contains the ninjection child object class.
 ---
 
----@nodoc
----@type Ninjection.Config
-local cfg = require("ninjection.config").values
+---@type NinjectionConfig
+local cfg = setmetatable({}, {
+	__index = function(_, key)
+		return require("ninjection.config").values[key]
+	end,
+})
 
 ---@tag NJChildCursor
 ---@class NJChildCursor -- Options to calculate child window cursor position
@@ -339,20 +342,27 @@ function NJChild:get_parent()
 	return nj_parent, nil
 end
 
+---@nodoc
+--- Reads cfg.formatter and formats child buffer given either a:
+--- - custom anonymous function
+--- - globally defined function
+--- - user defined ex command
+--- - LSP formatting (default/fallback on failure)
+---
 ---@return boolean success, string? err
 function NJChild:format()
 	local timeout = cfg.format_timeout or 500
 
 	---@private
 	---@param fmt_failed boolean
-	---@param fmt_fn string?
+	---@param formatter string?
 	---@param fmt_err string?
 	---@return boolean success, string? err
-	local function fallback(fmt_failed, fmt_fn, fmt_err)
+	local function fallback(fmt_failed, formatter, fmt_err)
 		if cfg.debug and fmt_failed then
 			vim.notify(
 				"ninjection.child:format(): warning format function call, "
-					.. tostring(fmt_fn)
+					.. tostring(formatter)
 					.. " failed with error: "
 					.. tostring(fmt_err)
 					.. " ... Reverting to LSP formatting."
@@ -371,33 +381,39 @@ function NJChild:format()
 		return fmt_ok, err
 	end
 
-	---@type string?
-	local cmd = cfg.format_cmd
-
-	if cmd then
-		---@type string[]
-		local path = vim.split(cmd, ".", { plain = true })
-
+	---@type unknown
+	local formatter = cfg.formatter
+	if type(formatter) == "function" then
+		---@cast formatter function
+		---@type boolean, string?
+		local fn_call_ok, fn_call_err = pcall(formatter)
+		if fn_call_ok then
+			return true, nil
+		else
+			return fallback(true, "<anonymous fn>", fn_call_err)
+		end
+	elseif type(formatter) == "string" then
+		---@cast formatter string
 		---@type unknown
-		local fmt_fn = vim.tbl_get(_G, unpack(path))
-
-		if type(fmt_fn) == "function" then
+		local global_fn = _G[cfg.formatter]
+		if type(global_fn) == "function" then
+			---@cast global_fn function
 			---@type boolean, string?
-			local fmt_ok, fmt_err = pcall(fmt_fn)
-			if not fmt_ok then
-				return fallback(true, fmt_fn, fmt_err)
-			else
+			local fmt_ok, fmt_err = pcall(global_fn)
+			if fmt_ok then
 				return true, nil
+			else
+				return fallback(true, tostring(cfg.formatter), fmt_err)
 			end
 		else
 			---@type boolean, string?
 			local fmt_ok, fmt_err = pcall(function()
-				vim.cmd(cmd)
+				vim.cmd(cfg.formatter)
 			end)
-			if not fmt_ok then
-				return fallback(true, fmt_fn, fmt_err)
-			else
+			if fmt_ok then
 				return true, nil
+			else
+				return fallback(true, tostring(cfg.formatter), fmt_err)
 			end
 		end
 	end

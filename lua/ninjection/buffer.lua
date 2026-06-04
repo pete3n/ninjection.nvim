@@ -4,9 +4,14 @@
 --- module for creating and editing injected text in buffers.
 ---
 local M = {}
----@nodoc
----@type Ninjection.Config
-local cfg = require("ninjection.config").values
+
+---@type NinjectionConfig
+local cfg = setmetatable({}, {
+	__index = function(_, key)
+		return require("ninjection.config").values[key]
+	end,
+})
+
 local NJParent = require("ninjection.parent")
 local NJChild = require("ninjection.child")
 

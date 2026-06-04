@@ -8,15 +8,16 @@ local M = {}
 local vc = require("ninjection.health").validate_config
 
 ---@nodoc
----@type Ninjection.Config
+---@type NinjectionConfig
 ---@tag default_config
 local default_config = {
 	---@type boolean
 	preserve_indents = true,
 	---@type  boolean
 	auto_format = true,
-	---@type string
-	format_cmd = "format_with_conform",
+	---@type string|function|nil
+	formatter = nil, -- Defaults to LSP formatting
+
 	---@type table<string, NJDelimiterPair>
 	format_delimiters = {
 		nix = {
@@ -28,6 +29,7 @@ local default_config = {
 			close = "]]",
 		},
 	},
+
 	---@type integer
 	format_indent = 2,
 	---@type integer
@@ -40,6 +42,7 @@ local default_config = {
 	debug = true,
 	---@type EditorStyle
 	editor_style = "floating",
+
 	---@type vim.api.keyset.win_config
 	win_config = {
 		zindex = 25,
@@ -51,6 +54,7 @@ local default_config = {
 		col = math.floor((vim.o.columns - math.floor(vim.o.columns * 0.8)) / 2),
 		border = "single",
 	},
+
 	---@type table<string, string>
 	--- inj_lang and inj_text mandatory labels to indicate the language being
 	--- injected and the text associated with that injected node, the string name
@@ -78,7 +82,7 @@ local default_config = {
 		lua = [[^%-%-%s*([%w_+%-]+)%s*$]], -- Parses "-- lang" to "lang"
 	},
 
-	---@type table<string,fun(text: string): string, table<string, boolean>>
+	---@type table<string, NJTextModifier>
 	inj_text_modifiers = {
 		nix = function(text)
 			---@type string[]
@@ -160,7 +164,7 @@ local default_config = {
 		end,
 	},
 
-	---@type table<string, fun(text: string, metadata: table<string, boolean>, indents?: NJIndents): string[]>
+	---@type table<string, NJTextRestorer>
 	inj_text_restorers = {
 		nix = function(text, metadata, indents)
 			---@type string[]
@@ -225,6 +229,7 @@ local default_config = {
 			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0 },
 		},
 	},
+
 	---@type table<string, string>
 	lsp_map = {
 		bash = "bashls",
@@ -236,8 +241,15 @@ local default_config = {
 }
 
 ---@nodoc
+--- Fetch current configuration, or default_config
+---@return NinjectionConfig
+M.get_config = function()
+	return M.values or default_config
+end
+
+---@nodoc
 --- Provide default_config for inspection, primarily for documentation.
----@return Ninjection.Config
+---@return NinjectionConfig
 M.get_default = function()
 	return default_config
 end
@@ -271,25 +283,29 @@ M.reload = function()
 end
 
 ---@nodoc
+---@private
 --- Merges user provided configuration overrides with the default configuration.
----@param cfg_overrides? Ninjection.Config
----@return nil
+---@param cfg_overrides? NinjectionConfig
+---@return boolean success, string[]? errors
 M._merge_config = function(cfg_overrides)
-	---@type Ninjection.Config
+	---@type NinjectionConfig
 	local user_config = vim.g.ninjection or cfg_overrides or {}
-	---@type Ninjection.Config
-	local config = vim.tbl_deep_extend("force", default_config, user_config)
+	---@type NinjectionConfig
+	local tmp_config = vim.tbl_deep_extend("force", default_config, user_config)
 
-	local is_valid, err
-	is_valid, err = vc(config)
-	if not is_valid then
-		error(err, 2)
+	---@type boolean, string[]?
+	local is_valid_cfg, cfg_errors
+	is_valid_cfg, cfg_errors = vc(tmp_config)
+	if not is_valid_cfg then
+		M.values = default_config
+		return false, cfg_errors
 	end
 
-	M.values = config
-	return M.values
+	M.values = tmp_config
+	return true, nil
 end
 
--- Provide default config in the event no user overrides are provided.
-M.values = M._merge_config()
+-- Always ensure at least the default_config exists.
+M.values = M.values or default_config
+
 return M

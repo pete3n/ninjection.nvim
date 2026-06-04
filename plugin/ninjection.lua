@@ -1,5 +1,5 @@
 ---@nodoc
----@type table<string, Ninjection.Subcommand>
+---@type table<string, NinjectionSubcommand>
 local subcommand_tbl = {
 	edit = {
 		impl = function()
@@ -24,7 +24,7 @@ local subcommand_tbl = {
 }
 
 ---@nodoc
----@param opts Ninjection.CmdOpts
+---@param opts NinjectionCmdOpts
 ---@return nil
 local function ninjection_cmd(opts)
 	---@type string[]

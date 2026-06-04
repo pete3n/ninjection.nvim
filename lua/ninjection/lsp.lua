@@ -4,9 +4,13 @@
 --- module for starting and managing LSP connections.
 ---
 local M = {}
----@nodoc
----@type Ninjection.Config
-local cfg = require("ninjection.config").values
+
+---@type NinjectionConfig
+local cfg = setmetatable({}, {
+	__index = function(_, key)
+		return require("ninjection.config").values[key]
+	end,
+})
 
 ---@alias NJLspStatusResponseType
 ---| "unmapped"
@@ -115,7 +119,7 @@ function M.start_lsp(lang, bufnr)
 	end
 
 	if type(lsp_cfg.cmd) == "function" then
-		-- Advanced users may be using a dynamic client
+		-- Dynamic clients not currently supported
 		local err = "ninjection.lsp.start_lsp() error: dynamic RPC clients are not supported."
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.ERROR)

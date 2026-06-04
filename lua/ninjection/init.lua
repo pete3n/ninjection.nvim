@@ -6,34 +6,45 @@
 local ninjection = {}
 
 ---@nodoc
----@param user_cfg Ninjection.Config
+---@param user_cfg NinjectionConfig
 ---@return nil
 function ninjection.setup(user_cfg)
-	---@type boolean, string?
-	local is_valid, err
-	is_valid, err = require("ninjection.health").validate_config(user_cfg)
-	if is_valid == true then
-		require("ninjection.config")._merge_config(user_cfg)
-	else
+	---@type boolean, string[]?
+	local is_valid_cfg, cfg_errors = require("ninjection.config")._merge_config(user_cfg)
+
+	if not is_valid_cfg then
 		vim.notify(
-			"ninjection warning: User configuration is invalid: "
-				.. err
-				.. " \nReverting to default configuration settings.",
+			"ninjection.setup() warning: Reverted to default_config. Invalid user configuration:\n"
+				.. table.concat(vim.tbl_map(tostring, cfg_errors or {}), "\n"),
 			vim.log.levels.WARN
 		)
 	end
 end
 
----@type Ninjection.Config
-local cfg = require("ninjection.config").values
+---@type NinjectionConfig
+local cfg = setmetatable({}, {
+	__index = function(_, key)
+		return require("ninjection.config").values[key]
+	end,
+	__newindex = function(_, key, value)
+		require("ninjection.config").values[key] = value
+	end,
+})
+
 local buffer = require("ninjection.buffer")
 local parse = require("ninjection.parse")
 local NJChild = require("ninjection.child")
 local NJParent = require("ninjection.parent")
 local lsp = require("ninjection.lsp")
 
-if vim.fn.exists(":checkhealth") == 2 then
-	require("ninjection.health").check()
+if vim.fn.exists(":checkhealth") == 2 and vim.health and vim.health.report_info then
+	---@type boolean, string?
+	local ok, err = pcall(function()
+		require("ninjection.health").check()
+	end)
+	if not ok then
+		vim.notify("ninjection.init() error: health check failed: " .. tostring(err), vim.log.levels.ERROR)
+	end
 end
 
 ---@tag ninjection.select()

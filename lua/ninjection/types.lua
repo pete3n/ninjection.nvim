@@ -10,14 +10,14 @@
 --- `"cur_win" | "floating" | "v_split" | "h_split"`
 
 ---@tag Ninjection.Subcommand
----@class Ninjection.Subcommand
+---@class NinjectionSubcommand
 ---@brief Implemented by `plugin/ninjection.lua` for user commands.
 ---
 ---@field impl fun()
 ---@field complete? fun(arg_lead: string): string[]
 
 ---@tag Ninjection.CmdOpts
----@class Ninjection.CmdOpts
+---@class NinjectionCmdOpts
 ---@brief Implemented by `plugin/ninjection.lua` for user commands.
 ---
 ---@field args string - The entire argument string as typed.
@@ -27,8 +27,11 @@
 ---@field line2? number - Ending line number for optional range.
 ---@field count? number - Optional count.
 
----@tag Ninjection.Config
----@class Ninjection.Config
+---@alias NJTextModifier fun(text: string): string, table<string, boolean>
+---@alias NJTextRestorer fun(text: string, metadata: table<string, boolean>, indents?: NJIndents): string[]
+
+---@tag NinjectionConfig
+---@class NinjectionConfig
 ---@brief Implemented by `ninjection/config.lua` for default and user configs.
 ---
 ---@field preserve_indents? boolean - Preserve indents from the parent buffer.
@@ -37,7 +40,8 @@
 --- indents, then enabling this will increas the original indenation.
 ---
 ---@field auto_format? boolean - Auto format the new child buffer: default (true).
----@field format_cmd? string - Command used for formatting (default uses lsp.format).
+---@field formatter? string|function|nil - Ex command string or anonymous function definition
+--- used by Ninjection for buffer formatting. Will default to LSP formatting if nil.
 ---@field format_indent? integer - Additional spaces to indent injected text blocks.
 ---@field format_timeout? integer - Timeout in ms to wait for buffer formatting:
 --- default (500)
@@ -61,10 +65,10 @@
 --- injected language comment to derive the language. Defaults to # lang style
 --- comments for Nix.
 ---
----@field inj_text_modifiers? table<string, fun(text: string): string, table> - Contains
+---@field inj_text_modifiers? table<string, NJTextModifier> - Contains
 --- per-language functions to modify text returned by the lang query
 ---
----@field inj_text_restorers? table<string, fun(text: string, meta: table): string[]> - Contains
+---@field inj_text_restorers? table<string, NJTextRestorer> - Contains
 --- per-language functions to restore modified text
 ---
 ---@field inj_lang_tweaks? table<string, NJLangTweak> - Contains
@@ -83,7 +87,7 @@
 ---@field e_row integer
 ---@field e_col integer
 
----@tab NJDelimiterPair
+---@tag NJDelimiterPair
 ---@class NJDelimiterPair
 ---@brief Store language specific comment delimiters for injected code.
 ---
