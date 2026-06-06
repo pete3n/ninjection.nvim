@@ -12,7 +12,8 @@ vim.opt.completeopt = { 'menu', 'menuone', 'noselect' }
 local function has_words_before()
   local unpack_ = unpack or table.unpack
   local line, col = unpack_(vim.api.nvim_win_get_cursor(0))
-  return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match('%s') == nil
+  return col ~= 0
+    and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match('%s') == nil
 end
 
 ---@param source string|table
@@ -148,7 +149,12 @@ cmp.setup.cmdline(':', {
   },
 })
 
-vim.keymap.set({ 'i', 'c', 's' }, '<C-n>', cmp.complete, { noremap = false, desc = '[cmp] complete' })
+vim.keymap.set(
+  { 'i', 'c', 's' },
+  '<C-n>',
+  cmp.complete,
+  { noremap = false, desc = '[cmp] complete' }
+)
 vim.keymap.set({ 'i', 'c', 's' }, '<C-f>', function()
   complete_with_source('path')
 end, { noremap = false, desc = '[cmp] path' })

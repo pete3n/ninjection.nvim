@@ -1,5 +1,5 @@
 local injected_content_edit = -- nix
-		[[
+	[[
 let
 			flake = builtins.getFlake (toString ./.);
 		in

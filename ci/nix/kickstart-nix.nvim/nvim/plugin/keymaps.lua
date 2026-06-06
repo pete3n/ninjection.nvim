@@ -141,8 +141,18 @@ keymap.set('n', '<space>e', function()
   end
   vim.api.nvim_win_set_config(winid or 0, { focusable = true })
 end, { noremap = true, silent = true, desc = 'diagnostics floating window' })
-keymap.set('n', '[d', diagnostic.goto_prev, { noremap = true, silent = true, desc = 'previous [d]iagnostic' })
-keymap.set('n', ']d', diagnostic.goto_next, { noremap = true, silent = true, desc = 'next [d]iagnostic' })
+keymap.set(
+  'n',
+  '[d',
+  diagnostic.goto_prev,
+  { noremap = true, silent = true, desc = 'previous [d]iagnostic' }
+)
+keymap.set(
+  'n',
+  ']d',
+  diagnostic.goto_next,
+  { noremap = true, silent = true, desc = 'next [d]iagnostic' }
+)
 keymap.set('n', '[e', function()
   diagnostic.goto_prev {
     severity = severity.ERROR,
@@ -186,7 +196,12 @@ local function toggle_spell_check()
   vim.opt.spell = not (vim.opt.spell:get())
 end
 
-keymap.set('n', '<leader>S', toggle_spell_check, { noremap = true, silent = true, desc = 'toggle [S]pell' })
+keymap.set(
+  'n',
+  '<leader>S',
+  toggle_spell_check,
+  { noremap = true, silent = true, desc = 'toggle [S]pell' }
+)
 
 keymap.set('n', '<C-d>', '<C-d>zz', { desc = 'move [d]own half-page and center' })
 keymap.set('n', '<C-u>', '<C-u>zz', { desc = 'move [u]p half-page and center' })

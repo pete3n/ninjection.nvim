@@ -53,7 +53,12 @@ vim.schedule(function()
       map('n', '<leader>hb', function()
         gs.blame_line { full = true }
       end, { desc = 'git [h] [b]lame line (full)' })
-      map('n', '<leader>glb', gs.toggle_current_line_blame, { desc = '[g]it toggle current [l]ine [b]lame' })
+      map(
+        'n',
+        '<leader>glb',
+        gs.toggle_current_line_blame,
+        { desc = '[g]it toggle current [l]ine [b]lame' }
+      )
       map('n', '<leader>hd', gs.diffthis, { desc = 'git [h] [d]iff this' })
       map('n', '<leader>hD', function()
         gs.diffthis('~')
