@@ -361,4 +361,90 @@ function M.restore_indents(text, indents)
 	return lines
 end
 
+---@tag ninjection.buffer.strip_indents()
+---@brief
+--- Removes the common left indentation (`l_indent`) from each non-blank line.
+---
+--- Parameters ~
+---@param text string|table<integer,string> The text to strip indents from.
+--- Can be either a string (with newline separators) or a table of lines.
+---@param indents NJIndents Table with indent values for t, b, l
+---
+---@return string[]? stripped_lines, string? err
+--- Lines with the common left indent removed.
+---
+function M.strip_indents(text, indents)
+	---@type string[]?
+	local lines
+	if type(text) == "string" then
+		---@type boolean
+		local split_ok
+		split_ok, lines = pcall(function()
+			return vim.split(text, "\n")
+		end)
+		if not split_ok or not lines or #lines == 0 then
+			---@type string
+			local err = "ninjection.buffer.strip_indents() error: Unable to split text lines."
+			if cfg.debug then
+				vim.notify(err, vim.log.levels.ERROR)
+			end
+			return nil, err
+		end
+	---@cast lines string[]
+	elseif type(text) == "table" then
+		lines = text
+	---@cast lines string[]
+	else
+		---@type string
+		local err = "ninjection.buffer.strip_indents() error: Text must be a string or a table of lines."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return nil, err
+	end
+
+	---@type integer
+	local target = indents.l_indent or 0
+	if target <= 0 then
+		return lines
+	end
+
+	---@type integer
+	local tabstop = vim.o.tabstop or 8
+
+	-- Remove up to `target` display columns of leading whitespace from each
+	-- non-blank line, expanding tabs against the current tabstop. Tabs that would
+	-- overshoot `target` are left intact so we never strip more than the recorded
+	-- common indent.
+	for line_idx, line in ipairs(lines) do
+		---@cast line_idx number
+		---@cast line string
+		if line:match("%S") then
+			---@type integer, integer
+			local col, idx = 0, 1
+			while idx <= #line and col < target do
+				---@type string
+				local char = line:sub(idx, idx)
+				---@type integer?
+				local adv
+				if char == " " then
+					adv = 1
+				elseif char == "\t" then
+					adv = tabstop - (col % tabstop)
+				else
+					break
+				end
+				if col + adv > target then
+					break
+				end
+				col = col + adv
+				idx = idx + 1
+			end
+			lines[line_idx] = line:sub(idx)
+		end
+	end
+
+	return lines
+end
+
 return M
