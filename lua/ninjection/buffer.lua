@@ -312,10 +312,10 @@ function M.restore_indents(text, indents)
 			end
 			return nil, err
 		end
-	---@cast lines string[]
+		---@cast lines string[]
 	elseif type(text) == "table" then
 		lines = text
-	---@cast lines string[]
+		---@cast lines string[]
 	else
 		local err = "ninjection.buffer.restore_indents() error: Text must be a string or a table of lines."
 		---@type string err
@@ -390,10 +390,10 @@ function M.strip_indents(text, indents)
 			end
 			return nil, err
 		end
-	---@cast lines string[]
+		---@cast lines string[]
 	elseif type(text) == "table" then
 		lines = text
-	---@cast lines string[]
+		---@cast lines string[]
 	else
 		---@type string
 		local err = "ninjection.buffer.strip_indents() error: Text must be a string or a table of lines."
