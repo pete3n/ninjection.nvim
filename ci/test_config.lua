@@ -1,38 +1,38 @@
 vim.api.nvim_create_user_command("NinjectionSetup", function()
-  vim.ui.input({
-    prompt = "Enter Lua config table (e.g. { formatter = function() ... end }):",
-    default = "{ }",
-  }, function(input)
-    if not input then
-      vim.notify("NinjectionSetup cancelled", vim.log.levels.WARN)
-      return
-    end
+	vim.ui.input({
+		prompt = "Enter Lua config table (e.g. { formatter = function() ... end }):",
+		default = "{ }",
+	}, function(input)
+		if not input then
+			vim.notify("NinjectionSetup cancelled", vim.log.levels.WARN)
+			return
+		end
 
-    local chunk, err = load("return " .. input)
-    if not chunk then
-      vim.notify("Failed to parse config: " .. err, vim.log.levels.ERROR)
-      return
-    end
+		local chunk, err = load("return " .. input)
+		if not chunk then
+			vim.notify("Failed to parse config: " .. err, vim.log.levels.ERROR)
+			return
+		end
 
-    local ok, user_cfg = pcall(chunk)
-    if not ok then
-      vim.notify("Error evaluating config: " .. user_cfg, vim.log.levels.ERROR)
-      return
-    end
+		local ok, user_cfg = pcall(chunk)
+		if not ok then
+			vim.notify("Error evaluating config: " .. user_cfg, vim.log.levels.ERROR)
+			return
+		end
 
-    -- Save for reload purposes
-    _G.ninjection_config = user_cfg
+		-- Save for reload purposes
+		_G.ninjection_config = user_cfg
 
-    -- Call reload to invalidate module cache
-    require("ninjection.config").reload()
+		-- Call reload to invalidate module cache
+		require("ninjection.config").reload()
 
-    -- Re-require and run setup with fresh modules
-    require("ninjection").setup(_G.ninjection_config)
+		-- Re-require and run setup with fresh modules
+		require("ninjection").setup(_G.ninjection_config)
 
-    vim.notify("Ninjection configured and reloaded.", vim.log.levels.INFO)
-  end)
+		vim.notify("Ninjection configured and reloaded.", vim.log.levels.INFO)
+	end)
 end, {
-  desc = "Prompt and run ninjection.setup() with Lua table config override",
+	desc = "Prompt and run ninjection.setup() with Lua table config override",
 })
 
 -- Invalidate all modules and re-setup from _G.ninjection_config

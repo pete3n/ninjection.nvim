@@ -242,6 +242,25 @@ function NJChild:init_buf(opts)
 		end
 		---@cast p_indents NJIndents
 		self.p_indents = p_indents
+
+		-- Strip the recorded common left indent from the child buffer so it is not
+		-- duplicated when restore_indents() re-applies it on replace. Without this,
+		-- an injection that begins with a leading offset accumulates that offset on
+		-- every edit/replace cycle.
+		if p_indents.l_indent and p_indents.l_indent > 0 then
+			---@type string[]?
+			local dedented = require("ninjection.buffer").strip_indents(text_lines, p_indents)
+			if dedented then
+				---@cast dedented string[]
+				local dedent_ok = pcall(vim.api.nvim_buf_set_lines, c_bufnr, 0, -1, false, dedented)
+				if not dedent_ok and cfg.debug then
+					vim.notify(
+						"ninjection.child:init_buf() warning: Failed to set dedented buffer lines.",
+						vim.log.levels.WARN
+					)
+				end
+			end
+		end
 	end
 
 	---@type boolean, string?
@@ -435,27 +454,20 @@ function NJChild:set_cursor(opts)
 		return false, nil
 	end
 
-	---@type integer[]
-	local offset_cur
+	---@type integer
+	local relative_row = math.max(1, opts.p_cursor[1] - opts.s_row)
+	---@type integer
+	local relative_col = opts.p_cursor[2]
 
-	-- Assuming autoformat will remove any existing indents, we need to offset
-	-- the cursor for the removed indents.
-	if cfg.preserve_indents and cfg.auto_format then
-		---@type integer
-		local relative_row = opts.p_cursor[1] - opts.s_row
-		relative_row = math.max(1, relative_row)
-		---@type integer
-		if opts.indents then
-			local relative_col = opts.p_cursor[2] - opts.indents.l_indent
-			relative_col = math.max(0, relative_col)
-			offset_cur = { relative_row, relative_col }
-		end
-	else
-		---@type integer
-		local relative_row = opts.p_cursor[1] - opts.s_row
-		relative_row = math.max(1, relative_row)
-		offset_cur = { relative_row, opts.p_cursor[2] }
+	-- The child buffer content is dedented by the common left indent when
+	-- preserve_indents is enabled, so offset the cursor column to match the
+	-- stripped indentation.
+	if cfg.preserve_indents and opts.indents then
+		relative_col = math.max(0, relative_col - opts.indents.l_indent)
 	end
+
+	---@type integer[]
+	local offset_cur = { relative_row, relative_col }
 
 	---@type boolean, string?
 	local set_cur_ok, set_cur_err = pcall(function()
