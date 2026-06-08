@@ -35,7 +35,6 @@ Getting started with ninjection:
 	`<Plug>(NinjectionSelect)`
      
 
-==============================================================================
 ninjection-command USER COMMAND
 :Ninjection <subcommand?>
 
@@ -50,14 +49,13 @@ ninjection-command USER COMMAND
 The ninjection module contains the three primary ninjection functions:
 |select()|, |edit()|, and |replace()|.
 Type ~
-`(Ninjection.Config)`
+`(NinjectionConfig)`
                                                            *ninjection.select()*
 
-Identifies and selects injected text in visual mode.
+Identifies and selects injected text in visual line mode.
 
 Return ~
 `(nil)`
-
                                                              *ninjection.edit()*
 
 Detects injected languages at the cursor position and begins editing supported
@@ -67,7 +65,7 @@ and information to replace text in the parent buffer. It also appends the child
 buffer handle to an `NJParent` object in the parent buffer.
 
 Return ~
-`(nil)`
+`(boolean)` success, string? err
 
                                                           *ninjection.replace()*
 
@@ -77,8 +75,14 @@ table as an `NJParent` table in the child, and `NJChild` table indexed by the
 child bufnr in the parent. This relationship is validated before replacing.
 
 Return ~
-`(nil)`
+`(boolean)` success, string? err
 
+                                                           *ninjection.format()*
+
+Formats the injected code block under cursor using a specified format cmd,
+Sets indentation based on existing indents and configurable offsets.
+
+@return boolean success, string? err
 
 ==============================================================================
 "ninjection.config"
@@ -87,42 +91,73 @@ The config module contains the default ninjection configuration table and
 functions to merge user config options and reload config changes.
 
 NOTE: width/height col/row default values are dynamically set to:
-80% of vim.o.columns/vim.o.rows and offset for a centered window.
+80% of jvim.o.columns/vim.o.rows and offset for a centered window.
 `{
 `  auto_format = true,
 `  debug = true,
 `  editor_style = "floating",
-`  format_cmd = "_G.format_with_conform()",
-`  inj_lang_queries = {
-`    nix = '            (
-`              (comment) @injection.language
-`              .
-`              [
-`                (indented_string_expression
-`                  (string_fragment) @injection.content)
-`                (string_expression
-`                  (string_fragment) @injection.content)
-`              ]
-`              (#gsub! @injection.language "#%s*([%w%p]+)%s*" "%1")
-`              (#set! injection.combined)
-`            )
-`          '
+`  format_delimiters = {
+`    lua = {
+`      close = "]]",
+`      open = "[["
+`    },
+`    nix = {
+`      close = "'';",
+`      open = "''"
+`    }
 `  },
-`  injected_comment_lines = 1,
+`  format_indent = 2,
+`  format_timeout = 500,
+`  inj_lang_comment_pattern = {
+`    lua = "^%-%-%s*([%w_+%-]+)%s*$",
+`    nix = "^#%s*([%w_+%-]+)%s*$"
+`  },
+`  inj_lang_queries = {
+`    lua = "      (
+`        (comment) @inj_lang
+`        .
+`        (expression_list) @inj_text
+`      )
+`    ",
+`    nix = "      (
+`        (comment) @inj_lang
+`        .
+`        (indented_string_expression) @inj_text
+`      )
+`    "
+`  },
+`  inj_lang_tweaks = {
+`    nix = {
+`      buffer_cursor_offset = {
+`        e_col = 0,
+`        e_row = -1,
+`        s_col = 0,
+`        s_row = 1
+`      },
+`      parse_range_offset = {
+`        e_col = 120,
+`        e_row = -1,
+`        s_col = -120,
+`        s_row = 1
+`      }
+`    }
+`  },
+`  inj_text_modifiers = {
+`    lua = <function 1>,
+`    nix = <function 2>
+`  },
+`  inj_text_restorers = {
+`    lua = <function 3>,
+`    nix = <function 4>
+`  },
 `  lsp_map = {
 `    bash = "bashls",
-`    c = "clangd",
-`    cpp = "clangd",
-`    javascript = "ts_ls",
-`    json = "jsonls",
 `    lua = "lua_ls",
+`    nix = "nixd",
 `    python = "ruff",
-`    rust = "rust_analyzer",
-`    sh = "bashls",
-`    typescript = "ts_ls",
-`    yaml = "yamlls",
-`    zig = "zls"
+`    sh = "bashls"
 `  },
+`  lsp_timeout = 1000,
 `  preserve_indents = true,
 `  register = "z",
 `  win_config = {
@@ -155,22 +190,16 @@ The types module contains all ninjection specific type definitions.
 
 Supported window styles for buffer editor:
 `"cur_win" | "floating" | "v_split" | "h_split"`
-
-
-Modified from `nvim-lspconfig/lua/lspconfig/configs.lua` because I can't
-find a reference to: `vim.api.keyset.create_user_command.command_args`
-
                                                          *Ninjection.Subcommand*
 Class ~
-{Ninjection.Subcommand}
+{NinjectionSubcommand}
 Implemented by `plugin/ninjection.lua` for user commands.
 
 {impl} `(fun())`
 {complete} `(optional)` `(fun(arg_lead: string): string[])`
-
                                                             *Ninjection.CmdOpts*
 Class ~
-{Ninjection.CmdOpts}
+{NinjectionCmdOpts}
 Implemented by `plugin/ninjection.lua` for user commands.
 
 {args} `(string)` - The entire argument string as typed.
@@ -179,10 +208,9 @@ Implemented by `plugin/ninjection.lua` for user commands.
 {line1} `(optional)` `(number)` - Starting line number for optional range.
 {line2} `(optional)` `(number)` - Ending line number for optional range.
 {count} `(optional)` `(number)` - Optional count.
-
-                                                             *Ninjection.Config*
+                                                              *NinjectionConfig*
 Class ~
-{Ninjection.Config}
+{NinjectionConfig}
 Implemented by `ninjection/config.lua` for default and user configs.
 
 {preserve_indents} `(optional)` `(boolean)` - Preserve indents from the parent buffer.
@@ -190,23 +218,16 @@ This option should be used in conjunction with `auto_format` because this
 will re-apply indents that `auto_format` normally removes. If you don't remove
 indents, then enabling this will increas the original indenation.
 
-{auto_format} `(optional)` `(boolean)` - Auto format the new child buffer.
-{format_cmd} `(optional)` `(string)` - Command for `auto_format`.
-{injected_comment_lines} `(optional)` `(integer)` - The offset for comment delimiting
-lines. For example, offsetting 1 line would function with this format:
-
-`# injected_lang
-`''
-`	injected content
-`'';
-
-Offsetting 0 lines would function with this format:
-
-`# injected_lang
-`''injected content
-`more injected content
-`end content'';
-
+{auto_format} `(optional)` `(boolean)` - Auto format the new child buffer: default (true).
+{formatter} `(optional)` `(string|function|nil)` - Ex command string or anonymous function definition
+used by Ninjection for buffer formatting. Will default to LSP formatting if nil.
+{format_indent} `(optional)` `(integer)` - Additional spaces to indent injected text blocks.
+{format_timeout} `(optional)` `(integer)` - Timeout in ms to wait for buffer formatting:
+default (500)
+{format_delimiters} `(table<string, NJDelimiterPair>)` - Delimiter pairs for
+injected language comments.
+{lsp_timeout} `(optional)` `(integer)` - Timeout in ms to wait for LSP to start:
+default (1000)
 {register} `(optional)` `(string)` - Register to use to copy injected content.
 {debug} `(optional)` `(boolean)` - Output debug messages.
 
@@ -219,11 +240,22 @@ Window configuration parameters.
 {inj_lang_queries} `(optional)` `(table<string,string>)` - Contains per-language string
 literals for Treesitter queries to Identify injected content nodes.
 
-{lsp_map} `(optional)` `(table<string,string>)` - LSP associated with the injected
-languages These keys must match the language comment used to identify
-injected languages, and the value must match the LSP configured in your
-lspconfig.
+{inj_lang_comment_pattern} `(optional)` `(table<string,string>)` - Contains pattern to strip
+injected language comment to derive the language. Defaults to # lang style
+comments for Nix.
 
+{inj_text_modifiers} `(optional)` `(table<string, fun(text: string): string, table<string, boolean>>)` - Contains
+per-language functions to modify text returned by the lang query
+
+{inj_text_restorers} `(optional)` `(table<string, fun(text: string, metadata: table<string, boolean>, indents?: NJIndents): string[]>)` - Contains
+per-language functions to restore modified text
+
+{inj_lang_tweaks} `(optional)` `(table<string, NJLangTweak>)` - Contains
+language functions to workaround limitations in Treesitter queries and post-process
+injected content selections.
+
+{lsp_map} `(optional)` `(table<string, string>)` - Maps the injected language filetype
+comment to an LSP configuration name for that filetype.
                                                                        *NJRange*
 Class ~
 {NJRange}
@@ -233,15 +265,39 @@ Store cursor position coordinates.
 {s_col} `(integer)`
 {e_row} `(integer)`
 {e_col} `(integer)`
+                                                               *NJDelimiterPair*
+Class ~
+{NJDelimiterPair}
+Store language specific comment delimiters for injected code.
 
+{open} `(string)`
+{close} `(string)`
+                                                                 *NJCapturePair*
+Class ~
+{NJCapturePair}
+Store a language string and its associated node.
+
+{inj_lang} `(string)` Language tag extracted from inj_lang capture
+{node} `(TSNode)` Node associated with the injected code
+                                                                   *NJLangTweak*
+Class ~
+{NJLangTweak}
+Language specific adjustments for tweaking parsing and buffers.
+
+{parse_range_offset} `(NJRange)`
+{buffer_cursor_offset} `(NJRange)`
                                                                    *NJNodeTable*
 Class ~
 {NJNodeTable}
-Store a Treesitter node and its associated coordinates.
+Store an injected language capture pair, its range, its text, and the
+cursor position.
 
-{node} `(TSNode)`
-{range} `(NJRange)`
-
+{ft} `(string)` Filetype of the buffer containing the injection
+{pair} `(NJCapturePair)` Injected code node and its language tag
+{range} `(NJRange)` Range of the injected code node
+{text} `(string)` Injected text
+{text_meta} `(optional)` `(table<string, boolean>)` Language specific text modififications
+{cursor_pos} `(integer[])` Cursor position during table creation
                                                                      *NJIndents*
 Class ~
 {NJIndents}
@@ -250,50 +306,7 @@ Store indents for a text buffer.
 {t_indent} `(number)`
 {b_indent} `(number)`
 {l_indent} `(number)`
-
-                                                                      *NJParent*
-Store associated child bufnrs.
-Class ~
-{NJParent}
-{children} `(integer[])`
-
-                                                                       *NJChild*
-Class ~
-{NJChild}
-Store associated parent buffer information.
-
-{bufnr} `(integer)`
-{root_dir} `(string)`
-{p_bufnr} `(integer)`
-{p_indents} `(NJIndents)`
-{p_range} `(NJRange)`
-
-                                                                   *NJLspStatus*
-Class ~
-{NJLspStatus}
-Store LSP status and associated client ID.
-
-{status} `(string)` - The LSP startup status. Possible values: `"unmapped"`,
-`"unconfigured"`, `"unavailable"`, `"no-exec"`, `"unsupported"`, `"failed_start"`,
-`"started"`
-
-{client_id} `(integer)` - The client ID of the started LSP, -1 on failure
-
-                                                              *lspconfig.Config*
-Class ~
-{lspconfig.Config} : vim.lsp.ClientConfig
-Annotation for lspconfig from `nvim-lspconfig/lua/lspconfig/configs.lua`
-
-{enabled} `(optional)` `(boolean)`
-{single_file_support} `(optional)` `(boolean)`
-{silent} `(optional)` `(boolean)`
-{filetypes} `(optional)` `(string[])`
-{filetype} `(optional)` `(string)`
-{on_new_config} `(optional)` `(fun(new_config: lspconfig.Config?, new_root_dir: string))`
-{autostart} `(optional)` `(boolean)`
-{package} _`(on_attach?)` fun(client: vim.lsp.Client, bufnr: integer)
-{root_dir} `(optional)` `(string|fun(filename: string, bufnr: number))`
-{commands} `(optional)` `(table<string, ({[1]:string|vim.api.keyset.user_command})>)`
+{tab_indent} `(number)`
 
 ==============================================================================
 "ninjection.health"
@@ -307,43 +320,23 @@ and check for required dependencies.
 	current configuration.
 
 Parameters ~
-{cfg} `(optional)` `(Ninjection.Config)`
+{cfg} `(optional)` `(NinjectionConfig)`
 
 Return ~
-`(boolean)` is_valid, string? err
+`(boolean)` is_valid, string[]? err
+                                                     *ninjection.health.check()*
+
+checkhealth function for ninjection: checks requirements and
+validates configuration.
 
 
 ==============================================================================
 "ninjection.parse"
 
 The parse module contains all treesitter related functions for ninjection.
-
 Type ~
-`(Ninjection.Config)`
-                                                  *ninjection.parse.qet_query()*
-
-Retrieves a parsed query from Treesitter given a language and pattern.
-
-Parameters ~
-{lang} `(optional)` `(string?)` - Default: `"nix"` - language grammar to parse with.
-
-Return ~
-`(vim.treesitter.Query)` `(optional)` parsed_query
-parsed Treesitter Query object
-
-                                                   *ninjection.parse.get_root()*
-
-Parses the root tree for a language in a buffer.
-
-Parameters ~
-{bufnr} `(integer)` - Handle for buffer to parse.
-{lang} `(optional)` `(string)`  - Default: `"nix"` - language to parse with.
-
-Return ~
-`(TSNode)` `(optional)` root
-Root node of the TSTree for the language.
-
-                                             *ninjection.parse.get_node_table()*
+`(NinjectionConfig)`
+                                              *ninjection.parse.get_node_info()*
 
 Identifies the injected language node at the current cursor position
 with start and ending coordinates.
@@ -352,22 +345,14 @@ Parameters ~
 {bufnr} `(integer)` - The buffer handle to query in.
 
 Return ~
-`(NJNodeTable)` `(optional)` table, string? err
+`(NJNodeTable)` `(optional)` injection, string? err
 Returns a table containing:
- - node: `TSNode` - the Treesitter node element (see :h TSNode).
- - range: `NJRange` - row/col ranges for the node.
- NOTE: Coordinates may not match the actual text locations
- (see: `ninjection.parse.get_visual_range()` for this).
-                                               *ninjection.parse.get_inj_lang()*
-
-Parse an injected content node for an associated language comment.
-
-Parameters ~
-{bufnr} `(integer)` - Handle for the buffer to query in.
-injections in.
-
-Return ~
-`(string)` `(optional)` inj_lang , string? err - Injected language identified.
+ - ft: `string` - The filetype of the buffer containing the injection
+ - lang: `string` - the injected language (not the parent filetype)
+ - node: `TSNode` - the Treesitter node element (see :h TSNode)
+ - range: `NJRange` - row/col ranges for the node
+ - text: `string` - the injected language text (modified by any applicable
+ filetype functions)
 
                                            *ninjection.parse.get_visual_range()*
 
@@ -397,6 +382,16 @@ Return ~
 The buffer module contains helper functions utilized by the main ninjection
 module for creating and editing injected text in buffers.
 
+Type ~
+`(NinjectionConfig)`
+                                              *ninjection.buffer.get_root_dir()*
+
+Provides a root directory for attaching an LSP to a buffer.
+Tries to retrieve workspace folders first, then falls back to cwd.
+
+Return ~
+`(string)` `(optional)` root_dir, string? err
+Root directory for new buffer.
                                                *ninjection.buffer.get_indents()*
 
 Finds whitespace indents (top, bottom, left) in the provided buffer.
@@ -425,43 +420,18 @@ Return ~
 `(string[])` `(optional)` restored_lines, string? err
 Lines with the indents restored.
 
-                                              *ninjection.buffer.create_child()*
+                                             *ninjection.buffer.strip_indents()*
 
-Creates a child buffer to edit injected language text.
-
-Parameters ~
-{p_bufnr} `(integer)` - Buffer handle for parent buffer.
-{p_name} `(string)` - Name for parent buffer.
-{p_range} `(NJRange)` - Text range for the injected text.
-{root_dir} `(string)` - Root directory for project, or cwd.
-{text} `(string)` - Text to populate the child buffer with.
-{lang} `(string)` - Language to configure buffer for.
-
-Return ~
-`({ bufnr: integer?, win: integer?, indents: NJIndents })` c_table, string? err
-                                             *ninjection.buffer.set_child_cur()*
-
-Sets the child cursor to the same relative position as in the parent window.
+Removes the common left indentation (`l_indent`) from each non-blank line.
 
 Parameters ~
-{c_win} `(integer)` Handle for child window to set the cursor in.
-{p_cursor} `(integer[])` Parent cursor pos.
-{s_row} `(integer)` Starting row from the parent to offset the child cursor by.
-{indents} `(NJIndents?)` Indents to calculate additional offsets with.
+{text} `(string|table<integer,string>)` The text to strip indents from.
+Can be either a string (with newline separators) or a table of lines.
+{indents} `(NJIndents)` Table with indent values for t, b, l
 
 Return ~
-`(string)` `(optional)` err
-
-                                                 *ninjection.buffer.start_lsp()*
-
-Starts an appropriate LSP for the provided language.
-
-Parameters ~
-{lang} `(string)` - The filetype of the injected language (e.g., "lua", "python").
-{root_dir} `(string)` - The root directory for the buffer.
-
-Return ~
-`(NJLspStatus)` `(optional)` result, string? err - The LSP status.
+`(string[])` `(optional)` stripped_lines, string? err
+Lines with the common left indent removed.
 
 
  vim:tw=78:ts=8:noet:ft=help:norl:
