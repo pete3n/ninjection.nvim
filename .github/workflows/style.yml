@@ -11,12 +11,12 @@ jobs:
     name: stylua
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - run: date +%F > todays-date
 
       # Cache Stylua
       - name: Restore cache for Stylua
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: .ci/stylua
           key: stylua-2.5.2-${{ hashFiles('todays-date') }}
