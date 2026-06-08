@@ -15,11 +15,11 @@ on:
       lua_ls_version:
         description: "Lua LS version"
         required: true
-        default: "3.13.0"
+        default: "3.18.1"
       neovim_versions:
         description: "Neovim versions"
         required: true
-        default: '["0.10.2"]'
+        default: '["0.12.2"]'
 
 jobs:
   lua-language-server:
@@ -51,7 +51,7 @@ jobs:
         run: |
           test -d .ci/neovim || {
             mkdir -p .ci/neovim
-            curl -sL "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"
+            curl -sL "https://github.com/neovim/neovim/releases/download/v${{ matrix.rev }}/nvim-linux-x86_64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/.ci/neovim"
           }
           test -d .ci/lua-ls || {
             mkdir -p .ci/lua-ls
