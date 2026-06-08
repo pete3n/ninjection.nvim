@@ -157,7 +157,7 @@
               	mkdir -p ~/.config
               	rm -rf ~/.local/state/nvim-dev/swap
               	mkdir -p ~/.local/state/nvim-dev/swap
-              	ln -Tfns "$PWD/nvim" ~/.config/nvim-dev
+              	ln -Tfns "$PWD/slop-env/nvim" ~/.config/nvim-dev
 
               	export NVIM_PACKPATH="${nvimPackDir}"
               	export NVIM_RTP="${nvimPackDir}"
@@ -210,6 +210,25 @@
               			setpriv --ambient-caps=-sys_nice -- jailed-claude "$@"
               	}
               	alias jail-shell="setpriv --ambient-caps=-sys_nice -- jailed-shell"
+            '';
+        };
+
+        # Headless shell for CI / the Plenary e2e suite. Same Neovim toolchain
+        # as devShells.default (nvim-dev + packpath + the ~/.config/nvim-dev
+        # symlink that the test child loads init.lua from), but without the
+        # jail/claude/sandbox tooling or interactive setup checks. Deliberately
+        # references none of jail/claude-pkg/sandboxed so building it does not
+        # force the jail-nix / llm-agents / nix-slop-dev inputs.
+        devShells.test = pkgs.mkShell {
+          name = "nvim-test-devShell";
+          buildInputs = projectPkgs;
+          shellHook = # sh
+            ''
+              	mkdir -p ~/.config
+              	ln -Tfns "$PWD/slop-env/nvim" ~/.config/nvim-dev
+              	export NVIM_PACKPATH="${nvimPackDir}"
+              	export NVIM_RTP="${nvimPackDir}"
+              	export VIMRUNTIME="${nvimDev}/share/nvim/runtime"
             '';
         };
       }
