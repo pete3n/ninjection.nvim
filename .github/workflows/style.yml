@@ -19,13 +19,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .ci/stylua
-          key: stylua-${{ hashFiles('todays-date') }}
+          key: stylua-2.5.2-${{ hashFiles('todays-date') }}
 
       - name: Prepare Stylua
         run: |
           test -d .ci/stylua || {
             mkdir -p .ci/stylua
-            curl -sL "https://github.com/JohnnyMorganz/StyLua/releases/download/v2.0.2/stylua-linux-x86_64.zip" -o stylua.zip
+            curl -sL "https://github.com/JohnnyMorganz/StyLua/releases/download/v2.5.2/stylua-linux-x86_64.zip" -o stylua.zip
             unzip stylua.zip -d .ci/stylua
             chmod +x .ci/stylua/stylua
           }
