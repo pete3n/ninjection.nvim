@@ -298,10 +298,7 @@ local function _validate_formatter(formatter)
 			if not cmd_ok then
 				table.insert(
 					errors,
-					"Invalid formatter user defined command: \n'"
-						.. formatter
-						.. "' is not a valid Ex command: \n"
-						.. cmd_err
+					"Invalid formatter user defined command: \n'" .. formatter .. "' is not a valid Ex command: \n" .. cmd_err
 				)
 				return false, errors
 			end

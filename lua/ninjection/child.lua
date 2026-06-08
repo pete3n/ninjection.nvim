@@ -254,10 +254,7 @@ function NJChild:init_buf(opts)
 				---@cast dedented string[]
 				local dedent_ok = pcall(vim.api.nvim_buf_set_lines, c_bufnr, 0, -1, false, dedented)
 				if not dedent_ok and cfg.debug then
-					vim.notify(
-						"ninjection.child:init_buf() warning: Failed to set dedented buffer lines.",
-						vim.log.levels.WARN
-					)
+					vim.notify("ninjection.child:init_buf() warning: Failed to set dedented buffer lines.", vim.log.levels.WARN)
 				end
 			end
 		end

@@ -446,8 +446,7 @@ M.get_visual_range = function(node, bufnr)
 	if not raw_lines or #raw_lines == 0 then
 		if cfg.debug then
 			vim.notify(
-				"ninjection.parse.get_visual_range() warning: Nothing "
-					.. "returned from calling vim.api.nvim_buf_get_lines()",
+				"ninjection.parse.get_visual_range() warning: Nothing " .. "returned from calling vim.api.nvim_buf_get_lines()",
 				vim.log.levels.WARN
 			)
 		end
@@ -466,8 +465,7 @@ M.get_visual_range = function(node, bufnr)
 	if not visual_text then
 		if cfg.debug then
 			vim.notify(
-				"ninjection.parse.get_visual_range() warning: No text "
-					.. "returned from vim.treesitter.get_node_text()",
+				"ninjection.parse.get_visual_range() warning: No text " .. "returned from vim.treesitter.get_node_text()",
 				vim.log.levels.WARN
 			)
 		end
@@ -480,20 +478,14 @@ M.get_visual_range = function(node, bufnr)
 	end)
 	if not ok then
 		err = tostring(raw_output)
-		vim.notify(
-			"ninjection.parse.get_visual_range(): Error calling " .. "vim.split(): " .. err,
-			vim.log.levels.ERROR
-		)
+		vim.notify("ninjection.parse.get_visual_range(): Error calling " .. "vim.split(): " .. err, vim.log.levels.ERROR)
 		return nil, err
 	end
 	---@type string[]|nil
 	local visual_lines = raw_output
 	if not visual_lines or #visual_lines == 0 then
 		if cfg.debug then
-			vim.notify(
-				"ninjection.parse.get_visual_range(): No strings returned" .. "from vim.split()",
-				vim.log.levels.WARN
-			)
+			vim.notify("ninjection.parse.get_visual_range(): No strings returned" .. "from vim.split()", vim.log.levels.WARN)
 		end
 		return nil
 	end
