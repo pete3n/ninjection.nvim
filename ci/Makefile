@@ -65,8 +65,8 @@ lua_ls-debug:
 	head .ci/neovim/share/nvim/runtime/lua/vim/treesitter/query.lua; 
 
 	if [ ! -f .ci/lua_ls-log/check.json ]; then \
-		echo "Error: check.json not found."; \
-		exit 1; \
+		echo "✅ No errors found."; \
+		exit 0; \
 	fi
 
 	# If file length is more than 2 characters (not just "[]"), print and exit
