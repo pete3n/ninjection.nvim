@@ -1,7 +1,7 @@
-# Split placeholder transform (host-keyed) from header render (injected-keyed)
+# Split placeholder transform (parent-keyed) from header render (injected-keyed)
 
 Making injected code editable spans two independent language axes: rewriting
-host interpolations into editable placeholders is governed by the **parent
+parent interpolations into editable placeholders is governed by the **parent
 buffer language's** rules (e.g. Nix decides that `''${x}` is a literal and
 `${pkgs.y}` is an interpolation), while building the language header — shebang,
 comment delimiter, assignment operator, default value — is governed by the

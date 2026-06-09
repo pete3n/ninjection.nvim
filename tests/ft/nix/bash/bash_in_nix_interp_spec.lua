@@ -17,7 +17,7 @@ describe("ninjection interpreted placeholder round-trip #e2e #bash-nix #interp",
 		vim.cmd("bdelete!")
 	end)
 
-	it("declares an interpreted placeholder with a # <- host arrow in the block", function()
+	it("declares an interpreted placeholder with a # <- parent arrow in the block", function()
 		vim.cmd("edit tests/ft/nix/bash/bash_interp.nix")
 		vim.api.nvim_win_set_cursor(0, { 5, 10 })
 

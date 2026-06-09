@@ -15,7 +15,7 @@ exactly where the user fixes it.
 
 ## Consequences
 
-- Substituting the host's *real* evaluated value into placeholders (real-time
+- Substituting the parent's *real* evaluated value into placeholders (real-time
   interpolation in the child buffer) is out of scope for now; placeholders are
   declared with the injected language's default value (`""`, `nil`).
 - The round-trip's correctness obligation is limited to reproducing the user's
@@ -26,5 +26,5 @@ exactly where the user fixes it.
   which already emitted invalid shell) is de-escaped but left undeclared — the
   injected LSP surfaces the pre-existing error instead of ninjection hiding it
   behind a rename. Consequently only interpreted placeholders carry a ledger
-  arrow, and the reverse rule is: arrow → bare `${host}`; otherwise (bare-in-block
-  or absent) → escape `''${name}`.
+  arrow, and the reverse rule is: arrow → bare `${p_var}`; otherwise
+  (bare-in-block or absent) → escape `''${c_var}`.

@@ -136,13 +136,13 @@ function ninjection.edit()
 	end
 	---@cast injection NJNodeTable
 
-	-- Transform host placeholders for editing (de-escape ''${x} -> ${x}, rename
+	-- Transform parent placeholders for editing (de-escape ''${x} -> ${x}, rename
 	-- interpolations ${pkgs.x} -> ${pkgs_0x2E_x}) using Treesitter before any
 	-- string-level modifiers run, so the injected language sees valid syntax. The
 	-- ledger records the interpreted placeholders for the header block.
 	-- See docs/adr/0001-0002.
 	local placeholder = require("ninjection.placeholder")
-	---@type { name: string, host: string }[]
+	---@type { c_var: string, p_var: string }[]
 	local interp_ledger
 	injection.text, interp_ledger = placeholder.forward(injection.pair.node, cur_bufnr, injection.ft)
 
@@ -339,7 +339,7 @@ function ninjection.replace()
 	end
 	---@cast get_lines_return string[]
 
-	-- Re-escape injected-language ${x} expansions back to host literals (''${x})
+	-- Re-escape injected-language ${x} expansions back to parent literals (''${x})
 	-- using Treesitter, before indent restoration so node coordinates map to the
 	-- raw child lines. See docs/adr/0001-0002.
 	---@type string[]

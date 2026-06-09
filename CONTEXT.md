@@ -2,21 +2,22 @@
 
 Ninjection is a Treesitter plugin for Neovim that extends Treesitter's
 introspection into injected languages: it makes injected-language code blocks
-inside a host file (e.g. shell or Lua embedded in Nix) editable as first-class
+inside a parent file (e.g. shell or Lua embedded in Nix) editable as first-class
 buffers — with the injected language's LSP, completion, and formatting — then
-writes the edits back into the host file. Structural understanding of code is
+writes the edits back into the parent file. Structural understanding of code is
 always Treesitter's job, never hand-rolled string parsing.
 
 ## Language
 
 **Injection**:
-A region of a host file written in a different language, marked for Treesitter to
-parse as that language. The unit ninjection extracts, edits, and writes back.
+A region of a parent file written in a different language, marked for Treesitter
+to parse as that language. The unit ninjection extracts, edits, and writes back.
 _Avoid_: snippet, embed, fragment
 
 **Parent buffer**:
-The host-language buffer that contains injections (e.g. the Nix file). Modeled as
-`NJParent`.
+The buffer whose language contains the injections (e.g. the Nix file). Modeled as
+`NJParent`. The model extends to grandchildren (a child buffer may itself open a
+grandchild).
 _Avoid_: host buffer, source buffer
 
 **Child buffer**:
@@ -30,9 +31,9 @@ Distinct from the parent buffer language.
 
 **Language header**:
 Ephemeral scaffolding prepended to a child buffer on edit and stripped on
-write-back. Supplies what the injected language's LSP needs but the host
-synthesizes at build time (e.g. a shell shebang), and carries a delimited block
-recording the placeholder substitutions to reverse.
+write-back. Supplies what the injected language's LSP needs but the parent
+(e.g. Nix) synthesizes at build time (e.g. a shell shebang), and carries a
+delimited block recording the placeholder substitutions to reverse.
 
 **Ninjection block**:
 The delimited, comment-fenced region inside a language header holding real
@@ -40,12 +41,12 @@ variable declarations (initialized to the injected language's default value,
 e.g. `""` for shell, `nil` for Lua) for the injected placeholders. Satisfies the
 injected language's LSP (no undefined-variable diagnostics) and serves as the
 round-trip ledger of which placeholders to restore — including rename mappings
-for placeholders whose host name is invalid in the injected language. Delimited
+for placeholders whose parent name is invalid in the injected language. Delimited
 in the injected language's comment syntax; tagged with the parent buffer
 language.
 
 **Rename mapping**:
-A ledger entry recording that an *interpreted* placeholder's host name was
+A ledger entry recording that an *interpreted* placeholder's parent name was
 rewritten to an injected-language-safe identifier for editing (e.g. Nix
 `pkgs.gnugrep` → `pkgs_0x2E_gnugrep`, since the dot is invalid in shell — each
 invalid character is replaced in place by `_0x<HEX>_`).
@@ -53,7 +54,7 @@ Reversed on write-back. Only interpreted placeholders are renamed; literals neve
 are.
 
 **Literal placeholder**:
-A host interpolation that denotes literal text rather than evaluation — in Nix,
+A parent interpolation that denotes literal text rather than evaluation — in Nix,
 `''${var}` produces the literal `${var}`. Ninjection de-escapes it to `${var}`
 for editing and re-escapes on write-back. Literals are never renamed: the token
 is its own injected-language name, so a literal whose name is invalid in the
@@ -62,7 +63,7 @@ pre-existing error rather than hiding it.
 _Avoid_: escaped variable
 
 **Interpreted placeholder**:
-A host interpolation the host evaluates — in Nix, `${pkgs.hello}`. Ninjection
+A parent interpolation the parent evaluates — in Nix, `${pkgs.hello}`. Ninjection
 rewrites it to an injected-language-safe identifier (see Rename mapping) for
-editing and restores it on write-back. Substituting the host's *real* evaluated
+editing and restores it on write-back. Substituting the parent's *real* evaluated
 value (rather than a default) is a future enhancement.
