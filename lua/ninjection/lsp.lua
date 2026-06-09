@@ -87,9 +87,12 @@ M.NJLspStatus = NJLspStatus
 --- Parameters ~
 ---@param lang string - The filetype of the injected language (e.g., "lua", "python").
 ---@param bufnr integer - The bufnr handle to attach the LSP to.
+---@param root_dir string? - Concrete project root for the child. Used to override a
+--- dynamic (function-form) `root_dir` in the resolved config, which `vim.lsp.start()`
+--- does not resolve. Falls back to the cwd when omitted.
 ---
 ---@return NJLspStatus? result, string? err - The LSP status.
-function M.start_lsp(lang, bufnr)
+function M.start_lsp(lang, bufnr, root_dir)
 	-- The injected language must be mapped to an LSP
 	---@type string?
 	local lang_lsp = cfg.lsp_map[lang]
@@ -135,8 +138,25 @@ function M.start_lsp(lang, bufnr)
 		return NJLspStatus.new(LspStatusMsg.NO_EXEC, nil), err
 	end
 
+	-- `vim.lsp.config[name]` is a `vim.lsp.Config`, which may carry a dynamic
+	-- (function-form) `root_dir` resolved only by the `vim.lsp.enable` autostart
+	-- framework. `vim.lsp.start()` does NOT resolve it; it would hand the function
+	-- straight to the client, leaving `client.root_dir` a function. That both hangs
+	-- the synchronous start and crashes downstream plugins (e.g. lazydev) that call
+	-- `vim.fs.normalize(client.root_dir)`. Our child is a synthetic scratch buffer
+	-- with no real file, so marker-based resolution is meaningless anyway; pin a
+	-- concrete string root instead. Deep-copy first so the shared global config is
+	-- left untouched.
+	---@type vim.lsp.ClientConfig
+	local client_cfg = vim.deepcopy(lsp_cfg)
+	if type(root_dir) == "string" and root_dir ~= "" then
+		client_cfg.root_dir = root_dir
+	elseif type(client_cfg.root_dir) ~= "string" then
+		client_cfg.root_dir = vim.fn.getcwd()
+	end
+
 	---@type integer?
-	local client_id = vim.lsp.start(lsp_cfg, { bufnr = bufnr })
+	local client_id = vim.lsp.start(client_cfg, { bufnr = bufnr })
 	if not client_id then
 		---@type string
 		local err = "ninjection.lsp.start_lsp() warning: The LSP, "

@@ -246,7 +246,7 @@ function ninjection.edit()
 	})
 
 	---@type NJLspStatus?, string?
-	local c_lsp, lsp_err = lsp.start_lsp(injection.pair.inj_lang, nj_child.c_bufnr)
+	local c_lsp, lsp_err = lsp.start_lsp(injection.pair.inj_lang, nj_child.c_bufnr, nj_child.c_root_dir)
 	if not c_lsp or c_lsp.status == lsp.LspStatusMsg then
 		---@type string
 		local err = "ninjection.edit() warning: starting LSP failed ... " .. tostring(lsp_err)
@@ -556,7 +556,7 @@ function ninjection.format()
 	nj_parent:add_child(nj_child.c_bufnr)
 
 	---@type NJLspStatus?, string?
-	local lsp_status, lsp_err = lsp.start_lsp(injection.pair.inj_lang, nj_child.c_bufnr)
+	local lsp_status, lsp_err = lsp.start_lsp(injection.pair.inj_lang, nj_child.c_bufnr, nj_child.c_root_dir)
 	if not lsp_status then
 		-- start_lsp should always return a status
 		return false, tostring(lsp_err)
