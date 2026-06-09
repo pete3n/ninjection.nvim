@@ -246,7 +246,9 @@ function M.collect_placeholders(bufnr)
 	local names = {}
 	for _, node in query:iter_captures(root, bufnr, 0, -1) do
 		local name = vim.treesitter.get_node_text(node, bufnr)
-		if not seen[name] then
+		-- Only declare valid identifiers. Shell positional (`${1}`) and special
+		-- parameters are intrinsically defined and are not declarable assignments.
+		if not seen[name] and name:match("^[%a_][%w_]*$") then
 			seen[name] = true
 			names[#names + 1] = name
 		end
