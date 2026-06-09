@@ -46,8 +46,8 @@ local FENCE_ARROW = " <- "
 ---@param name string
 ---@return string
 local function fix_name(name)
-	return (name:gsub("[^%w_]", function(c)
-		return string.format("_0x%02X_", string.byte(c))
+	return (name:gsub("[^%w_]", function(char)
+		return string.format("_0x%02X_", string.byte(char))
 	end))
 end
 
@@ -181,9 +181,9 @@ function M.reverse(bufnr, parent_lang)
 		-- back to a leading escape at the start position.
 		---@type string?
 		local c_var
-		for c in node:iter_children() do
-			if c:type() == "variable_name" then
-				c_var = vim.treesitter.get_node_text(c, bufnr)
+		for child in node:iter_children() do
+			if child:type() == "variable_name" then
+				c_var = vim.treesitter.get_node_text(child, bufnr)
 				break
 			end
 		end
@@ -191,24 +191,24 @@ function M.reverse(bufnr, parent_lang)
 	end
 
 	-- Apply from last to first so earlier edits don't shift later coordinates.
-	table.sort(edits, function(a, b)
-		if a.s_row ~= b.s_row then
-			return a.s_row > b.s_row
+	table.sort(edits, function(edit_a, edit_b)
+		if edit_a.s_row ~= edit_b.s_row then
+			return edit_a.s_row > edit_b.s_row
 		end
-		return a.s_col > b.s_col
+		return edit_a.s_col > edit_b.s_col
 	end)
 
-	for _, e in ipairs(edits) do
-		local line = lines[e.s_row + 1]
-		if e.c_var and ledger[e.c_var] and e.e_col then
+	for _, edit in ipairs(edits) do
+		local line = lines[edit.s_row + 1]
+		if edit.c_var and ledger[edit.c_var] and edit.e_col then
 			-- Interpreted: replace ${c_var} with the bare parent interpolation.
-			local p_var_expr = "${" .. ledger[e.c_var] .. "}"
-			line = line:sub(1, e.s_col) .. p_var_expr .. line:sub(e.e_col + 1)
+			local p_var_expr = "${" .. ledger[edit.c_var] .. "}"
+			line = line:sub(1, edit.s_col) .. p_var_expr .. line:sub(edit.e_col + 1)
 		else
 			-- Literal (or unknown): re-escape with a leading ''.
-			line = line:sub(1, e.s_col) .. "''" .. line:sub(e.s_col + 1)
+			line = line:sub(1, edit.s_col) .. "''" .. line:sub(edit.s_col + 1)
 		end
-		lines[e.s_row + 1] = line
+		lines[edit.s_row + 1] = line
 	end
 
 	return lines
@@ -311,9 +311,9 @@ function M.strip_header(lines, inj_lang)
 	end
 
 	local close = desc.comment .. FENCE_CLOSE
-	for i, line in ipairs(lines) do
+	for index, line in ipairs(lines) do
 		if line == close then
-			return vim.list_slice(lines, i + 1)
+			return vim.list_slice(lines, index + 1)
 		end
 	end
 
