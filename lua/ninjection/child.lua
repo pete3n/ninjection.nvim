@@ -18,6 +18,7 @@ local cfg = setmetatable({}, {
 ---@field s_row integer -- Starting row to calculate offset from
 ---@field indents? NJIndents -- Optional indent preservation object
 ---@field text_meta? table<string, boolean> -- Metadata for text modifications
+---@field header_lines? integer -- Language-header lines prepended above the body
 
 ---@tag NJChild
 ---@class NJChild
@@ -462,6 +463,10 @@ function NJChild:set_cursor(opts)
 	if cfg.preserve_indents and opts.indents then
 		relative_col = math.max(0, relative_col - opts.indents.l_indent)
 	end
+
+	-- The language header is prepended above the body, so shift the cursor row
+	-- down by the header height to land on the matching body line.
+	relative_row = relative_row + (opts.header_lines or 0)
 
 	---@type integer[]
 	local offset_cur = { relative_row, relative_col }

@@ -216,11 +216,21 @@ function ninjection.edit()
 		return false, add_child_err
 	end
 
+	-- Prepend the injected-language header (ephemeral scaffolding for the child's
+	-- tooling; stripped on write-back). Added after init_buf's dedent so the
+	-- header never participates in indent detection. See docs/adr/0001.
+	---@type string[]
+	local header = require("ninjection.placeholder").render_header(nj_child.c_ft)
+	if #header > 0 then
+		vim.api.nvim_buf_set_lines(nj_child.c_bufnr, 0, 0, false, header)
+	end
+
 	nj_child:set_cursor({
 		p_cursor = injection.cursor_pos,
 		s_row = (injection.range.s_row + cur_row_offset),
 		indents = cfg.preserve_indents and nj_child.p_indents or nil,
 		text_meta = injection.text_meta,
+		header_lines = #header,
 	})
 
 	---@type NJLspStatus?, string?
@@ -322,6 +332,10 @@ function ninjection.replace()
 	-- raw child lines. See docs/adr/0001-0002.
 	---@type string[]
 	local rep_lines = require("ninjection.placeholder").reverse(0, nj_child.p_ft)
+
+	-- Strip the ephemeral language header (shebang/block) prepended on edit, so it
+	-- never reaches the parent buffer. See docs/adr/0001.
+	rep_lines = require("ninjection.placeholder").strip_header(rep_lines, nj_child.c_ft)
 
 	if cfg.preserve_indents then
 		---@type string[]?, string?

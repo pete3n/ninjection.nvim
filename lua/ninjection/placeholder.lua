@@ -108,4 +108,52 @@ function M.reverse(bufnr, host_ft)
 	return lines
 end
 
+-- Language header (injected-keyed) ----------------------------------------
+-- The header is ephemeral scaffolding prepended to the child buffer for the
+-- injected language's tooling and stripped on write-back. Injected-keyed per
+-- ADR-0001; declarative descriptor table for now. Currently only the shebang;
+-- the fenced ninjection block of declarations lands in a later slice.
+
+---@type table<string, { shebang: string }>
+local HEADERS = {
+	bash = { shebang = "#!/usr/bin/env bash" },
+	sh = { shebang = "#!/usr/bin/env sh" },
+}
+
+---@brief
+--- Render the language-header lines for an injected language. Returns an empty
+--- list for languages without a descriptor (the round-trip is then header-less).
+---@param inj_lang string The injected (child) language.
+---@return string[] header The header lines, top to bottom.
+function M.render_header(inj_lang)
+	local desc = HEADERS[inj_lang]
+	if not desc then
+		return {}
+	end
+	return { desc.shebang }
+end
+
+---@brief
+--- Strip a previously-rendered language header from child lines on write-back.
+--- Only removes the leading lines if they still match the rendered header, so a
+--- buffer whose header was altered or removed is written back unchanged rather
+--- than corrupted.
+---@param lines string[] The child lines.
+---@param inj_lang string The injected (child) language.
+---@return string[] lines The lines with the matching header removed.
+function M.strip_header(lines, inj_lang)
+	local header = M.render_header(inj_lang)
+	if #header == 0 then
+		return lines
+	end
+
+	for i, h in ipairs(header) do
+		if lines[i] ~= h then
+			return lines
+		end
+	end
+
+	return vim.list_slice(lines, #header + 1)
+end
+
 return M
