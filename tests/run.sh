@@ -12,7 +12,7 @@
 #
 # Usage:
 #   tests/run.sh              # run all groups
-#   tests/run.sh health       # health | nix-lua | lua-nix
+#   tests/run.sh health       # health | nix-lua | nix-bash | lua-nix
 #   tests/run.sh tests/ft/... # an explicit directory or spec path
 set -uo pipefail
 
@@ -24,6 +24,7 @@ NVIM_BIN="${NVIM_BIN:-nvim-dev}"
 TEST_GROUPS=(
 	"tests/health"
 	"tests/ft/nix/lua"
+	"tests/ft/nix/bash"
 	"tests/ft/lua/nix"
 )
 
@@ -31,6 +32,7 @@ if [ "$#" -gt 0 ]; then
 	case "$1" in
 		health) TEST_GROUPS=("tests/health") ;;
 		nix-lua) TEST_GROUPS=("tests/ft/nix/lua") ;;
+		nix-bash) TEST_GROUPS=("tests/ft/nix/bash") ;;
 		lua-nix) TEST_GROUPS=("tests/ft/lua/nix") ;;
 		*) TEST_GROUPS=("$1") ;;
 	esac

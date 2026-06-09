@@ -58,6 +58,24 @@ jobs:
       - name: Run nix-lua tests
         run: docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/nix/lua" -c "qa"
 
+  nix-bash-tests:
+    needs: build-image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ninjection-test-image
+          path: .
+
+      - name: Load Docker image
+        run: docker load < ninjection-test.tar
+
+      - name: Run nix-bash tests
+        run: docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/nix/bash" -c "qa"
+
   lua-nix-tests:
     needs: build-image
     runs-on: ubuntu-22.04
