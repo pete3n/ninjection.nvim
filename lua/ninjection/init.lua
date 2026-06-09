@@ -136,6 +136,11 @@ function ninjection.edit()
 	end
 	---@cast injection NJNodeTable
 
+	-- De-escape host literal placeholders (e.g. Nix ''${x} -> ${x}) using
+	-- Treesitter before any string-level modifiers run, so the injected language
+	-- sees valid syntax. See docs/adr/0001-0002.
+	injection.text = require("ninjection.placeholder").forward(injection.pair.node, cur_bufnr, injection.ft)
+
 	-- Apply filetype specific text modification functions
 	---@type integer
 	local cur_row_offset = 0
@@ -311,8 +316,12 @@ function ninjection.replace()
 		return false, err
 	end
 	---@cast get_lines_return string[]
+
+	-- Re-escape injected-language ${x} expansions back to host literals (''${x})
+	-- using Treesitter, before indent restoration so node coordinates map to the
+	-- raw child lines. See docs/adr/0001-0002.
 	---@type string[]
-	local rep_lines = get_lines_return
+	local rep_lines = require("ninjection.placeholder").reverse(0, nj_child.p_ft)
 
 	if cfg.preserve_indents then
 		---@type string[]?, string?
