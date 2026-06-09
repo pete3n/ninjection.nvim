@@ -11,7 +11,7 @@ describe("ninjection interpreted placeholder round-trip #e2e #bash-nix #interp",
 		local child_buf = vim.api.nvim_get_current_buf()
 		local text = table.concat(vim.api.nvim_buf_get_lines(child_buf, 0, -1, false), "\n")
 
-		assert.is_truthy(text:find("${pkgs_0x2Ehello}", 1, true), "child body should contain the renamed id")
+		assert.is_truthy(text:find("${pkgs_0x2E_hello}", 1, true), "child body should contain the renamed id")
 		assert.is_nil(text:find("${pkgs.hello}", 1, true), "child should not contain the raw Nix interpolation")
 
 		vim.cmd("bdelete!")
@@ -28,7 +28,7 @@ describe("ninjection interpreted placeholder round-trip #e2e #bash-nix #interp",
 		assert.are.same({
 			"#!/usr/bin/env bash",
 			"# >>> ninjection:nix",
-			'pkgs_0x2Ehello="" # <- pkgs.hello',
+			'pkgs_0x2E_hello="" # <- pkgs.hello',
 			"# <<< ninjection",
 		}, head)
 

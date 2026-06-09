@@ -14,7 +14,7 @@ describe("ninjection mixed literal + interpreted round-trip #e2e #bash-nix #mixe
 		assert.are.same({
 			"#!/usr/bin/env bash",
 			"# >>> ninjection:nix",
-			'pkgs_0x2Ehello="" # <- pkgs.hello',
+			'pkgs_0x2E_hello="" # <- pkgs.hello',
 			'HOME=""',
 			"# <<< ninjection",
 		}, head)

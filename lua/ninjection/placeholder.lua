@@ -39,13 +39,15 @@ local FENCE_ARROW = " <- "
 
 ---@brief
 --- Rewrite a host name into an injected-language-safe identifier by replacing
---- each character invalid in an identifier with `_0x<HEX>` in place (ADR-0003's
---- rename encoding: stateless, self-documenting, position-preserving).
+--- each character invalid in an identifier with `_0x<HEX>_` in place (ADR-0003's
+--- rename encoding: stateless, self-documenting, position-preserving). The
+--- trailing underscore keeps the marker legible when a name character follows
+--- (e.g. `pkgs.Extra` -> `pkgs_0x2E_Extra`, not `pkgs_0x2EExtra`).
 ---@param name string
 ---@return string
 local function safe_id(name)
 	return (name:gsub("[^%w_]", function(c)
-		return string.format("_0x%02X", string.byte(c))
+		return string.format("_0x%02X_", string.byte(c))
 	end))
 end
 
