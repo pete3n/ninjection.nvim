@@ -13,3 +13,6 @@ Follow-up:
       inert and accidentally load-bearing (see docs/adr/0001 notes / memory)
 - [ ] Real value interpolation for interpreted placeholders (default `""`/`nil` today)
 - [ ] Generalise beyond a Nix host / bash+sh injected languages
+- [ ] Foldable ninjection block: wrap declarations in `{ ... }` with indentation
+      so Neovim can fold/collapse a large header, e.g.
+      `# >>> ninjection:nix` / `{` / `  var1=""` / `  ...` / `}` / `# <<< ninjection`
