@@ -98,6 +98,7 @@
         projectPkgs = with pkgs; [
           lua-language-server
           nixd
+          ruff
           stylua
           luajitPackages.luacheck
           luajitPackages.busted
