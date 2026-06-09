@@ -20,29 +20,71 @@ local HOST = "nix"
 --- Host node type whose text is the literal-escape marker to drop on the way in.
 local NIX_LITERAL_ESCAPE = "dollar_escape"
 
+--- Host node type for an evaluated `${expr}` interpolation, to be renamed.
+local NIX_INTERPOLATION = "interpolation"
+
+--- Injected-language header descriptors (injected-keyed, declarative; ADR-0001).
+--- Each carries the shebang plus the comment syntax, assignment operator, and
+--- default value used to render the ninjection block of declarations.
+---@type table<string, { shebang: string, comment: string, assign: string, default: string }>
+local HEADERS = {
+	bash = { shebang = "#!/usr/bin/env bash", comment = "#", assign = "=", default = '""' },
+	sh = { shebang = "#!/usr/bin/env sh", comment = "#", assign = "=", default = '""' },
+}
+
+--- Fixed markers for the fenced ninjection block.
+local FENCE_OPEN = " >>> ninjection:"
+local FENCE_CLOSE = " <<< ninjection"
+local FENCE_ARROW = " <- "
+
 ---@brief
---- De-escape host literal escapes in an injection so the injected language sees
---- valid syntax. Treesitter identifies the escape nodes; we reconstruct the
---- injection text from the node's children, dropping the escapes. Interpolations
---- and all other content are preserved verbatim.
+--- Rewrite a host name into an injected-language-safe identifier by replacing
+--- each character invalid in an identifier with `_0x<HEX>` in place (ADR-0003's
+--- rename encoding: stateless, self-documenting, position-preserving).
+---@param name string
+---@return string
+local function safe_id(name)
+	return (name:gsub("[^%w_]", function(c)
+		return string.format("_0x%02X", string.byte(c))
+	end))
+end
+
+---@brief
+--- Transform an injection for editing in the injected language:
+---  - drop Nix `''` literal escapes (`''${x}` -> `${x}`), and
+---  - rename Nix interpolations (`${pkgs.x}` -> `${pkgs_0x2E_x}`), recording the
+---    original host expression in the returned ledger.
+--- Treesitter identifies the nodes (ADR-0002); the text is reconstructed from the
+--- node's children. All other content is preserved verbatim.
 ---
 ---@param node TSNode The injected content node, in the host (parent) language.
 ---@param bufnr integer The parent buffer the node lives in.
 ---@param host_ft string The host (parent) filetype.
----@return string text The injection text with literal escapes removed.
+---@return string text The transformed injection text.
+---@return { name: string, host: string }[] ledger Interpreted placeholders, in order.
 function M.forward(node, bufnr, host_ft)
 	if host_ft ~= HOST then
-		return vim.treesitter.get_node_text(node, bufnr)
+		return vim.treesitter.get_node_text(node, bufnr), {}
 	end
 
 	---@type string[]
 	local parts = {}
+	---@type { name: string, host: string }[]
+	local ledger = {}
 	for child in node:iter_children() do
-		if child:type() ~= NIX_LITERAL_ESCAPE then
+		local kind = child:type()
+		if kind == NIX_INTERPOLATION then
+			local expr = child:named_child(0)
+			local host = expr and vim.treesitter.get_node_text(expr, bufnr) or ""
+			local name = safe_id(host)
+			parts[#parts + 1] = "${" .. name .. "}"
+			ledger[#ledger + 1] = { name = name, host = host }
+		elseif kind ~= NIX_LITERAL_ESCAPE then
+			-- Drop `''` literal escapes; keep everything else verbatim.
 			parts[#parts + 1] = vim.treesitter.get_node_text(child, bufnr)
 		end
 	end
-	return table.concat(parts)
+	return table.concat(parts), ledger
 end
 
 --- Injected-language Treesitter node type for a braced `${...}` expansion. Only
@@ -51,14 +93,55 @@ end
 local INJECTED_EXPANSION = "expansion"
 
 ---@brief
---- Re-escape injected-language `${x}` expansions back into host literal escapes
---- (`''${x}`) for write-back. Treesitter finds the expansions in the child buffer
---- (ADR-0002); we prepend the host escape onto each TS-identified slice. If the
---- injected language has no grammar, the lines are returned unchanged.
+--- Read the interpreted-placeholder ledger from a child buffer's ninjection
+--- block: each `name=... <comment> <- host` line maps the safe id back to its
+--- original host expression. Parses ninjection's own fenced block, not the
+--- language (ADR-0002).
+---@param lines string[] The child lines.
+---@param inj_lang string The injected (child) language.
+---@return table<string, string> ledger Map of safe id -> host expression.
+function M.read_ledger(lines, inj_lang)
+	local desc = HEADERS[inj_lang]
+	if not desc then
+		return {}
+	end
+
+	local open = desc.comment .. FENCE_OPEN
+	local close = desc.comment .. FENCE_CLOSE
+	local arrow = " " .. desc.comment .. FENCE_ARROW
+
+	---@type table<string, string>
+	local ledger = {}
+	local in_block = false
+	for _, line in ipairs(lines) do
+		if line:sub(1, #open) == open then
+			in_block = true
+		elseif line == close then
+			break
+		elseif in_block then
+			local pos = line:find(arrow, 1, true)
+			if pos then
+				local name = line:sub(1, pos - 1):match("^([%w_]+)")
+				if name then
+					ledger[name] = line:sub(pos + #arrow)
+				end
+			end
+		end
+	end
+	return ledger
+end
+
+---@brief
+--- Restore injected-language `${x}` expansions to their host form for write-back.
+--- An expansion whose name is an interpreted placeholder (in the block ledger) is
+--- un-mangled to the bare host interpolation `${host}`; any other expansion is a
+--- literal and is re-escaped to `''${x}`. Treesitter finds the expansions in the
+--- child buffer (ADR-0002). If the injected language has no grammar / `${}`, the
+--- lines are returned unchanged.
 ---
 ---@param bufnr integer The child buffer, in the injected language.
 ---@param host_ft string The host (parent) filetype to restore escaping for.
----@return string[] lines The child lines with `${x}` re-escaped to `''${x}`.
+---@return string[] lines The child lines with expansions restored to host form.
 function M.reverse(bufnr, host_ft)
 	---@type string[]
 	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
@@ -74,35 +157,54 @@ function M.reverse(bufnr, host_ft)
 	end
 	---@cast parser vim.treesitter.LanguageTree
 
+	local inj_lang = parser:lang()
+	local ledger = M.read_ledger(lines, inj_lang)
+
 	-- The injected language may have no `${...}` expansion concept (e.g. Lua), in
 	-- which case the query is invalid for its grammar; treat that as nothing to
-	-- re-escape rather than an error.
-	local q_ok, query = pcall(vim.treesitter.query.parse, parser:lang(), "(" .. INJECTED_EXPANSION .. ") @e")
+	-- restore rather than an error.
+	local q_ok, query = pcall(vim.treesitter.query.parse, inj_lang, "(" .. INJECTED_EXPANSION .. ") @e")
 	if not q_ok or not query then
 		return lines
 	end
 
 	local root = parser:parse()[1]:root()
 
-	---@type integer[][]
-	local positions = {}
+	---@type { s_row: integer, s_col: integer, e_col: integer, name: string? }[]
+	local edits = {}
 	for _, node in query:iter_captures(root, bufnr, 0, -1) do
-		local s_row, s_col = node:range()
-		positions[#positions + 1] = { s_row, s_col }
+		local s_row, s_col, e_row, e_col = node:range()
+		-- Only single-line expansions are rewritten by range; multi-line ones fall
+		-- back to a leading escape at the start position.
+		---@type string?
+		local name
+		for c in node:iter_children() do
+			if c:type() == "variable_name" then
+				name = vim.treesitter.get_node_text(c, bufnr)
+				break
+			end
+		end
+		edits[#edits + 1] = { s_row = s_row, s_col = s_col, e_col = (s_row == e_row) and e_col or nil, name = name }
 	end
 
-	-- Insert from last to first so earlier edits don't shift later coordinates.
-	table.sort(positions, function(a, b)
-		if a[1] ~= b[1] then
-			return a[1] > b[1]
+	-- Apply from last to first so earlier edits don't shift later coordinates.
+	table.sort(edits, function(a, b)
+		if a.s_row ~= b.s_row then
+			return a.s_row > b.s_row
 		end
-		return a[2] > b[2]
+		return a.s_col > b.s_col
 	end)
 
-	for _, p in ipairs(positions) do
-		local row, col = p[1], p[2]
-		local line = lines[row + 1]
-		lines[row + 1] = line:sub(1, col) .. "''" .. line:sub(col + 1)
+	for _, e in ipairs(edits) do
+		local line = lines[e.s_row + 1]
+		if e.name and ledger[e.name] and e.e_col then
+			-- Interpreted: replace ${safe} with the bare host interpolation.
+			line = line:sub(1, e.s_col) .. "${" .. ledger[e.name] .. "}" .. line:sub(e.e_col + 1)
+		else
+			-- Literal (or unknown): re-escape with a leading ''.
+			line = line:sub(1, e.s_col) .. "''" .. line:sub(e.s_col + 1)
+		end
+		lines[e.s_row + 1] = line
 	end
 
 	return lines
@@ -111,18 +213,9 @@ end
 -- Language header (injected-keyed) ----------------------------------------
 -- The header is ephemeral scaffolding prepended to the child buffer for the
 -- injected language's tooling and stripped on write-back. Injected-keyed per
--- ADR-0001; declarative descriptor table for now. It carries the shebang Nix
--- synthesises at build time plus a fenced "ninjection block" of real variable
--- declarations so the injected LSP does not flag the placeholder references.
-
----@type table<string, { shebang: string, comment: string, assign: string, default: string }>
-local HEADERS = {
-	bash = { shebang = "#!/usr/bin/env bash", comment = "#", assign = "=", default = '""' },
-	sh = { shebang = "#!/usr/bin/env sh", comment = "#", assign = "=", default = '""' },
-}
-
-local FENCE_OPEN = " >>> ninjection:"
-local FENCE_CLOSE = " <<< ninjection"
+-- ADR-0001; declarative descriptor table (HEADERS, defined above) for now. It
+-- carries the shebang Nix synthesises at build time plus a fenced "ninjection
+-- block" of real declarations so the injected LSP does not flag the references.
 
 ---@brief
 --- Collect the placeholder variable names declared by `${name}` expansions in
@@ -166,11 +259,19 @@ end
 ---@param inj_lang string The injected (child) language.
 ---@param parent_lang string The host (parent) filetype, recorded in the fence.
 ---@param vars string[] Placeholder names to declare.
+---@param ledger? { name: string, host: string }[] Interpreted placeholders; each
+--- gets a `# <- host` arrow so write-back restores the bare host interpolation.
 ---@return string[] header
-function M.build_header(inj_lang, parent_lang, vars)
+function M.build_header(inj_lang, parent_lang, vars, ledger)
 	local desc = HEADERS[inj_lang]
 	if not desc then
 		return {}
+	end
+
+	---@type table<string, string>
+	local interp = {}
+	for _, entry in ipairs(ledger or {}) do
+		interp[entry.name] = entry.host
 	end
 
 	---@type string[]
@@ -178,7 +279,11 @@ function M.build_header(inj_lang, parent_lang, vars)
 	if vars and #vars > 0 then
 		lines[#lines + 1] = desc.comment .. FENCE_OPEN .. parent_lang
 		for _, v in ipairs(vars) do
-			lines[#lines + 1] = v .. desc.assign .. desc.default
+			local decl = v .. desc.assign .. desc.default
+			if interp[v] then
+				decl = decl .. " " .. desc.comment .. FENCE_ARROW .. interp[v]
+			end
+			lines[#lines + 1] = decl
 		end
 		lines[#lines + 1] = desc.comment .. FENCE_CLOSE
 	end

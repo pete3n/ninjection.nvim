@@ -136,10 +136,15 @@ function ninjection.edit()
 	end
 	---@cast injection NJNodeTable
 
-	-- De-escape host literal placeholders (e.g. Nix ''${x} -> ${x}) using
-	-- Treesitter before any string-level modifiers run, so the injected language
-	-- sees valid syntax. See docs/adr/0001-0002.
-	injection.text = require("ninjection.placeholder").forward(injection.pair.node, cur_bufnr, injection.ft)
+	-- Transform host placeholders for editing (de-escape ''${x} -> ${x}, rename
+	-- interpolations ${pkgs.x} -> ${pkgs_0x2E_x}) using Treesitter before any
+	-- string-level modifiers run, so the injected language sees valid syntax. The
+	-- ledger records the interpreted placeholders for the header block.
+	-- See docs/adr/0001-0002.
+	local placeholder = require("ninjection.placeholder")
+	---@type { name: string, host: string }[]
+	local interp_ledger
+	injection.text, interp_ledger = placeholder.forward(injection.pair.node, cur_bufnr, injection.ft)
 
 	-- Apply filetype specific text modification functions
 	---@type integer
@@ -222,9 +227,12 @@ function ninjection.edit()
 	-- from the de-escaped child body and declared in the fenced block so the
 	-- injected LSP does not flag them. See docs/adr/0001.
 	---@type string[]
-	local placeholder = require("ninjection.placeholder")
-	local header =
-		placeholder.build_header(nj_child.c_ft, nj_child.p_ft, placeholder.collect_placeholders(nj_child.c_bufnr))
+	local header = placeholder.build_header(
+		nj_child.c_ft,
+		nj_child.p_ft,
+		placeholder.collect_placeholders(nj_child.c_bufnr),
+		interp_ledger
+	)
 	if #header > 0 then
 		vim.api.nvim_buf_set_lines(nj_child.c_bufnr, 0, 0, false, header)
 	end
