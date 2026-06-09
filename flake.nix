@@ -58,6 +58,23 @@
         # Resolved at nix eval time — correct for local devShell builds.
         cfgDir = "~/.config/claude";
         skillsDir = ./slop-env/claude-config/skills;
+        rulesDir = ./slop-env/claude-config/rules;
+
+        # CLAUDE.md ships as the base file followed by every rules/*.md,
+        # concatenated so universal policy is always in context (unlike
+        # relevance-recalled memory, which is per-project and dynamically pathed).
+        claudeMd =
+          let
+            ruleNames = builtins.attrNames (
+              lib.filterAttrs (name: kind: kind == "regular" && lib.hasSuffix ".md" name) (
+                builtins.readDir rulesDir
+              )
+            );
+            ruleBodies = map (name: builtins.readFile (rulesDir + "/${name}")) ruleNames;
+          in
+          lib.concatStringsSep "\n\n" (
+            [ (builtins.readFile ./slop-env/claude-config/CLAUDE.md) ] ++ ruleBodies
+          );
 
         basePkgs = with pkgs; [
           bashInteractive
@@ -106,7 +123,7 @@
             (ro-bind "${skillsDir}" (noescape "${cfgDir}/skills"))
             (write-text (noescape "${cfgDir}/settings.json") claudeSettings)
             (try-readwrite (noescape "${cfgDir}/.credentials.json"))
-            (write-text (noescape "${cfgDir}/CLAUDE.md") (builtins.readFile ./slop-env/claude-config/CLAUDE.md))
+            (write-text (noescape "${cfgDir}/CLAUDE.md") claudeMd)
 
             # Persistent runtime state
             (try-readwrite (noescape "${cfgDir}/.claude.json"))
