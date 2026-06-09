@@ -111,49 +111,105 @@ end
 -- Language header (injected-keyed) ----------------------------------------
 -- The header is ephemeral scaffolding prepended to the child buffer for the
 -- injected language's tooling and stripped on write-back. Injected-keyed per
--- ADR-0001; declarative descriptor table for now. Currently only the shebang;
--- the fenced ninjection block of declarations lands in a later slice.
+-- ADR-0001; declarative descriptor table for now. It carries the shebang Nix
+-- synthesises at build time plus a fenced "ninjection block" of real variable
+-- declarations so the injected LSP does not flag the placeholder references.
 
----@type table<string, { shebang: string }>
+---@type table<string, { shebang: string, comment: string, assign: string, default: string }>
 local HEADERS = {
-	bash = { shebang = "#!/usr/bin/env bash" },
-	sh = { shebang = "#!/usr/bin/env sh" },
+	bash = { shebang = "#!/usr/bin/env bash", comment = "#", assign = "=", default = '""' },
+	sh = { shebang = "#!/usr/bin/env sh", comment = "#", assign = "=", default = '""' },
 }
 
+local FENCE_OPEN = " >>> ninjection:"
+local FENCE_CLOSE = " <<< ninjection"
+
 ---@brief
---- Render the language-header lines for an injected language. Returns an empty
---- list for languages without a descriptor (the round-trip is then header-less).
+--- Collect the placeholder variable names declared by `${name}` expansions in
+--- the child buffer, in first-seen order without duplicates. Treesitter reads
+--- the names (ADR-0002); a grammar without `${}` yields none.
+---@param bufnr integer The child buffer, in the injected language.
+---@return string[] names
+function M.collect_placeholders(bufnr)
+	---@type boolean, vim.treesitter.LanguageTree?
+	local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
+	if not ok or not parser then
+		return {}
+	end
+	---@cast parser vim.treesitter.LanguageTree
+
+	local q_ok, query =
+		pcall(vim.treesitter.query.parse, parser:lang(), "(" .. INJECTED_EXPANSION .. " (variable_name) @name)")
+	if not q_ok or not query then
+		return {}
+	end
+
+	local root = parser:parse()[1]:root()
+	---@type table<string, boolean>
+	local seen = {}
+	---@type string[]
+	local names = {}
+	for _, node in query:iter_captures(root, bufnr, 0, -1) do
+		local name = vim.treesitter.get_node_text(node, bufnr)
+		if not seen[name] then
+			seen[name] = true
+			names[#names + 1] = name
+		end
+	end
+	return names
+end
+
+---@brief
+--- Build the language-header lines: the shebang, then (when there are vars) a
+--- fenced ninjection block declaring each at the injected language's default
+--- value. Returns an empty list for languages without a descriptor.
 ---@param inj_lang string The injected (child) language.
----@return string[] header The header lines, top to bottom.
-function M.render_header(inj_lang)
+---@param parent_lang string The host (parent) filetype, recorded in the fence.
+---@param vars string[] Placeholder names to declare.
+---@return string[] header
+function M.build_header(inj_lang, parent_lang, vars)
 	local desc = HEADERS[inj_lang]
 	if not desc then
 		return {}
 	end
-	return { desc.shebang }
+
+	---@type string[]
+	local lines = { desc.shebang }
+	if vars and #vars > 0 then
+		lines[#lines + 1] = desc.comment .. FENCE_OPEN .. parent_lang
+		for _, v in ipairs(vars) do
+			lines[#lines + 1] = v .. desc.assign .. desc.default
+		end
+		lines[#lines + 1] = desc.comment .. FENCE_CLOSE
+	end
+	return lines
 end
 
 ---@brief
---- Strip a previously-rendered language header from child lines on write-back.
---- Only removes the leading lines if they still match the rendered header, so a
---- buffer whose header was altered or removed is written back unchanged rather
---- than corrupted.
+--- Strip the language header from child lines on write-back. When a ninjection
+--- block is present, removes everything through its closing fence (shebang and
+--- block); otherwise removes a matching lone shebang. A buffer whose header was
+--- altered or removed is returned unchanged rather than corrupted.
 ---@param lines string[] The child lines.
 ---@param inj_lang string The injected (child) language.
----@return string[] lines The lines with the matching header removed.
+---@return string[] lines The lines with the header removed.
 function M.strip_header(lines, inj_lang)
-	local header = M.render_header(inj_lang)
-	if #header == 0 then
+	local desc = HEADERS[inj_lang]
+	if not desc then
 		return lines
 	end
 
-	for i, h in ipairs(header) do
-		if lines[i] ~= h then
-			return lines
+	local close = desc.comment .. FENCE_CLOSE
+	for i, line in ipairs(lines) do
+		if line == close then
+			return vim.list_slice(lines, i + 1)
 		end
 	end
 
-	return vim.list_slice(lines, #header + 1)
+	if lines[1] == desc.shebang then
+		return vim.list_slice(lines, 2)
+	end
+	return lines
 end
 
 return M

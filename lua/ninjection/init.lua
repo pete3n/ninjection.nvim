@@ -218,9 +218,13 @@ function ninjection.edit()
 
 	-- Prepend the injected-language header (ephemeral scaffolding for the child's
 	-- tooling; stripped on write-back). Added after init_buf's dedent so the
-	-- header never participates in indent detection. See docs/adr/0001.
+	-- header never participates in indent detection. Placeholder vars are read
+	-- from the de-escaped child body and declared in the fenced block so the
+	-- injected LSP does not flag them. See docs/adr/0001.
 	---@type string[]
-	local header = require("ninjection.placeholder").render_header(nj_child.c_ft)
+	local placeholder = require("ninjection.placeholder")
+	local header =
+		placeholder.build_header(nj_child.c_ft, nj_child.p_ft, placeholder.collect_placeholders(nj_child.c_bufnr))
 	if #header > 0 then
 		vim.api.nvim_buf_set_lines(nj_child.c_bufnr, 0, 0, false, header)
 	end

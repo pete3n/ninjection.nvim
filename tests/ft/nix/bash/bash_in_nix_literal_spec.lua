@@ -30,6 +30,24 @@ describe("ninjection literal placeholder round-trip #e2e #bash-nix #literal", fu
 		vim.cmd("bdelete!")
 	end)
 
+	it("declares literal vars in a fenced ninjection block under the shebang", function()
+		vim.cmd("edit tests/ft/nix/bash/bash_literal.nix")
+		vim.api.nvim_win_set_cursor(0, { 5, 11 })
+
+		nj.edit()
+		local child_buf = vim.api.nvim_get_current_buf()
+		local head = vim.api.nvim_buf_get_lines(child_buf, 0, 4, false)
+
+		assert.are.same({
+			"#!/usr/bin/env bash",
+			"# >>> ninjection:nix",
+			'HOME=""',
+			"# <<< ninjection",
+		}, head)
+
+		vim.cmd("bdelete!")
+	end)
+
 	it("round-trips an unedited literal back to the parent unchanged", function()
 		vim.cmd("edit tests/ft/nix/bash/bash_literal.nix")
 		local parent_buf = vim.api.nvim_get_current_buf()
