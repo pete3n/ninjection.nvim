@@ -136,6 +136,16 @@ function ninjection.edit()
 	end
 	---@cast injection NJNodeTable
 
+	-- Transform parent placeholders for editing (de-escape ''${x} -> ${x}, rename
+	-- interpolations ${pkgs.x} -> ${pkgs_0x2E_x}) using Treesitter before any
+	-- string-level modifiers run, so the injected language sees valid syntax. The
+	-- ledger records the interpreted placeholders for the header block.
+	-- See docs/adr/0001-0002.
+	local placeholder = require("ninjection.placeholder")
+	---@type { c_var: string, p_var: string }[]
+	local interp_ledger
+	injection.text, interp_ledger = placeholder.forward(injection.pair.node, cur_bufnr, injection.ft)
+
 	-- Apply filetype specific text modification functions
 	---@type integer
 	local cur_row_offset = 0
@@ -211,11 +221,28 @@ function ninjection.edit()
 		return false, add_child_err
 	end
 
+	-- Prepend the injected-language header (ephemeral scaffolding for the child's
+	-- tooling; stripped on write-back). Added after init_buf's dedent so the
+	-- header never participates in indent detection. Placeholder vars are read
+	-- from the de-escaped child body and declared in the fenced block so the
+	-- injected LSP does not flag them. See docs/adr/0001.
+	---@type string[]
+	local header = placeholder.build_header(
+		nj_child.c_ft,
+		nj_child.p_ft,
+		placeholder.collect_placeholders(nj_child.c_bufnr),
+		interp_ledger
+	)
+	if #header > 0 then
+		vim.api.nvim_buf_set_lines(nj_child.c_bufnr, 0, 0, false, header)
+	end
+
 	nj_child:set_cursor({
 		p_cursor = injection.cursor_pos,
 		s_row = (injection.range.s_row + cur_row_offset),
 		indents = cfg.preserve_indents and nj_child.p_indents or nil,
 		text_meta = injection.text_meta,
+		header_lines = #header,
 	})
 
 	---@type NJLspStatus?, string?
@@ -311,8 +338,22 @@ function ninjection.replace()
 		return false, err
 	end
 	---@cast get_lines_return string[]
+
+	-- Re-escape injected-language ${x} expansions back to parent literals (''${x})
+	-- using Treesitter, before indent restoration so node coordinates map to the
+	-- raw child lines. See docs/adr/0001-0002.
 	---@type string[]
-	local rep_lines = get_lines_return
+	local rep_lines = require("ninjection.placeholder").reverse(0, nj_child.p_ft)
+
+	-- Strip the ephemeral language header (shebang/block) prepended on edit, so it
+	-- never reaches the parent buffer. The number of lines removed is the header
+	-- height, used below to map the child cursor back to the parent. See
+	-- docs/adr/0001.
+	---@type string[]
+	local stripped = require("ninjection.placeholder").strip_header(rep_lines, nj_child.c_ft)
+	---@type integer
+	local header_lines = #rep_lines - #stripped
+	rep_lines = stripped
 
 	if cfg.preserve_indents then
 		---@type string[]?, string?
@@ -381,9 +422,11 @@ function ninjection.replace()
 
 	nj_parent:del_child(cur_bufnr)
 
-	-- Calculate tentative row and col based on config
+	-- Calculate tentative row and col based on config. Subtract the header height
+	-- so the child cursor (which sits below the prepended header) maps back to the
+	-- corresponding parent line rather than overshooting by the header size.
 	---@type integer, integer
-	local row = this_cursor[1] + nj_child.p_range.s_row
+	local row = math.max(1, this_cursor[1] - header_lines) + nj_child.p_range.s_row
 	local col = this_cursor[2]
 
 	if cfg.preserve_indents and nj_child.p_indents then
