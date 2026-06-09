@@ -346,8 +346,14 @@ function ninjection.replace()
 	local rep_lines = require("ninjection.placeholder").reverse(0, nj_child.p_ft)
 
 	-- Strip the ephemeral language header (shebang/block) prepended on edit, so it
-	-- never reaches the parent buffer. See docs/adr/0001.
-	rep_lines = require("ninjection.placeholder").strip_header(rep_lines, nj_child.c_ft)
+	-- never reaches the parent buffer. The number of lines removed is the header
+	-- height, used below to map the child cursor back to the parent. See
+	-- docs/adr/0001.
+	---@type string[]
+	local stripped = require("ninjection.placeholder").strip_header(rep_lines, nj_child.c_ft)
+	---@type integer
+	local header_lines = #rep_lines - #stripped
+	rep_lines = stripped
 
 	if cfg.preserve_indents then
 		---@type string[]?, string?
@@ -416,9 +422,11 @@ function ninjection.replace()
 
 	nj_parent:del_child(cur_bufnr)
 
-	-- Calculate tentative row and col based on config
+	-- Calculate tentative row and col based on config. Subtract the header height
+	-- so the child cursor (which sits below the prepended header) maps back to the
+	-- corresponding parent line rather than overshooting by the header size.
 	---@type integer, integer
-	local row = this_cursor[1] + nj_child.p_range.s_row
+	local row = math.max(1, this_cursor[1] - header_lines) + nj_child.p_range.s_row
 	local col = this_cursor[2]
 
 	if cfg.preserve_indents and nj_child.p_indents then

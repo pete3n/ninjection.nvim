@@ -63,6 +63,21 @@ describe("ninjection literal placeholder round-trip #e2e #bash-nix #literal", fu
 		vim.cmd("bdelete!")
 	end)
 
+	it("restores the parent cursor to the edited line, not below it", function()
+		vim.cmd("edit tests/ft/nix/bash/bash_literal.nix")
+		vim.api.nvim_win_set_cursor(0, { 5, 11 }) -- on the injected line in the parent
+
+		nj.edit()
+		nj.replace()
+
+		-- Without moving in the child, the cursor should map back to the same
+		-- parent line (5), not jump below by the header height.
+		local row = vim.api.nvim_win_get_cursor(0)[1]
+		assert.are.equal(5, row)
+
+		vim.cmd("bdelete!")
+	end)
+
 	it("escapes a freshly-typed ${VAR} on write-back, alongside the original", function()
 		vim.cmd("edit tests/ft/nix/bash/bash_literal.nix")
 		local parent_buf = vim.api.nvim_get_current_buf()
