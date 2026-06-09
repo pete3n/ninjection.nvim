@@ -126,22 +126,6 @@ NOTE: width/height col/row default values are dynamically set to:
 `      )
 `    "
 `  },
-`  inj_lang_tweaks = {
-`    nix = {
-`      buffer_cursor_offset = {
-`        e_col = 0,
-`        e_row = -1,
-`        s_col = 0,
-`        s_row = 1
-`      },
-`      parse_range_offset = {
-`        e_col = 120,
-`        e_row = -1,
-`        s_col = -120,
-`        s_row = 1
-`      }
-`    }
-`  },
 `  inj_text_modifiers = {
 `    lua = <function 1>,
 `    nix = <function 2>
@@ -250,10 +234,6 @@ per-language functions to modify text returned by the lang query
 {inj_text_restorers} `(optional)` `(table<string, fun(text: string, metadata: table<string, boolean>, indents?: NJIndents): string[]>)` - Contains
 per-language functions to restore modified text
 
-{inj_lang_tweaks} `(optional)` `(table<string, NJLangTweak>)` - Contains
-language functions to workaround limitations in Treesitter queries and post-process
-injected content selections.
-
 {lsp_map} `(optional)` `(table<string, string>)` - Maps the injected language filetype
 comment to an LSP configuration name for that filetype.
                                                                        *NJRange*
@@ -279,13 +259,6 @@ Store a language string and its associated node.
 
 {inj_lang} `(string)` Language tag extracted from inj_lang capture
 {node} `(TSNode)` Node associated with the injected code
-                                                                   *NJLangTweak*
-Class ~
-{NJLangTweak}
-Language specific adjustments for tweaking parsing and buffers.
-
-{parse_range_offset} `(NJRange)`
-{buffer_cursor_offset} `(NJRange)`
                                                                    *NJNodeTable*
 Class ~
 {NJNodeTable}

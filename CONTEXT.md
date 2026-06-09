@@ -63,7 +63,11 @@ pre-existing error rather than hiding it.
 _Avoid_: escaped variable
 
 **Interpreted placeholder**:
-A parent interpolation the parent evaluates — in Nix, `${pkgs.hello}`. Ninjection
-rewrites it to an injected-language-safe identifier (see Rename mapping) for
-editing and restores it on write-back. Substituting the parent's *real* evaluated
-value (rather than a default) is a future enhancement.
+A parent interpolation the parent evaluates — in Nix, `${pkgs.hello}`. Whether
+ninjection rewrites it for editing depends on the *injected* language: where the
+injected language reads `${…}` as live syntax (shell expansion), it is rewritten
+to an injected-language-safe identifier (see Rename mapping) and restored on
+write-back; where `${…}` is inert in the injected language (e.g. inside a Python
+string literal it is ordinary text), the interpolation is left verbatim and
+round-trips unchanged. Substituting the parent's *real* evaluated value (rather
+than a default) is a future enhancement.

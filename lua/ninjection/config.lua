@@ -219,17 +219,6 @@ local default_config = {
 		end,
 	},
 
-	---@type table<string, NJLangTweak>
-	inj_lang_tweaks = {
-		---@type NJLangTweak
-		nix = {
-			---@type NJRange
-			parse_range_offset = { s_row = 1, e_row = -1, s_col = -120, e_col = 120 },
-			---@type NJRange
-			buffer_cursor_offset = { s_row = 1, e_row = -1, s_col = 0, e_col = 0 },
-		},
-	},
-
 	---@type table<string, string>
 	lsp_map = {
 		bash = "bashls",

@@ -71,10 +71,6 @@
 ---@field inj_text_restorers? table<string, NJTextRestorer> - Contains
 --- per-language functions to restore modified text
 ---
----@field inj_lang_tweaks? table<string, NJLangTweak> - Contains
---- language functions to workaround limitations in Treesitter queries and post-process
---- injected content selections.
----
 ---@field lsp_map? table<string, string> - Maps the injected language filetype
 --- comment to an LSP configuration name for that filetype.
 
@@ -100,13 +96,6 @@
 ---
 ---@field inj_lang string Language tag extracted from inj_lang capture
 ---@field node TSNode Node associated with the injected code
-
----@tag NJLangTweak
----@class NJLangTweak
----@brief Language specific adjustments for tweaking parsing and buffers.
----
----@field parse_range_offset NJRange
----@field buffer_cursor_offset NJRange
 
 ---@tag NJNodeTable
 ---@class NJNodeTable

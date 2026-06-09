@@ -370,32 +370,41 @@ function ninjection.replace()
 		rep_lines = restored_lines
 	end
 
-	if cfg.debug then
-		if not cfg.inj_text_restorers then
+	-- Restore the parent's outer string delimiters (e.g. Nix ''...'') that the
+	-- inj_text_modifier stripped for editing. The write-back range covers the
+	-- whole injected node including those delimiters, so this restore is
+	-- load-bearing for every round-trip; it must run regardless of `cfg.debug`,
+	-- which gates only verbose diagnostics. See docs/adr/0001.
+	if not cfg.inj_text_restorers then
+		if cfg.debug then
 			vim.notify("cfg.inj_text_restorers is nil", vim.log.levels.WARN)
-		elseif not cfg.inj_text_restorers[nj_child.p_ft] then
+		end
+	elseif not cfg.inj_text_restorers[nj_child.p_ft] then
+		if cfg.debug then
 			vim.notify("No restorer defined for filetype: " .. tostring(nj_child.p_ft), vim.log.levels.WARN)
-		elseif not nj_child.p_text_meta then
+		end
+	elseif not nj_child.p_text_meta then
+		if cfg.debug then
 			vim.notify("text_meta is nil for current injection", vim.log.levels.WARN)
-		else
+		end
+	else
+		---@type string
+		local rep_text = table.concat(rep_lines, "\n")
+		---@type boolean, string[]?
+		local restored_ok, restored_text =
+			pcall(cfg.inj_text_restorers[nj_child.p_ft], rep_text, nj_child.p_text_meta, nj_child.p_indents)
+		if not restored_ok or not restored_text or type(restored_text) ~= "table" then
 			---@type string
-			local rep_text = table.concat(rep_lines, "\n")
-			---@type boolean, string[]?
-			local restored_ok, restored_text =
-				pcall(cfg.inj_text_restorers[nj_child.p_ft], rep_text, nj_child.p_text_meta, nj_child.p_indents)
-			if not restored_ok or not restored_text or type(restored_text) ~= "table" then
-				---@type string
-				local err = "ninjection.replace() error: Text restorer function for "
-					.. nj_child.p_ft
-					.. " failed ..."
-					.. tostring(restored_text)
-				if cfg.debug then
-					vim.notify(err, vim.log.levels.ERROR)
-				end
-				return false, err
-			else
-				rep_lines = restored_text
+			local err = "ninjection.replace() error: Text restorer function for "
+				.. nj_child.p_ft
+				.. " failed ..."
+				.. tostring(restored_text)
+			if cfg.debug then
+				vim.notify(err, vim.log.levels.ERROR)
 			end
+			return false, err
+		else
+			rep_lines = restored_text
 		end
 	end
 
