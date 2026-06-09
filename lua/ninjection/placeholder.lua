@@ -170,7 +170,7 @@ function M.reverse(bufnr, host_ft)
 
 	local root = parser:parse()[1]:root()
 
-	---@type { s_row: integer, s_col: integer, e_col: integer, name: string? }[]
+	---@type { s_row: integer, s_col: integer, e_col: integer?, name: string? }[]
 	local edits = {}
 	for _, node in query:iter_captures(root, bufnr, 0, -1) do
 		local s_row, s_col, e_row, e_col = node:range()
