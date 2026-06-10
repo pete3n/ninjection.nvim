@@ -89,6 +89,7 @@
           gzip
           jq
           nix
+					nixfmt
           ps
           ripgrep
           unzip
