@@ -45,9 +45,12 @@ Follow-up:
                float remains a sibling renderer over the same engine).
             4. [x] Busted specs that skip cleanly (`pending`) when `nix`/nixpkgs-source
                is absent; the synthesis + `let`-eval specs run with no flake/network.
-            - [ ] Follow-up: make the engine eval **async** (`vim.system` + callback /
-                  on_exit). The spike uses a synchronous `:wait()` (~0.2s offline);
-                  a cold/online eval would block the editor.
+            - [x] Follow-up: engine eval is **async** — `resolve(node, bufnr,
+                  root_dir, on_done)` is callback-only; `vim.system` on_exit delivers
+                  via `vim.schedule`, never synchronously (even for `bound_by_caller`
+                  and pre-eval errors, so callers see one contract). The verb renders
+                  in the callback and returns immediately after dispatch
+                  (`tests/ft/nix/resolve/resolve_async_spec.lua`).
             - [ ] Follow-up (scoped separately, NOT a spike blocker): a dedicated pinned
                   fixture flake + seeding its nixpkgs source into the ADR-0004 Docker
                   closure so the eval specs run offline in CI. The closure today carries

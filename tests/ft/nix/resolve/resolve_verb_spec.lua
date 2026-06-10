@@ -54,11 +54,16 @@ describe("ninjection.resolve() verb #e2e #nix #resolve", function()
 		local ok, err = nj.resolve()
 		assert.is_true(ok, "resolve verb should succeed: " .. tostring(err))
 
+		-- The eval is asynchronous; the rendering arrives via the event loop.
+		local rendered = ""
+		vim.wait(30000, function()
+			rendered = table.concat(resolve_virt_texts(bufnr), "\n")
+			return rendered:match("/nix/store/.*hello") ~= nil
+		end, 50)
+		assert.is_truthy(rendered:match("/nix/store/.*hello"), "expected the store path in virtual text, got: " .. rendered)
+
 		local after = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 		assert.are.same(before, after, "resolve must not mutate the buffer")
-
-		local rendered = table.concat(resolve_virt_texts(bufnr), "\n")
-		assert.is_truthy(rendered:match("/nix/store/.*hello"), "expected the store path in virtual text, got: " .. rendered)
 
 		vim.cmd("bdelete!")
 	end)
@@ -72,11 +77,16 @@ describe("ninjection.resolve() verb #e2e #nix #resolve", function()
 		local ok = nj.resolve()
 		assert.is_true(ok, "resolve verb should succeed even when bound by caller")
 
+		-- Even a no-eval condition is delivered via the event loop, never synchronously.
+		local rendered = ""
+		vim.wait(10000, function()
+			rendered = table.concat(resolve_virt_texts(bufnr), "\n")
+			return rendered:match("caller") ~= nil
+		end, 50)
+		assert.is_truthy(rendered:match("caller"), "expected a bound-by-caller note, got: " .. rendered)
+
 		local after = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 		assert.are.same(before, after, "resolve must not mutate the buffer")
-
-		local rendered = table.concat(resolve_virt_texts(bufnr), "\n")
-		assert.is_truthy(rendered:match("caller"), "expected a bound-by-caller note, got: " .. rendered)
 
 		vim.cmd("bdelete!")
 	end)

@@ -647,36 +647,39 @@ function ninjection.resolve()
 	end
 	---@cast root_dir string
 
-	---@type NJResolution?, string?
-	local result, res_err = resolve.resolve(node, cur_bufnr, root_dir)
-	if not result then
-		---@type string
-		local err = "ninjection.resolve() error: resolution failed ... " .. tostring(res_err)
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return false, err
-	end
-	---@cast result NJResolution
-
-	-- Render at the end of the interpolation's line. Clear any prior overlay first
-	-- so repeated resolves replace rather than stack.
+	-- The node's range is read before dispatching: the eval is asynchronous and the
+	-- node may be invalidated by a reparse before the result arrives.
 	---@type integer
 	local s_row, _, _, _ = node:range()
-	vim.api.nvim_buf_clear_namespace(cur_bufnr, resolve_ns, s_row, s_row + 1)
 
-	---@type string
-	local label
-	if result.bound_by_caller then
-		label = "⟨bound by caller: " .. result.bound_by_caller .. "⟩"
-	else
-		label = "⟶ " .. tostring(result.path)
-	end
+	resolve.resolve(node, cur_bufnr, root_dir, function(result, res_err)
+		if not result then
+			---@type string
+			local err = "ninjection.resolve() error: resolution failed ... " .. tostring(res_err)
+			if cfg.debug then
+				vim.notify(err, vim.log.levels.ERROR)
+			end
+			return
+		end
+		---@cast result NJResolution
 
-	pcall(vim.api.nvim_buf_set_extmark, cur_bufnr, resolve_ns, s_row, 0, {
-		virt_text = { { label, "Comment" } },
-		virt_text_pos = "eol",
-	})
+		-- Render at the end of the interpolation's line. Clear any prior overlay
+		-- first so repeated resolves replace rather than stack.
+		vim.api.nvim_buf_clear_namespace(cur_bufnr, resolve_ns, s_row, s_row + 1)
+
+		---@type string
+		local label
+		if result.bound_by_caller then
+			label = "⟨bound by caller: " .. result.bound_by_caller .. "⟩"
+		else
+			label = "⟶ " .. tostring(result.path)
+		end
+
+		pcall(vim.api.nvim_buf_set_extmark, cur_bufnr, resolve_ns, s_row, 0, {
+			virt_text = { { label, "Comment" } },
+			virt_text_pos = "eol",
+		})
+	end)
 
 	return true, nil
 end

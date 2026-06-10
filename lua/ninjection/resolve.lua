@@ -231,66 +231,78 @@ local function nix_eval_cmd(expr)
 	}
 end
 
+---@brief
+--- Hand a resolution to `on_done` on the main loop, never synchronously — the
+--- async contract holds even for conditions known before an eval is spawned, and
+--- the eval's completion callback runs off the main loop where API calls are
+--- unsafe. An error is also surfaced as a debug diagnostic.
+---@param on_done fun(result: NJResolution?, err: string?)
+---@param result NJResolution?
+---@param err string?
+local function deliver(on_done, result, err)
+	vim.schedule(function()
+		if err and cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		on_done(result, err)
+	end)
+end
+
 ---@tag ninjection.resolve.resolve()
 ---@brief
 --- Resolve an interpolation to its parent language's real evaluated value. The
 --- scope is reconstructed and synthesized (see |ninjection.resolve.synthesize()|),
---- then evaluated with `nix eval`. A caller-bound interpolation is returned as-is
+--- then evaluated with `nix eval`. A caller-bound interpolation is delivered as-is
 --- without evaluating. Resolution reads store paths at evaluation time and never
 --- realises a derivation.
+---
+--- The eval runs asynchronously so a cold/online `nix eval` never blocks the
+--- editor; `on_done` receives the result on the main loop, never synchronously
+--- (even for conditions known before the eval is spawned).
 ---
 ---@param node TSNode The interpolation node, in the parent (Nix) buffer.
 ---@param bufnr integer The parent buffer.
 ---@param root_dir string Flake root whose `nixpkgs` input supplies `pkgs`.
----@return NJResolution? result, string? err
-function M.resolve(node, bufnr, root_dir)
+---@param on_done fun(result: NJResolution?, err: string?) Receives the resolution.
+function M.resolve(node, bufnr, root_dir, on_done)
 	---@type NJResolution?, string?
 	local result, syn_err = M.synthesize(node, bufnr, root_dir)
 	if not result then
-		return nil, syn_err
+		return deliver(on_done, nil, syn_err)
 	end
 	---@cast result NJResolution
 
 	-- A caller-bound interpolation is not resolvable from the file alone; surface
 	-- the condition rather than evaluating.
 	if result.bound_by_caller then
-		return result, nil
+		return deliver(on_done, result, nil)
 	end
 	-- lua_ls cannot @cast a field; hoist to a local to narrow string? -> string.
 	local expr = result.expr
 	---@cast expr string
 
-	---@type boolean, vim.SystemCompleted?
-	local ok, completed = pcall(function()
-		return vim.system(nix_eval_cmd(expr), { text = true }):wait()
+	---@type boolean, any
+	local spawn_ok, spawn_err = pcall(vim.system, nix_eval_cmd(expr), { text = true }, function(completed)
+		if completed.code ~= 0 then
+			return deliver(
+				on_done,
+				nil,
+				"ninjection.resolve.resolve() error: nix eval failed ... " .. tostring(completed.stderr)
+			)
+		end
+
+		---@type string
+		local path = vim.trim(completed.stdout or "")
+		if path == "" then
+			return deliver(on_done, nil, "ninjection.resolve.resolve() warning: nix eval returned no value")
+		end
+
+		result.path = path
+		deliver(on_done, result, nil)
 	end)
-	if not ok or not completed then
-		---@type string
-		local err = "ninjection.resolve.resolve() error: failed to invoke nix ... " .. tostring(completed)
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return nil, err
+	if not spawn_ok then
+		deliver(on_done, nil, "ninjection.resolve.resolve() error: failed to invoke nix ... " .. tostring(spawn_err))
 	end
-	---@cast completed vim.SystemCompleted
-
-	if completed.code ~= 0 then
-		---@type string
-		local err = "ninjection.resolve.resolve() error: nix eval failed ... " .. tostring(completed.stderr)
-		if cfg.debug then
-			vim.notify(err, vim.log.levels.ERROR)
-		end
-		return nil, err
-	end
-
-	---@type string
-	local path = vim.trim(completed.stdout or "")
-	if path == "" then
-		return nil, "ninjection.resolve.resolve() warning: nix eval returned no value"
-	end
-
-	result.path = path
-	return result, nil
 end
 
 return M

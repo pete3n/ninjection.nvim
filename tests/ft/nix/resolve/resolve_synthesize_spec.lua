@@ -87,7 +87,14 @@ describe("ninjection.resolve synthesis #e2e #nix #resolve", function()
 		-- The reconstructed expression is self-contained (no flake/nixpkgs needed),
 		-- so it resolves offline wherever `nix` exists.
 		if vim.fn.executable("nix") == 1 then
-			local resolved = resolve.resolve(node, bufnr, root)
+			---@type NJResolution?
+			local resolved
+			resolve.resolve(node, bufnr, root, function(callback_result)
+				resolved = callback_result
+			end)
+			vim.wait(10000, function()
+				return resolved ~= nil
+			end, 50)
 			assert.are.equal("hi from let", resolved and resolved.path)
 		end
 
@@ -106,10 +113,19 @@ describe("ninjection.resolve synthesis #e2e #nix #resolve", function()
 		vim.api.nvim_win_set_cursor(0, { 4, 8 })
 
 		local node = resolve.find_interpolation(bufnr, vim.api.nvim_win_get_cursor(0))
-		local result, err = resolve.resolve(node, bufnr, root)
-		assert.is_truthy(result, "resolve should return a result: " .. tostring(err))
+		---@type NJResolution?, string?
+		local result, err
+		---@type boolean
+		local delivered = false
+		resolve.resolve(node, bufnr, root, function(callback_result, callback_err)
+			delivered, result, err = true, callback_result, callback_err
+		end)
+		vim.wait(30000, function()
+			return delivered
+		end, 50)
+		assert.is_truthy(result, "resolve should deliver a result: " .. tostring(err))
 		assert.is_truthy(
-			result.path and result.path:match("^/nix/store/.*hello"),
+			result and result.path and result.path:match("^/nix/store/.*hello"),
 			"expected a hello store path, got: " .. tostring(result and result.path)
 		)
 
