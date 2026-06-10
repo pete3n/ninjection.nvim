@@ -256,11 +256,13 @@ function M.resolve(node, bufnr, root_dir)
 	if result.bound_by_caller then
 		return result, nil
 	end
-	---@cast result.expr string
+	-- lua_ls cannot @cast a field; hoist to a local to narrow string? -> string.
+	local expr = result.expr
+	---@cast expr string
 
 	---@type boolean, vim.SystemCompleted?
 	local ok, completed = pcall(function()
-		return vim.system(nix_eval_cmd(result.expr), { text = true }):wait()
+		return vim.system(nix_eval_cmd(expr), { text = true }):wait()
 	end)
 	if not ok or not completed then
 		---@type string
