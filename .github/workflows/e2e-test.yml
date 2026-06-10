@@ -76,6 +76,28 @@ jobs:
       - name: Run nix-bash tests
         run: docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/nix/bash" -c "qa"
 
+  nix-resolve-tests:
+    needs: build-image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ninjection-test-image
+          path: .
+
+      - name: Load Docker image
+        run: docker load < ninjection-test.tar
+
+      # The resolution engine's eval-dependent specs skip cleanly when the pinned
+      # nixpkgs source is absent from the image closure (ADR-0006). Seeding that
+      # source so they run offline in CI is a separately-scoped follow-up; the
+      # synthesis and scope-walk specs run here today.
+      - name: Run nix-resolve tests
+        run: docker run --rm ninjection-test nvim-dev --headless -c "PlenaryBustedDirectory tests/ft/nix/resolve" -c "qa"
+
   lua-nix-tests:
     needs: build-image
     runs-on: ubuntu-22.04

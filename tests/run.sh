@@ -25,6 +25,7 @@ TEST_GROUPS=(
 	"tests/health"
 	"tests/ft/nix/lua"
 	"tests/ft/nix/bash"
+	"tests/ft/nix/resolve"
 	"tests/ft/lua/nix"
 )
 
@@ -33,6 +34,7 @@ if [ "$#" -gt 0 ]; then
 		health) TEST_GROUPS=("tests/health") ;;
 		nix-lua) TEST_GROUPS=("tests/ft/nix/lua") ;;
 		nix-bash) TEST_GROUPS=("tests/ft/nix/bash") ;;
+		nix-resolve) TEST_GROUPS=("tests/ft/nix/resolve") ;;
 		lua-nix) TEST_GROUPS=("tests/ft/lua/nix") ;;
 		*) TEST_GROUPS=("$1") ;;
 	esac
