@@ -29,6 +29,30 @@ Follow-up:
       — deferred + documented in ADR-0005: needs extmark-based position tracking
       (Treesitter can't re-find a site whose text became the evaluated value, esp.
       inside a string). An interpolation is a tracked site + rendering policy.
+      - [x] Feasibility spike: `resolve()` — display-only, non-destructive. Design
+            settled in ADR-0006 + CONTEXT.md (Resolved value, Resolution scope).
+            Implemented (`lua/ninjection/resolve.lua`, `tests/ft/nix/resolve/`):
+            1. [~] Fixtures under `tests/ft/nix/resolve/` (unbound / `{pkgs}:` formal /
+               `let`-bound). The eval root is the project flake for now; a *dedicated*
+               pinned fixture flake is folded into the CI-seeding follow-up below.
+            2. [x] `ninjection/resolve.lua`: `find_interpolation` + Treesitter
+               scope-walk (`synthesize`) -> `builtins.getFlake "<root>"`-based `--expr`
+               -> `nix eval --offline --impure --raw` -> `{ path }`. Nearest-binding
+               rule: `let`/`with`/`inherit` -> reconstruct; function formal -> report
+               `bound_by_caller`; otherwise-unbound -> supply `pkgs` from the flake.
+            3. [x] `ninjection.resolve()` verb in the `:Ninjection` dispatcher +
+               `<Plug>(NinjectionResolve)`; renders via extmark `virt_text` (hover
+               float remains a sibling renderer over the same engine).
+            4. [x] Busted specs that skip cleanly (`pending`) when `nix`/nixpkgs-source
+               is absent; the synthesis + `let`-eval specs run with no flake/network.
+            - [ ] Follow-up: make the engine eval **async** (`vim.system` + callback /
+                  on_exit). The spike uses a synchronous `:wait()` (~0.2s offline);
+                  a cold/online eval would block the editor.
+            - [ ] Follow-up (scoped separately, NOT a spike blocker): a dedicated pinned
+                  fixture flake + seeding its nixpkgs source into the ADR-0004 Docker
+                  closure so the eval specs run offline in CI. The closure today carries
+                  only the toolchain built from nixpkgs, not the source tree `nix eval`
+                  reads, so the store-path specs `pending` in CI for now.
 - [ ] Generalise beyond a Nix host / bash+sh injected languages
       - In progress: Python injected in Nix (parent stays Nix). Interpolation
         handling must become injected-keyed — shell rewrites `${x}`, Python leaves

@@ -70,4 +70,26 @@ to an injected-language-safe identifier (see Rename mapping) and restored on
 write-back; where `${…}` is inert in the injected language (e.g. inside a Python
 string literal it is ordinary text), the interpolation is left verbatim and
 round-trips unchanged. Substituting the parent's *real* evaluated value (rather
-than a default) is a future enhancement.
+than a default) is a future enhancement (see Resolved value).
+
+**Resolved value**:
+The parent language's *actual evaluated* result for an interpolation — e.g. Nix
+`${pkgs.hello}` resolves to its store path `/nix/store/…-hello`. The eventual
+replacement for the placeholder default (`""`/`nil`) an interpreted placeholder
+carries today (the deferred "real-value resolution" of ADR-0005). Produced by
+`resolve()` and surfaced *non-destructively* — virtual text or a hover float —
+never written into the buffer, preserving the round-trip's no-silent-mutation
+discipline. For Nix, a store path is available at *evaluation* time, so resolving
+never triggers a build.
+_Avoid_: evaluated output, build result, eval result
+
+**Resolution scope**:
+The lexical bindings an interpolation needs to be evaluated on its own (what
+`pkgs` is, etc.), recovered by Treesitter walking outward from the interpolation
+node and synthesized into a self-contained expression. When the binding chain
+bottoms out inside the file the interpolation is *self-contained* and resolvable;
+when it ends in a **free variable** — a function parameter (`{ pkgs, lib }:`)
+whose value is supplied by an unseen caller — it is not resolvable from the file
+alone. This self-contained / free-variable boundary is the defining feasibility
+limit of resolution.
+_Avoid_: environment, context, binding set
