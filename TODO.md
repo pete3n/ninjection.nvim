@@ -37,9 +37,15 @@ Follow-up:
                pinned fixture flake is folded into the CI-seeding follow-up below.
             2. [x] `ninjection/resolve.lua`: `find_interpolation` + Treesitter
                scope-walk (`synthesize`) -> `builtins.getFlake "<root>"`-based `--expr`
-               -> `nix eval --offline --impure --raw` -> `{ path }`. Nearest-binding
-               rule: `let`/`with`/`inherit` -> reconstruct; function formal -> report
-               `bound_by_caller`; otherwise-unbound -> supply `pkgs` from the flake.
+               -> `nix eval --offline --impure --raw` -> `{ path }`. Lexical-first
+               rule (Nix scoping: a lexical binding beats any `with`): `let` binding
+               or `inherit (src) name;` -> reconstruct; function formal -> report
+               `bound_by_caller`; lexically-unbound under `with` -> wrap in the with
+               chain (let-bound env binding spliced ahead; unbound env head pulls the
+               flake-pkgs preamble); otherwise-unbound -> supply `pkgs` from the flake.
+               `with`/`inherit_from` landed 2026-06-10. Not handled yet: transitive
+               deps of a reconstructed binding; plain `inherit name;` is passed over
+               by design (it only re-binds the outer scope).
             3. [x] `ninjection.resolve()` verb in the `:Ninjection` dispatcher +
                `<Plug>(NinjectionResolve)`; renders via extmark `virt_text` (hover
                float remains a sibling renderer over the same engine).

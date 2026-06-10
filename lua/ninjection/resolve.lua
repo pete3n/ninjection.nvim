@@ -33,8 +33,10 @@ local NIX_FUNCTION = "function_expression"
 local NIX_FORMALS = "formals"
 local NIX_FORMAL = "formal"
 local NIX_LET = "let_expression"
+local NIX_WITH = "with_expression"
 local NIX_BINDING_SET = "binding_set"
 local NIX_BINDING = "binding"
+local NIX_INHERIT_FROM = "inherit_from"
 
 ---@brief
 --- The head free name an interpolation expression depends on: the leftmost
@@ -123,9 +125,31 @@ function M.find_interpolation(bufnr, cursor_pos)
 end
 
 ---@brief
+--- Whether this `inherit_from` clause (`inherit (src) a b;`) inherits `name`.
+---@param inherit_node TSNode An `inherit_from` node.
+---@param name string
+---@param bufnr integer
+---@return boolean
+local function inherits_name(inherit_node, name, bufnr)
+	---@type TSNode?
+	local attrs = inherit_node:field("attrs")[1]
+	if not attrs then
+		return false
+	end
+	for attr in attrs:iter_children() do
+		if attr:named() and ts.get_node_text(attr, bufnr) == name then
+			return true
+		end
+	end
+	return false
+end
+
+---@brief
 --- The text of the `let` binding for `name` on this `let_expression`, if it
---- declares one (`greeting = "hi";` for `let greeting = "hi"; in ...`). The Nix
---- `binding` node spans the trailing `;`, so it reads as a ready-to-splice clause.
+--- declares one — a plain binding (`greeting = "hi";`) or an inherit-from
+--- clause (`inherit (src) greeting;`). Either node spans the trailing `;`, so
+--- it reads as a ready-to-splice clause. A plain `inherit greeting;` only
+--- re-binds the enclosing scope, so it supplies no value and is passed over.
 ---@param let_node TSNode A `let_expression` node.
 ---@param name string
 ---@param bufnr integer
@@ -139,11 +163,41 @@ local function let_binding_text(let_node, name, bufnr)
 					if attrpath and ts.get_node_text(attrpath, bufnr) == name then
 						return ts.get_node_text(binding, bufnr)
 					end
+				elseif binding:type() == NIX_INHERIT_FROM and inherits_name(binding, name, bufnr) then
+					return ts.get_node_text(binding, bufnr)
 				end
 			end
 		end
 	end
 	return nil
+end
+
+---@brief
+--- The nearest lexical binding of `name` in view — a function formal or a `let`
+--- binding on an ancestor — walking outward from `start`. Lexical bindings are
+--- what `with` cannot shadow (Nix scoping). A `let` binding also yields its
+--- ready-to-splice clause text; a formal is bound but has no in-file clause.
+---@param start TSNode
+---@param name string
+---@param bufnr integer
+---@return ("formal"|"let")? binding_kind, string? let_clause
+local function lexical_binding(start, name, bufnr)
+	---@type TSNode?
+	local ancestor = start:parent()
+	while ancestor do
+		local kind = ancestor:type()
+		if kind == NIX_FUNCTION and declares_formal(ancestor, name, bufnr) then
+			return "formal", nil
+		elseif kind == NIX_LET then
+			---@type string?
+			local binding = let_binding_text(ancestor, name, bufnr)
+			if binding then
+				return "let", binding
+			end
+		end
+		ancestor = ancestor:parent()
+	end
+	return nil, nil
 end
 
 ---@brief
@@ -180,27 +234,72 @@ function M.synthesize(node, bufnr, root_dir)
 	-- decides feasibility (ADR-0006): a `let`/`with`/`inherit` binding in view is
 	-- self-contained (reconstruct it), a function formal lives in an unseen caller
 	-- (not resolvable from the file alone), and an otherwise-unbound name falls back
-	-- to `pkgs` supplied from the pinned flake input.
+	-- to `pkgs` supplied from the pinned flake input. A lexical binding wins over
+	-- any `with`, regardless of nesting order (Nix scoping), so the lexical lookup
+	-- runs first and `with` environments only matter when it comes up empty.
 	---@type string?
 	local name = head_name(expr_node, bufnr)
+	-- Enclosing `with` environments, innermost first.
+	---@type TSNode[]
+	local with_envs = {}
 	if name then
+		---@type ("formal"|"let")?, string?
+		local binding_kind, let_clause = lexical_binding(node, name, bufnr)
+		if binding_kind == "formal" then
+			return { bound_by_caller = name }, nil
+		elseif let_clause then
+			return {
+				expr = "let " .. let_clause .. " in builtins.toString (" .. expr_text .. ")",
+			}, nil
+		end
+
 		---@type TSNode?
 		local ancestor = node:parent()
 		while ancestor do
-			local kind = ancestor:type()
-			if kind == NIX_FUNCTION and declares_formal(ancestor, name, bufnr) then
-				return { bound_by_caller = name }, nil
-			elseif kind == NIX_LET then
-				---@type string?
-				local binding = let_binding_text(ancestor, name, bufnr)
-				if binding then
-					return {
-						expr = "let " .. binding .. " in builtins.toString (" .. expr_text .. ")",
-					}, nil
+			if ancestor:type() == NIX_WITH then
+				---@type TSNode?
+				local env = ancestor:field("environment")[1]
+				if env then
+					table.insert(with_envs, env)
 				end
 			end
 			ancestor = ancestor:parent()
 		end
+	end
+
+	if #with_envs > 0 then
+		-- Inner `with` shadows outer: emit outermost first so the innermost
+		-- clause sits nearest the expression. An environment whose own head name
+		-- is let-bound in view gets that binding reconstructed ahead of the
+		-- chain; one lexically unbound in the file gets `pkgs` from the pinned
+		-- flake input, same as an unbound interpolation head.
+		---@type string[]
+		local clauses = {}
+		---@type boolean
+		local env_unbound = false
+		for env_index = #with_envs, 1, -1 do
+			---@type TSNode
+			local env = with_envs[env_index]
+			---@type string?
+			local env_name = head_name(env, bufnr)
+			if env_name then
+				---@type ("formal"|"let")?, string?
+				local binding_kind, let_clause = lexical_binding(env, env_name, bufnr)
+				if not binding_kind then
+					env_unbound = true
+				elseif let_clause then
+					table.insert(clauses, "let " .. let_clause .. " in ")
+				end
+			end
+			table.insert(clauses, "with " .. ts.get_node_text(env, bufnr) .. "; ")
+		end
+		---@type string
+		local preamble = env_unbound and (pkgs_preamble(root_dir) .. "in ") or ""
+		---@type NJResolution
+		local with_result = {
+			expr = preamble .. table.concat(clauses) .. "builtins.toString (" .. expr_text .. ")",
+		}
+		return with_result, nil
 	end
 
 	-- Head name is unbound in the file: supply `pkgs` from the pinned flake input.

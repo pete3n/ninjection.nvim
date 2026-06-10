@@ -26,6 +26,23 @@ local function nix_source_available(root)
 	return out.code == 0 and out.stdout:match("^/nix/store/") ~= nil
 end
 
+--- Run the async engine and block the spec until the resolution is delivered.
+---@param node TSNode
+---@param bufnr integer
+---@param root string
+---@return NJResolution? resolved
+local function await_resolve(node, bufnr, root)
+	---@type NJResolution?
+	local resolved
+	resolve.resolve(node, bufnr, root, function(callback_result)
+		resolved = callback_result
+	end)
+	vim.wait(10000, function()
+		return resolved ~= nil
+	end, 50)
+	return resolved
+end
+
 describe("ninjection.resolve synthesis #e2e #nix #resolve", function()
 	it("supplies pkgs from the pinned flake root for an unbound interpolation", function()
 		local root = vim.fn.getcwd()
@@ -87,16 +104,134 @@ describe("ninjection.resolve synthesis #e2e #nix #resolve", function()
 		-- The reconstructed expression is self-contained (no flake/nixpkgs needed),
 		-- so it resolves offline wherever `nix` exists.
 		if vim.fn.executable("nix") == 1 then
-			---@type NJResolution?
-			local resolved
-			resolve.resolve(node, bufnr, root, function(callback_result)
-				resolved = callback_result
-			end)
-			vim.wait(10000, function()
-				return resolved ~= nil
-			end, 50)
+			local resolved = await_resolve(node, bufnr, root)
 			assert.are.equal("hi from let", resolved and resolved.path)
 		end
+
+		vim.cmd("bdelete!")
+	end)
+
+	it("reconstructs an enclosing with whose environment is a literal attrset", function()
+		local root = vim.fn.getcwd()
+
+		vim.cmd("edit tests/ft/nix/resolve/resolve_with.nix")
+		local bufnr = vim.api.nvim_get_current_buf()
+		-- Cursor inside ${greeting} on the injected content line.
+		vim.api.nvim_win_set_cursor(0, { 5, 8 })
+
+		local node = resolve.find_interpolation(bufnr, vim.api.nvim_win_get_cursor(0))
+		assert.is_truthy(node, "should find an interpolation node at the cursor")
+
+		local result, syn_err = resolve.synthesize(node, bufnr, root)
+		assert.is_truthy(result, "synthesize should return a result: " .. tostring(syn_err))
+		assert.are.equal('with { greeting = "hi from with"; }; builtins.toString (greeting)', result.expr)
+
+		-- Self-contained (no flake/nixpkgs needed), so it resolves offline
+		-- wherever `nix` exists.
+		if vim.fn.executable("nix") == 1 then
+			local resolved = await_resolve(node, bufnr, root)
+			assert.are.equal("hi from with", resolved and resolved.path)
+		end
+
+		vim.cmd("bdelete!")
+	end)
+
+	it("supplies pkgs from the pinned flake root for an unbound with environment", function()
+		local root = vim.fn.getcwd()
+
+		vim.cmd("edit tests/ft/nix/resolve/resolve_with_pkgs.nix")
+		local bufnr = vim.api.nvim_get_current_buf()
+		-- Cursor inside ${hello} on the injected content line.
+		vim.api.nvim_win_set_cursor(0, { 5, 8 })
+
+		local node = resolve.find_interpolation(bufnr, vim.api.nvim_win_get_cursor(0))
+		assert.is_truthy(node, "should find an interpolation node at the cursor")
+
+		local result, syn_err = resolve.synthesize(node, bufnr, root)
+		assert.is_truthy(result, "synthesize should return a result: " .. tostring(syn_err))
+		assert.are.equal(
+			'let pkgs = (builtins.getFlake "'
+				.. root
+				.. '").inputs.nixpkgs.legacyPackages.${builtins.currentSystem}; in with pkgs; builtins.toString (hello)',
+			result.expr
+		)
+
+		vim.cmd("bdelete!")
+	end)
+
+	it("reconstructs the let binding of a with environment around the with chain", function()
+		local root = vim.fn.getcwd()
+
+		vim.cmd("edit tests/ft/nix/resolve/resolve_with_let.nix")
+		local bufnr = vim.api.nvim_get_current_buf()
+		-- Cursor inside ${greeting} on the injected content line.
+		vim.api.nvim_win_set_cursor(0, { 10, 8 })
+
+		local node = resolve.find_interpolation(bufnr, vim.api.nvim_win_get_cursor(0))
+		assert.is_truthy(node, "should find an interpolation node at the cursor")
+
+		-- The let clause is spliced verbatim, so the fixture's multi-line
+		-- binding layout survives into the synthesized expression.
+		local result, syn_err = resolve.synthesize(node, bufnr, root)
+		assert.is_truthy(result, "synthesize should return a result: " .. tostring(syn_err))
+		assert.are.equal(
+			'let attrs = {\n    greeting = "hi from with let";\n  }; in with attrs; builtins.toString (greeting)',
+			result.expr
+		)
+
+		-- Self-contained, so it resolves offline wherever `nix` exists.
+		if vim.fn.executable("nix") == 1 then
+			local resolved = await_resolve(node, bufnr, root)
+			assert.are.equal("hi from with let", resolved and resolved.path)
+		end
+
+		vim.cmd("bdelete!")
+	end)
+
+	it("splices an inherit-from clause as the let binding", function()
+		local root = vim.fn.getcwd()
+
+		vim.cmd("edit tests/ft/nix/resolve/resolve_inherit.nix")
+		local bufnr = vim.api.nvim_get_current_buf()
+		-- Cursor inside ${greeting} on the injected content line.
+		vim.api.nvim_win_set_cursor(0, { 7, 8 })
+
+		local node = resolve.find_interpolation(bufnr, vim.api.nvim_win_get_cursor(0))
+		assert.is_truthy(node, "should find an interpolation node at the cursor")
+
+		local result, syn_err = resolve.synthesize(node, bufnr, root)
+		assert.is_truthy(result, "synthesize should return a result: " .. tostring(syn_err))
+		assert.are.equal(
+			'let inherit ({ greeting = "hi from inherit"; }) greeting; in builtins.toString (greeting)',
+			result.expr
+		)
+
+		-- Self-contained, so it resolves offline wherever `nix` exists.
+		if vim.fn.executable("nix") == 1 then
+			local resolved = await_resolve(node, bufnr, root)
+			assert.are.equal("hi from inherit", resolved and resolved.path)
+		end
+
+		vim.cmd("bdelete!")
+	end)
+
+	it("lets a lexical binding shadow an inner with (Nix scoping)", function()
+		local root = vim.fn.getcwd()
+
+		vim.cmd("edit tests/ft/nix/resolve/resolve_shadow.nix")
+		local bufnr = vim.api.nvim_get_current_buf()
+		-- Cursor inside ${greeting} on the injected content line.
+		vim.api.nvim_win_set_cursor(0, { 8, 8 })
+
+		local node = resolve.find_interpolation(bufnr, vim.api.nvim_win_get_cursor(0))
+		assert.is_truthy(node, "should find an interpolation node at the cursor")
+
+		-- A `with` cannot shadow a lexical binding, no matter the nesting order:
+		-- the outer `let` wins over the inner `with` and the with clause is
+		-- discarded from the synthesized expression.
+		local result, syn_err = resolve.synthesize(node, bufnr, root)
+		assert.is_truthy(result, "synthesize should return a result: " .. tostring(syn_err))
+		assert.are.equal('let greeting = "hi from let"; in builtins.toString (greeting)', result.expr)
 
 		vim.cmd("bdelete!")
 	end)
