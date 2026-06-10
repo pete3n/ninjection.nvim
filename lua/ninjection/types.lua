@@ -109,6 +109,16 @@
 ---@field text_meta? table<string, boolean> Language specific text modififications
 ---@field cursor_pos integer[] Cursor position during table creation
 
+---@tag NJResolution
+---@class NJResolution
+---@brief Data produced by the resolution engine (ninjection/resolve.lua). The
+--- verb renders this non-destructively; it is never written into the buffer.
+---
+---@field expr? string Synthesized self-contained Nix expression (intermediate).
+---@field path? string Resolved value (e.g. a `/nix/store/...` path).
+---@field bound_by_caller? string Free formal name that blocks resolution; set when
+--- the interpolation's binding lives in an unseen caller (e.g. `{ pkgs }:`).
+
 ---@tag NJIndents
 ---@class NJIndents
 ---@brief Store indents for a text buffer.

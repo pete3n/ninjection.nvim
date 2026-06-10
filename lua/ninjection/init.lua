@@ -33,9 +33,14 @@ local cfg = setmetatable({}, {
 
 local buffer = require("ninjection.buffer")
 local parse = require("ninjection.parse")
+local resolve = require("ninjection.resolve")
 local NJChild = require("ninjection.child")
 local NJParent = require("ninjection.parent")
 local lsp = require("ninjection.lsp")
+
+--- Namespace for the non-destructive resolution overlay (virtual text). Resolved
+--- values are surfaced here, never written into the buffer (ADR-0006).
+local resolve_ns = vim.api.nvim_create_namespace("ninjection_resolve")
 
 if vim.fn.exists(":checkhealth") == 2 and vim.health and vim.health.report_info then
 	---@type boolean, string?
@@ -589,6 +594,89 @@ function ninjection.format()
 
 	vim.api.nvim_win_hide(nj_child.c_win)
 	nj_parent:del_child(nj_child.c_bufnr)
+
+	return true, nil
+end
+
+---@tag ninjection.resolve()
+---@brief
+--- Resolves the parent interpolation under the cursor to its real evaluated value
+--- and surfaces it non-destructively as virtual text at the end of the line. The
+--- buffer is never mutated (ADR-0006). When the interpolation is bound by an unseen
+--- caller (e.g. a `{ pkgs }:` formal), that condition is shown instead of a value.
+--- This verb renders the |ninjection.resolve.resolve()| engine's data.
+---
+---@return boolean success, string? err
+function ninjection.resolve()
+	---@type boolean, integer?
+	local get_buf_ok, cur_bufnr = pcall(vim.api.nvim_get_current_buf)
+	if not get_buf_ok or type(cur_bufnr) ~= "number" then
+		---@type string
+		local err = "ninjection.resolve() error: Could not retrieve current buffer handle."
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return false, err
+	end
+	---@cast cur_bufnr integer
+
+	---@type integer[]
+	local cursor_pos = vim.api.nvim_win_get_cursor(0)
+
+	---@type TSNode?, string?
+	local node, find_err = resolve.find_interpolation(cur_bufnr, cursor_pos)
+	if not node then
+		---@type string
+		local err = "ninjection.resolve() warning: No interpolation at cursor ... " .. tostring(find_err)
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.WARN)
+		end
+		return false, err
+	end
+	---@cast node TSNode
+
+	---@type string?, string?
+	local root_dir, dir_err = buffer.get_root_dir()
+	if not root_dir then
+		---@type string
+		local err = "ninjection.resolve() error: Failed to get root directory ... " .. tostring(dir_err)
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return false, err
+	end
+	---@cast root_dir string
+
+	---@type NJResolution?, string?
+	local result, res_err = resolve.resolve(node, cur_bufnr, root_dir)
+	if not result then
+		---@type string
+		local err = "ninjection.resolve() error: resolution failed ... " .. tostring(res_err)
+		if cfg.debug then
+			vim.notify(err, vim.log.levels.ERROR)
+		end
+		return false, err
+	end
+	---@cast result NJResolution
+
+	-- Render at the end of the interpolation's line. Clear any prior overlay first
+	-- so repeated resolves replace rather than stack.
+	---@type integer
+	local s_row, _, _, _ = node:range()
+	vim.api.nvim_buf_clear_namespace(cur_bufnr, resolve_ns, s_row, s_row + 1)
+
+	---@type string
+	local label
+	if result.bound_by_caller then
+		label = "⟨bound by caller: " .. result.bound_by_caller .. "⟩"
+	else
+		label = "⟶ " .. tostring(result.path)
+	end
+
+	pcall(vim.api.nvim_buf_set_extmark, cur_bufnr, resolve_ns, s_row, 0, {
+		virt_text = { { label, "Comment" } },
+		virt_text_pos = "eol",
+	})
 
 	return true, nil
 end

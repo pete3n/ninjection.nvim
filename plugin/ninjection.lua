@@ -22,6 +22,11 @@ local subcommand_tbl = {
 			require("ninjection").format()
 		end,
 	},
+	resolve = {
+		impl = function()
+			require("ninjection").resolve()
+		end,
+	},
 }
 
 ---@nodoc
@@ -72,6 +77,9 @@ end, { noremap = true, silent = true })
 vim.keymap.set("n", "<Plug>(NinjectionFormat)", function()
 	require("ninjection").format()
 end, { noremap = true, silent = true })
+vim.keymap.set("n", "<Plug>(NinjectionResolve)", function()
+	require("ninjection").resolve()
+end, { noremap = true, silent = true })
 
 ---@mod ninjection-command USER COMMAND
 ---@brief :Ninjection <subcommand?>
@@ -80,3 +88,4 @@ end, { noremap = true, silent = true })
 ---		edit  	=> |ninjection.edit|
 ---		replace => |ninjection.replace|
 ---		select  => |ninjection.select|
+---		resolve => |ninjection.resolve|
