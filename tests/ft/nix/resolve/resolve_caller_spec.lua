@@ -1,37 +1,10 @@
 local resolve = require("ninjection.resolve")
+local nix_source_available = dofile("tests/ft/nix/resolve/spec_helpers.lua").nix_source_available
 
 --- The fixture flake whose flake.nix instantiates config.nix with `pkgs` bound
 --- from the pinned nixpkgs input — the "knowing how the file is instantiated"
 --- case ADR-0006 deferred.
 local FIXTURE_ROOT_REL = "tests/ft/nix/resolve/caller_flake"
-
---- Whether the nix toolchain and the fixture flake's pinned nixpkgs source are
---- reachable offline. When false, the eval-dependent specs skip (the offline-CI
---- source seeding is a separately-scoped follow-up per ADR-0006).
----@param root string The fixture flake root.
----@return boolean
-local function nix_source_available(root)
-	if vim.fn.executable("nix") == 0 then
-		return false
-	end
-	local expr = 'builtins.toString ((builtins.getFlake "'
-		.. root
-		.. '").inputs.nixpkgs.legacyPackages.${builtins.currentSystem}.hello)'
-	local out = vim
-		.system({
-			"nix",
-			"eval",
-			"--offline",
-			"--impure",
-			"--extra-experimental-features",
-			"nix-command flakes",
-			"--raw",
-			"--expr",
-			expr,
-		}, { text = true })
-		:wait()
-	return out.code == 0 and out.stdout:match("^/nix/store/") ~= nil
-end
 
 describe("ninjection.resolve caller reconstruction #e2e #nix #resolve", function()
 	it("reconstructs an inherit-passed formal from the flake call site", function()

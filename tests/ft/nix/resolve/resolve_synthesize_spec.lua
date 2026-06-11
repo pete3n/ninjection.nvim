@@ -1,30 +1,5 @@
 local resolve = require("ninjection.resolve")
-
---- Whether the nix toolchain and the pinned nixpkgs source are reachable offline.
---- When false, the eval-dependent spec skips (the offline-CI source seeding is a
---- separately-scoped follow-up per ADR-0006).
-local function nix_source_available(root)
-	if vim.fn.executable("nix") == 0 then
-		return false
-	end
-	local expr = 'builtins.toString ((builtins.getFlake "'
-		.. root
-		.. '").inputs.nixpkgs.legacyPackages.${builtins.currentSystem}.hello)'
-	local out = vim
-		.system({
-			"nix",
-			"eval",
-			"--offline",
-			"--impure",
-			"--extra-experimental-features",
-			"nix-command flakes",
-			"--raw",
-			"--expr",
-			expr,
-		}, { text = true })
-		:wait()
-	return out.code == 0 and out.stdout:match("^/nix/store/") ~= nil
-end
+local nix_source_available = dofile("tests/ft/nix/resolve/spec_helpers.lua").nix_source_available
 
 --- Run the async engine and block the spec until the resolution is delivered.
 ---@param node TSNode

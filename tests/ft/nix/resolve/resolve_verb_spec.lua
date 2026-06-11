@@ -1,43 +1,7 @@
 local nj = require("ninjection")
-
---- virt_text chunks of every resolve extmark in the buffer, flattened to strings.
-local function resolve_virt_texts(bufnr)
-	local ns = vim.api.nvim_create_namespace("ninjection_resolve")
-	local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
-	local texts = {}
-	for _, mark in ipairs(marks) do
-		local chunks = mark[4] and mark[4].virt_text or {}
-		local parts = {}
-		for _, chunk in ipairs(chunks) do
-			parts[#parts + 1] = chunk[1]
-		end
-		texts[#texts + 1] = table.concat(parts)
-	end
-	return texts
-end
-
-local function nix_source_available(root)
-	if vim.fn.executable("nix") == 0 then
-		return false
-	end
-	local expr = 'builtins.toString ((builtins.getFlake "'
-		.. root
-		.. '").inputs.nixpkgs.legacyPackages.${builtins.currentSystem}.hello)'
-	local out = vim
-		.system({
-			"nix",
-			"eval",
-			"--offline",
-			"--impure",
-			"--extra-experimental-features",
-			"nix-command flakes",
-			"--raw",
-			"--expr",
-			expr,
-		}, { text = true })
-		:wait()
-	return out.code == 0 and out.stdout:match("^/nix/store/") ~= nil
-end
+local helpers = dofile("tests/ft/nix/resolve/spec_helpers.lua")
+local nix_source_available = helpers.nix_source_available
+local resolve_virt_texts = helpers.resolve_virt_texts
 
 describe("ninjection.resolve() verb #e2e #nix #resolve", function()
 	it("renders the resolved store path as non-destructive virtual text", function()

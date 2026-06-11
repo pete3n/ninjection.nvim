@@ -41,6 +41,7 @@ local NIX_INHERIT_FROM = "inherit_from"
 local NIX_APPLY = "apply_expression"
 local NIX_PATH = "path_expression"
 local NIX_ATTRSET = "attrset_expression"
+local NIX_LIST = "list_expression"
 
 ---@brief
 --- The head free name an interpolation expression depends on: the leftmost
@@ -84,6 +85,21 @@ local function declares_formal(fn_node, name, source)
 	return false
 end
 
+---@brief
+--- Root of the parent-language tree for `bufnr`, or nil when the buffer has no
+--- parent parser.
+---@param bufnr integer
+---@return TSNode? root
+local function parent_tree_root(bufnr)
+	---@type boolean, vim.treesitter.LanguageTree?
+	local ok, parser = pcall(ts.get_parser, bufnr, PARENT_LANG, { error = false })
+	if not ok or not parser then
+		return nil
+	end
+	---@cast parser vim.treesitter.LanguageTree
+	return parser:parse()[1]:root()
+end
+
 ---@tag ninjection.resolve.find_interpolation()
 ---@brief
 --- Find the innermost Nix `interpolation` node containing the cursor. The cursor
@@ -97,14 +113,11 @@ function M.find_interpolation(bufnr, cursor_pos)
 	---@type integer, integer
 	local row, col = cursor_pos[1] - 1, cursor_pos[2]
 
-	---@type boolean, vim.treesitter.LanguageTree?
-	local ok, parser = pcall(ts.get_parser, bufnr, PARENT_LANG, { error = false })
-	if not ok or not parser then
+	---@type TSNode?
+	local root = parent_tree_root(bufnr)
+	if not root then
 		return nil, "ninjection.resolve.find_interpolation() error: no " .. PARENT_LANG .. " parser for buffer"
 	end
-	---@cast parser vim.treesitter.LanguageTree
-
-	local root = parser:parse()[1]:root()
 
 	---@type TSNode?
 	local found
@@ -126,6 +139,43 @@ function M.find_interpolation(bufnr, cursor_pos)
 		return nil, "ninjection.resolve.find_interpolation() warning: no interpolation at cursor"
 	end
 	return found, nil
+end
+
+---@tag ninjection.resolve.find_resolvable()
+---@brief
+--- Find the resolvable node at the cursor: the innermost Nix `interpolation`
+--- containing it, or — outside any interpolation — the bare variable expression
+--- under the cursor (e.g. `wget` in `with pkgs; [ wget ]`). Attribute-path
+--- names are not variable expressions, so a cursor on a binding name finds
+--- nothing.
+---
+---@param bufnr integer The parent buffer.
+---@param cursor_pos integer[] Cursor position, (1:0) row:col indexed.
+---@return TSNode? node, string? err The resolvable node, or nil + reason.
+function M.find_resolvable(bufnr, cursor_pos)
+	---@type TSNode?
+	local interp = M.find_interpolation(bufnr, cursor_pos)
+	if interp then
+		return interp, nil
+	end
+
+	---@type integer, integer
+	local row, col = cursor_pos[1] - 1, cursor_pos[2]
+	---@type TSNode?
+	local root = parent_tree_root(bufnr)
+	if not root then
+		return nil, "ninjection.resolve.find_resolvable() error: no " .. PARENT_LANG .. " parser for buffer"
+	end
+
+	---@type TSNode?
+	local at_cursor = root:named_descendant_for_range(row, col, row, col)
+	while at_cursor and at_cursor:type() ~= NIX_VARIABLE do
+		at_cursor = at_cursor:parent()
+	end
+	if at_cursor then
+		return at_cursor, nil
+	end
+	return nil, "ninjection.resolve.find_resolvable() warning: no resolvable expression at cursor"
 end
 
 ---@brief
@@ -295,6 +345,48 @@ local function call_arg(args_node, name, source)
 end
 
 ---@brief
+--- The call site instantiating `parent_file` as a *module*: an application
+--- (`nixpkgs.lib.nixosSystem { ... }`) whose argument attrset has a `modules`
+--- list containing a path that resolves to it. Returns the apply node and its
+--- argument attrset.
+---@param flake_root TSNode Root of the parsed flake.nix tree.
+---@param source string The flake.nix source text.
+---@param parent_file string Absolute path of the instantiated file.
+---@param root_dir string Flake root, for resolving the relative module path.
+---@return TSNode? apply, TSNode? call_args
+local function find_module_call_site(flake_root, source, parent_file, root_dir)
+	---@type boolean, vim.treesitter.Query?
+	local q_ok, query = pcall(ts.query.parse, PARENT_LANG, "(" .. NIX_APPLY .. ") @apply")
+	if not q_ok or not query then
+		return nil, nil
+	end
+	for _, apply in query:iter_captures(flake_root, source, 0, -1) do
+		---@type TSNode?
+		local args = apply:field("argument")[1]
+		if args and args:type() == NIX_ATTRSET then
+			---@type ("inherit"|"binding")?, TSNode?
+			local modules_kind, modules_binding = call_arg(args, "modules", source)
+			if modules_kind == "binding" and modules_binding then
+				---@type TSNode?
+				local modules_list = modules_binding:field("expression")[1]
+				if modules_list and modules_list:type() == NIX_LIST then
+					for element in modules_list:iter_children() do
+						if element:type() == NIX_PATH then
+							---@type string
+							local resolved = vim.fs.normalize(root_dir .. "/" .. ts.get_node_text(element, source))
+							if resolved == vim.fs.normalize(parent_file) then
+								return apply, args
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	return nil, nil
+end
+
+---@brief
 --- Trace `name` outward from `start` through the flake.nix scope until it
 --- bottoms out at a flake input, accumulating ready-to-splice `let ... in `
 --- clauses (outermost first). Each hop splices the nearest `let` binding and
@@ -333,6 +425,45 @@ local function trace_to_input(start, name, source, root_dir)
 end
 
 ---@brief
+--- Reconstruct the `pkgs` a module-system call supplies to its modules:
+--- `<input>.legacyPackages.<system>`, where the input is traced from the head
+--- of the callee (`nixpkgs` in `nixpkgs.lib.nixosSystem`) and the system is
+--- read from the call site's `system` binding (`builtins.currentSystem` when
+--- the call declares none). Returns the ready-to-splice `let ... in ` chain.
+---@param apply TSNode The module-system `apply_expression` node.
+---@param call_args TSNode The call's argument `attrset_expression`.
+---@param source string The flake.nix source text.
+---@param root_dir string Flake root.
+---@return string? clauses
+local function module_pkgs_clauses(apply, call_args, source, root_dir)
+	---@type TSNode?
+	local callee = apply:field("function")[1]
+	---@type string?
+	local head = callee and head_name(callee, source) or nil
+	if not head then
+		return nil
+	end
+	---@type string?
+	local outer = trace_to_input(apply, head, source, root_dir)
+	if not outer then
+		return nil
+	end
+
+	---@type ("inherit"|"binding")?, TSNode?
+	local system_kind, system_binding = call_arg(call_args, "system", source)
+	---@type string
+	local system_text = "builtins.currentSystem"
+	if system_kind == "binding" and system_binding then
+		---@type TSNode?
+		local system_expr = system_binding:field("expression")[1]
+		if system_expr then
+			system_text = ts.get_node_text(system_expr, source)
+		end
+	end
+	return outer .. "let pkgs = " .. head .. ".legacyPackages.${" .. system_text .. "}; in "
+end
+
+---@brief
 --- Reconstruct the caller's binding chain for a formal of `parent_file` from
 --- the flake call site: parse `<root_dir>/flake.nix`, find the
 --- `import ./<file> { ... }` instantiation, and trace the argument supplying
@@ -364,7 +495,20 @@ local function caller_clauses(formal_name, parent_file, root_dir)
 	---@type TSNode?
 	local call_args = find_call_site(flake_root, source, parent_file, root_dir)
 	if not call_args then
-		return nil
+		-- Not import-instantiated; the file may instead be a *module* of a
+		-- `lib.nixosSystem`-shaped call, where the module system (not the call's
+		-- attrset) supplies `pkgs`. Only `pkgs` is reconstructible that way —
+		-- other module arguments (`config`, `lib`) would need a module-system
+		-- evaluation.
+		if formal_name ~= "pkgs" then
+			return nil
+		end
+		---@type TSNode?, TSNode?
+		local apply, module_args = find_module_call_site(flake_root, source, parent_file, root_dir)
+		if not apply or not module_args then
+			return nil
+		end
+		return module_pkgs_clauses(apply, module_args, source, root_dir)
 	end
 
 	---@type ("inherit"|"binding")?, TSNode?
@@ -403,8 +547,10 @@ end
 ---@param root_dir string Flake root whose `nixpkgs` input supplies `pkgs`.
 ---@return NJResolution? result, string? err
 function M.synthesize(node, bufnr, root_dir)
+	-- An interpolation wraps its expression; a bare expression node (e.g. a
+	-- variable in a `with pkgs; [ ... ]` list) *is* the expression.
 	---@type TSNode?
-	local expr_node = node:named_child(0)
+	local expr_node = node:type() == NIX_INTERPOLATION and node:named_child(0) or node
 	if not expr_node then
 		return nil, "ninjection.resolve.synthesize() warning: interpolation has no expression"
 	end
@@ -480,6 +626,16 @@ function M.synthesize(node, bufnr, root_dir)
 					env_unbound = true
 				elseif let_clause then
 					table.insert(clauses, "let " .. let_clause .. " in ")
+				elseif binding_kind == "formal" then
+					-- The environment's value lives in an unseen caller — unless
+					-- the project flake instantiates this file and supplies the
+					-- formal (same bottoming-out as an interpolation head formal).
+					---@type string?
+					local env_clauses = caller_clauses(env_name, vim.api.nvim_buf_get_name(bufnr), root_dir)
+					if not env_clauses then
+						return { bound_by_caller = env_name }, nil
+					end
+					table.insert(clauses, env_clauses)
 				end
 			end
 			table.insert(clauses, "with " .. ts.get_node_text(env, bufnr) .. "; ")

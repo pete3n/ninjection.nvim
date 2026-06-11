@@ -600,11 +600,12 @@ end
 
 ---@tag ninjection.resolve()
 ---@brief
---- Resolves the parent interpolation under the cursor to its real evaluated value
---- and surfaces it non-destructively as virtual text at the end of the line. The
---- buffer is never mutated (ADR-0006). When the interpolation is bound by an unseen
---- caller (e.g. a `{ pkgs }:` formal), that condition is shown instead of a value.
---- This verb renders the |ninjection.resolve.resolve()| engine's data.
+--- Resolves the parent expression under the cursor — an interpolation, or a bare
+--- variable such as a `with pkgs; [ ... ]` list member — to its real evaluated
+--- value and surfaces it non-destructively as virtual text at the end of the line.
+--- The buffer is never mutated (ADR-0006). When the expression is bound by an
+--- unseen caller (e.g. a `{ pkgs }:` formal), that condition is shown instead of
+--- a value. This verb renders the |ninjection.resolve.resolve()| engine's data.
 ---
 ---@return boolean success, string? err
 function ninjection.resolve()
@@ -624,10 +625,10 @@ function ninjection.resolve()
 	local cursor_pos = vim.api.nvim_win_get_cursor(0)
 
 	---@type TSNode?, string?
-	local node, find_err = resolve.find_interpolation(cur_bufnr, cursor_pos)
+	local node, find_err = resolve.find_resolvable(cur_bufnr, cursor_pos)
 	if not node then
 		---@type string
-		local err = "ninjection.resolve() warning: No interpolation at cursor ... " .. tostring(find_err)
+		local err = "ninjection.resolve() warning: No resolvable expression at cursor ... " .. tostring(find_err)
 		if cfg.debug then
 			vim.notify(err, vim.log.levels.WARN)
 		end
