@@ -36,21 +36,25 @@ local NIX_LET = "let_expression"
 local NIX_WITH = "with_expression"
 local NIX_BINDING_SET = "binding_set"
 local NIX_BINDING = "binding"
+local NIX_INHERIT = "inherit"
 local NIX_INHERIT_FROM = "inherit_from"
+local NIX_APPLY = "apply_expression"
+local NIX_PATH = "path_expression"
+local NIX_ATTRSET = "attrset_expression"
 
 ---@brief
 --- The head free name an interpolation expression depends on: the leftmost
 --- variable in its select/apply chain (`pkgs.hello` -> `pkgs`). Descends leftmost
 --- named children until a `variable_expression` is reached.
 ---@param expr_node TSNode
----@param bufnr integer
+---@param source integer|string Buffer number or source text the node was parsed from.
 ---@return string? name
-local function head_name(expr_node, bufnr)
+local function head_name(expr_node, source)
 	---@type TSNode?
 	local node = expr_node
 	while node do
 		if node:type() == NIX_VARIABLE then
-			return ts.get_node_text(node, bufnr)
+			return ts.get_node_text(node, source)
 		end
 		node = node:named_child(0)
 	end
@@ -62,15 +66,15 @@ end
 --- `function_expression` node.
 ---@param fn_node TSNode A `function_expression` node.
 ---@param name string
----@param bufnr integer
+---@param source integer|string Buffer number or source text the node was parsed from.
 ---@return boolean
-local function declares_formal(fn_node, name, bufnr)
+local function declares_formal(fn_node, name, source)
 	for child in fn_node:iter_children() do
 		if child:type() == NIX_FORMALS then
 			for formal in child:iter_children() do
 				if formal:type() == NIX_FORMAL then
 					local id = formal:named_child(0)
-					if id and ts.get_node_text(id, bufnr) == name then
+					if id and ts.get_node_text(id, source) == name then
 						return true
 					end
 				end
@@ -125,19 +129,20 @@ function M.find_interpolation(bufnr, cursor_pos)
 end
 
 ---@brief
---- Whether this `inherit_from` clause (`inherit (src) a b;`) inherits `name`.
----@param inherit_node TSNode An `inherit_from` node.
+--- Whether this inherit clause (`inherit a b;` / `inherit (src) a b;`) names
+--- `name` among its inherited attrs.
+---@param inherit_node TSNode An `inherit` or `inherit_from` node.
 ---@param name string
----@param bufnr integer
+---@param source integer|string Buffer number or source text the node was parsed from.
 ---@return boolean
-local function inherits_name(inherit_node, name, bufnr)
+local function inherits_name(inherit_node, name, source)
 	---@type TSNode?
 	local attrs = inherit_node:field("attrs")[1]
 	if not attrs then
 		return false
 	end
 	for attr in attrs:iter_children() do
-		if attr:named() and ts.get_node_text(attr, bufnr) == name then
+		if attr:named() and ts.get_node_text(attr, source) == name then
 			return true
 		end
 	end
@@ -145,59 +150,62 @@ local function inherits_name(inherit_node, name, bufnr)
 end
 
 ---@brief
---- The text of the `let` binding for `name` on this `let_expression`, if it
---- declares one — a plain binding (`greeting = "hi";`) or an inherit-from
---- clause (`inherit (src) greeting;`). Either node spans the trailing `;`, so
---- it reads as a ready-to-splice clause. A plain `inherit greeting;` only
---- re-binds the enclosing scope, so it supplies no value and is passed over.
+--- The `let` binding for `name` on this `let_expression`, if it declares one —
+--- a plain binding (`greeting = "hi";`) or an inherit-from clause
+--- (`inherit (src) greeting;`). Either node spans the trailing `;`, so its text
+--- reads as a ready-to-splice clause; the node itself is also returned so a
+--- caller can keep tracing the binding's value expression. A plain
+--- `inherit greeting;` only re-binds the enclosing scope, so it supplies no
+--- value and is passed over.
 ---@param let_node TSNode A `let_expression` node.
 ---@param name string
----@param bufnr integer
----@return string? binding_text
-local function let_binding_text(let_node, name, bufnr)
+---@param source integer|string Buffer number or source text the node was parsed from.
+---@return string? binding_text, TSNode? binding_node
+local function let_binding_text(let_node, name, source)
 	for child in let_node:iter_children() do
 		if child:type() == NIX_BINDING_SET then
 			for binding in child:iter_children() do
 				if binding:type() == NIX_BINDING then
 					local attrpath = binding:named_child(0)
-					if attrpath and ts.get_node_text(attrpath, bufnr) == name then
-						return ts.get_node_text(binding, bufnr)
+					if attrpath and ts.get_node_text(attrpath, source) == name then
+						return ts.get_node_text(binding, source), binding
 					end
-				elseif binding:type() == NIX_INHERIT_FROM and inherits_name(binding, name, bufnr) then
-					return ts.get_node_text(binding, bufnr)
+				elseif binding:type() == NIX_INHERIT_FROM and inherits_name(binding, name, source) then
+					return ts.get_node_text(binding, source), binding
 				end
 			end
 		end
 	end
-	return nil
+	return nil, nil
 end
 
 ---@brief
 --- The nearest lexical binding of `name` in view — a function formal or a `let`
 --- binding on an ancestor — walking outward from `start`. Lexical bindings are
 --- what `with` cannot shadow (Nix scoping). A `let` binding also yields its
---- ready-to-splice clause text; a formal is bound but has no in-file clause.
+--- ready-to-splice clause text and node; a formal is bound but has no in-file
+--- clause.
 ---@param start TSNode
 ---@param name string
----@param bufnr integer
----@return ("formal"|"let")? binding_kind, string? let_clause
-local function lexical_binding(start, name, bufnr)
+---@param source integer|string Buffer number or source text the node was parsed from.
+---@return ("formal"|"let")? binding_kind, string? let_clause, TSNode? binding_node
+local function lexical_binding(start, name, source)
 	---@type TSNode?
 	local ancestor = start:parent()
 	while ancestor do
 		local kind = ancestor:type()
-		if kind == NIX_FUNCTION and declares_formal(ancestor, name, bufnr) then
-			return "formal", nil
+		if kind == NIX_FUNCTION and declares_formal(ancestor, name, source) then
+			return "formal", nil, nil
 		elseif kind == NIX_LET then
-			---@type string?
-			local binding = let_binding_text(ancestor, name, bufnr)
-			if binding then
-				return "let", binding
+			---@type string?, TSNode?
+			local binding_text, binding_node = let_binding_text(ancestor, name, source)
+			if binding_text then
+				return "let", binding_text, binding_node
 			end
 		end
 		ancestor = ancestor:parent()
 	end
-	return nil, nil
+	return nil, nil, nil
 end
 
 ---@brief
@@ -208,6 +216,180 @@ end
 ---@return string
 local function pkgs_preamble(root_dir)
 	return 'let pkgs = (builtins.getFlake "' .. root_dir .. '").inputs.nixpkgs.legacyPackages.${builtins.currentSystem}; '
+end
+
+---@brief
+--- Render a `let ... in ` clause binding `name` to the flake input of the same
+--- name. Inside flake.nix the outputs function is applied to the locked inputs,
+--- so a name "bound by the caller" there *is* addressable — this is where a
+--- caller-binding chain bottoms out (ADR-0006).
+---@param name string
+---@param root_dir string Flake root.
+---@return string
+local function input_clause(name, root_dir)
+	return "let " .. name .. ' = (builtins.getFlake "' .. root_dir .. '").inputs.' .. name .. "; in "
+end
+
+---@brief
+--- The argument attrset of the call site instantiating `parent_file` —
+--- an `import ./<file> { ... }` application whose path resolves to it.
+---@param flake_root TSNode Root of the parsed flake.nix tree.
+---@param source string The flake.nix source text.
+---@param parent_file string Absolute path of the instantiated file.
+---@param root_dir string Flake root, for resolving the relative import path.
+---@return TSNode? call_args
+local function find_call_site(flake_root, source, parent_file, root_dir)
+	---@type boolean, vim.treesitter.Query?
+	local q_ok, query = pcall(ts.query.parse, PARENT_LANG, "(" .. NIX_APPLY .. ") @apply")
+	if not q_ok or not query then
+		return nil
+	end
+	for _, apply in query:iter_captures(flake_root, source, 0, -1) do
+		---@type TSNode?, TSNode?
+		local fn, args = apply:field("function")[1], apply:field("argument")[1]
+		if fn and fn:type() == NIX_APPLY and args and args:type() == NIX_ATTRSET then
+			---@type TSNode?, TSNode?
+			local import_fn, import_path = fn:field("function")[1], fn:field("argument")[1]
+			if
+				import_fn
+				and import_fn:type() == NIX_VARIABLE
+				and ts.get_node_text(import_fn, source) == "import"
+				and import_path
+				and import_path:type() == NIX_PATH
+			then
+				---@type string
+				local resolved = vim.fs.normalize(root_dir .. "/" .. ts.get_node_text(import_path, source))
+				if resolved == vim.fs.normalize(parent_file) then
+					return args
+				end
+			end
+		end
+	end
+	return nil
+end
+
+---@brief
+--- How a call-site argument attrset supplies `name`: a plain inherit
+--- (`inherit pkgs;` — the caller's variable of the same name) or an explicit
+--- binding (`lib = pkgs.lib;` — an expression in the caller's scope).
+---@param args_node TSNode The call site's `attrset_expression`.
+---@param name string
+---@param source integer|string Buffer number or source text the node was parsed from.
+---@return ("inherit"|"binding")? arg_kind, TSNode? arg_node
+local function call_arg(args_node, name, source)
+	for child in args_node:iter_children() do
+		if child:type() == NIX_BINDING_SET then
+			for binding in child:iter_children() do
+				if binding:type() == NIX_BINDING then
+					local attrpath = binding:named_child(0)
+					if attrpath and ts.get_node_text(attrpath, source) == name then
+						return "binding", binding
+					end
+				elseif binding:type() == NIX_INHERIT and inherits_name(binding, name, source) then
+					return "inherit", binding
+				end
+			end
+		end
+	end
+	return nil, nil
+end
+
+---@brief
+--- Trace `name` outward from `start` through the flake.nix scope until it
+--- bottoms out at a flake input, accumulating ready-to-splice `let ... in `
+--- clauses (outermost first). Each hop splices the nearest `let` binding and
+--- continues with the head name of that binding's value expression; a formal
+--- means the outputs function's argument — a flake input — and closes the
+--- chain. An unbound head or a binding cycle yields nil.
+---@param start TSNode
+---@param name string
+---@param source string The flake.nix source text.
+---@param root_dir string Flake root.
+---@return string? clauses
+local function trace_to_input(start, name, source, root_dir)
+	---@type string[]
+	local clauses = {}
+	---@type table<string, boolean>
+	local seen = {}
+	---@type TSNode?, string?
+	local node, head = start, name
+	while node and head and not seen[head] do
+		seen[head] = true
+		---@type ("formal"|"let")?, string?, TSNode?
+		local binding_kind, clause, binding_node = lexical_binding(node, head, source)
+		if binding_kind == "formal" then
+			table.insert(clauses, 1, input_clause(head, root_dir))
+			return table.concat(clauses)
+		elseif clause and binding_node then
+			table.insert(clauses, 1, "let " .. clause .. " in ")
+			---@type TSNode?
+			local value = binding_node:field("expression")[1]
+			node, head = binding_node, value and head_name(value, source) or nil
+		else
+			return nil
+		end
+	end
+	return nil
+end
+
+---@brief
+--- Reconstruct the caller's binding chain for a formal of `parent_file` from
+--- the flake call site: parse `<root_dir>/flake.nix`, find the
+--- `import ./<file> { ... }` instantiation, and trace the argument supplying
+--- the formal back to a flake input. Returns the ready-to-splice `let ... in `
+--- chain, or nil when the caller is not in view (no flake, no call site, the
+--- formal is not supplied, or the chain never reaches an input) — the genuine
+--- bound-by-caller condition.
+---@param formal_name string
+---@param parent_file string Absolute path of the buffer's file.
+---@param root_dir string Flake root.
+---@return string? clauses
+local function caller_clauses(formal_name, parent_file, root_dir)
+	---@type string
+	local flake_path = root_dir .. "/flake.nix"
+	if vim.fn.filereadable(flake_path) == 0 then
+		return nil
+	end
+	---@type string
+	local source = table.concat(vim.fn.readfile(flake_path), "\n")
+	---@type boolean, vim.treesitter.LanguageTree?
+	local ok, parser = pcall(ts.get_string_parser, source, PARENT_LANG)
+	if not ok or not parser then
+		return nil
+	end
+	---@cast parser vim.treesitter.LanguageTree
+	---@type TSNode
+	local flake_root = parser:parse()[1]:root()
+
+	---@type TSNode?
+	local call_args = find_call_site(flake_root, source, parent_file, root_dir)
+	if not call_args then
+		return nil
+	end
+
+	---@type ("inherit"|"binding")?, TSNode?
+	local arg_kind, arg_node = call_arg(call_args, formal_name, source)
+	if arg_kind == "inherit" and arg_node then
+		-- `inherit pkgs;`: the formal is the caller's variable of the same name.
+		return trace_to_input(arg_node, formal_name, source, root_dir)
+	elseif arg_kind == "binding" and arg_node then
+		-- `lib = pkgs.lib;`: splice the binding verbatim as the innermost clause
+		-- and trace its value expression's head through the caller's scope.
+		---@type TSNode?
+		local value = arg_node:field("expression")[1]
+		---@type string?
+		local head = value and head_name(value, source) or nil
+		if not head then
+			return nil
+		end
+		---@type string?
+		local outer = trace_to_input(arg_node, head, source, root_dir)
+		if not outer then
+			return nil
+		end
+		return outer .. "let " .. ts.get_node_text(arg_node, source) .. " in "
+	end
+	return nil
 end
 
 ---@tag ninjection.resolve.synthesize()
@@ -246,6 +428,15 @@ function M.synthesize(node, bufnr, root_dir)
 		---@type ("formal"|"let")?, string?
 		local binding_kind, let_clause = lexical_binding(node, name, bufnr)
 		if binding_kind == "formal" then
+			-- The binding lives in an unseen caller — unless the caller is the
+			-- project flake itself: when flake.nix instantiates this file and
+			-- supplies the formal, the chain bottoms out at a flake input and
+			-- closes (ADR-0006's "knowing how the file is instantiated").
+			---@type string?
+			local clauses = caller_clauses(name, vim.api.nvim_buf_get_name(bufnr), root_dir)
+			if clauses then
+				return { expr = clauses .. "builtins.toString (" .. expr_text .. ")" }, nil
+			end
 			return { bound_by_caller = name }, nil
 		elseif let_clause then
 			return {
