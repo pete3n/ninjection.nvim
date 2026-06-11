@@ -1,3 +1,4 @@
+.ci/
 ci/lua_ls.log
 ci/.luarc.local.json
 scripts/
